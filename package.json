@@ -1,0 +1,28 @@
+{
+  "name": "ferryflow",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "scan:secrets": "node scripts/secret-scan.mjs",
+    "qa:api": "npm run lint -w apps/api && npm run test -w apps/api && npm run build -w apps/api",
+    "qa:web": "npm run typecheck -w apps/web && npm run test -w apps/web && npm run build -w apps/web && npm run test:e2e -w apps/web",
+    "qa": "npm run scan:secrets && npm run qa:api && npm run qa:web"
+  },
+  "dependencies": {
+    "framer-motion": "^13.1.1",
+    "mapbox-gl": "^3.29.0",
+    "react-map-gl": "^8.1.2",
+    "zustand": "^5.0.15"
+  }
+}
