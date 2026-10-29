@@ -106,7 +106,7 @@ export const ADALAR_HERITAGE_DATA: IslandProfile[] = [
     transitRoutes: [
       {
         departurePier: 'Bostancı',
-        operators: ['Şehir Hatları', 'Mavi Marmara', 'İDO'],
+        operators: ['Şehir Hatları', 'Mavi Marmara'],
         approxDurationMin: 30,
         transitConnection: 'Marmaray Bostancı İstasyonu (5 dk yürüme)',
         tip: 'En hızlı ve sık kalkan ana arterdir. Sabah ve akşam her 20-30 dakikada bir sefer vardır.'

@@ -4,7 +4,6 @@ import { getMaviMarmaraSchedules } from "./mavi-marmara-schedules";
 import { getDenturSchedules } from "./dentur-schedules";
 import { getPrensTurSchedules } from "./prens-tur-schedules";
 import { getTuryolSchedules } from "./turyol-schedules";
-import { getIdoSchedules } from "./ido-schedules";
 
 export interface RawStop {
   name: string;
@@ -48,7 +47,7 @@ export interface RawOfficialTrip {
 /**
  * LİMAN BAŞKANLIĞI VE UKOME İZİNLİ TÜM OPERATÖRLER DOĞRULANMIŞ VERİ SETİ:
  * - Şehir Hatları : official-scraped-schedules.json (resmi portal dökümü).
- * - İDO           : ido.com.tr Marmara & Adalar hızlı deniz otobüsü tarifesi.
+ * - İDO           : İstanbul Adalar seferleri için güncel tarife doğrulanamadı; sefer eklenmez.
  * - Mavi Marmara  : mavimarmara.net resmi tarife sayfalarından doğrulanmış GERÇEK veri.
  * - Dentur Avrasya: denturavrasya.com hat sayfalarından canlı parse edilmiş veri.
  * - Prens Tur     : prenstur.net resmi 2026-2027 kış tarifesi afişinden çıkarılmış doğrulanmış veri.
@@ -60,7 +59,6 @@ const maviMarmaraTrips = getMaviMarmaraSchedules();
 const denturTrips = getDenturSchedules();
 const prensTurTrips = getPrensTurSchedules();
 const turyolTrips = getTuryolSchedules();
-const idoTrips = getIdoSchedules();
 
 export const OFFICIAL_SCHEDULES_DATA: RawOfficialTrip[] = [
   ...baseTrips,
@@ -69,5 +67,4 @@ export const OFFICIAL_SCHEDULES_DATA: RawOfficialTrip[] = [
   ...denturTrips,
   ...prensTurTrips,
   ...turyolTrips,
-  ...idoTrips,
 ];

@@ -6,7 +6,7 @@
  *
  * VERİ DURUMU:
  * - Şehir Hatları : REAL — resmi siteden alınmış JSON (official-scraped-schedules.json)
- * - İDO           : REAL — ido.com.tr Marmara & Adalar hızlı deniz otobüsü tarifesi
+ * - İDO           : UNAVAILABLE — güncel İstanbul Adalar tarifesi doğrulanamadı
  * - Mavi Marmara  : REAL — mavimarmara.net tarife sayfalarından doğrulanmış
  * - Dentur Avrasya: REAL — denturavrasya.com hat sayfalarından parse edilmiş
  * - Turyol        : REAL — turyol.com iç arama motorundan canlı çekilmiş doğrulanmış veri
@@ -72,10 +72,10 @@ export const OPERATOR_REGISTRY: OperatorRecord[] = [
     officialUrl: "https://www.ido.com.tr",
     logoPath: "/logos/operator-ido.png",
     brandColor: "#0B4F9C",
-    category: "ADALAR",
-    dataStatus: "REAL",
+    category: "HEPSI",
+    dataStatus: "UNAVAILABLE",
     statusNote:
-      "ido.com.tr resmi portalından doğrulanmış hızlı deniz otobüsü tarifesi (Bostancı–Adalar, Kabataş–Kadıköy–Adalar).",
+      "İstanbul Adaları için güncel İDO kalkış saati doğrulanamadı. Doğrulanmış tarife bulunana kadar İDO adına Adalar seferi gösterilmez.",
   },
   {
     name: "Mavi Marmara",
