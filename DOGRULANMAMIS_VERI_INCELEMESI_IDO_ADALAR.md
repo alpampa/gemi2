@@ -10,15 +10,15 @@ Projede, İDO'nun güncel resmî tarifesinden alındığı ileri sürülen Bosta
 
 ## Bulabildiğim kanıtlar
 
-- [İBB Şehir Planlama — Adalar'a Ulaşım](https://sehirplanlama.ibb.istanbul/adalarkanip-surdurulebilir-ulasim-ve-altyapi-sistemleri/): Adalar'a ulaşımı Şehir Hatları ve özel motorlarla açıklıyor; İDO'nun Adalar'daki iskele altyapısını “atıl” olarak niteliyor. Bu, güncel düzenli İDO seferi bulunmadığı yönündeki en güçlü güncel resmî kanıt.
+- [İBB Şehir Planlama — Adalar'a Ulaşım](https://sehirplanlama.ibb.istanbul/adalarkanip-surdurulebilir-ulasim-ve-altyapi-sistemleri/): Adalar'a ulaşımı Şehir Hatları ve özel motorlarla açıklıyor; İDO'nun Adalar'daki iskele altyapısını “atıl” olarak niteliyor. Sayfada değerlendirmenin tarihi görünmediği için bu bilgi 2026 tarifesinin yerine geçmez.
 - [Şehir Hatları — Bostancı–Adalar Ring tarifesi](https://sehirhatlari.istanbul/tr/timetables/domestic-trips/inner-istanbul-ferry-lines/kadikoy-besiktas-770): Bostancı ile Adalar arasındaki mevcut tarifeyi ve uğrak saatlerini Şehir Hatları hattı olarak yayımlıyor.
 - [Anadolu Ajansı — 2021'de İDO'nun Adalar seferleri](https://www.aa.com.tr/tr/gundem/idonun-adalar-seferleri-basladi-/2290785): İDO'nun 1 Temmuz–5 Eylül 2021 arasında Kabataş ve Yenikapı'dan dört İstanbul adasına sezonluk sefer yaptığını bildiriyor. Bu, geçmişte sefer olduğunu kanıtlar; bugünkü seferi kanıtlamaz.
 - [Adalar Kaymakamlığı — Ulaşım](https://adalar.gov.tr/ulasim): İDO'yu genel işletmeci listesinde sayıyor; fakat İDO'ya ait belirli bir hat, sefer saati veya tarife vermiyor. Bu nedenle güncel İDO seferini tek başına doğrulamıyor.
-- [İDO'nun güncel sefer sayfası](https://egeadalari.ido.com.tr/tr/sefer-saatleri) ve [İDO ana sayfası](https://egeadalari.ido.com.tr/tr): Güncel sayfalarda Ege Adaları seferleri anlatılıyor. Ana sayfadaki İstanbul içi “Adalar” ifadesi genel; İstanbul Prens Adaları için güncel hat ve kalkış saati sunmuyor.
+- [İDO'nun sefer sayfası](https://egeadalari.ido.com.tr/tr/sefer-saatleri) ve [İDO ana sayfası](https://egeadalari.ido.com.tr/tr): Ana sayfa Ege Adaları seferlerini öne çıkarıyor ve ayrıca İstanbul içi Adalar'a erişimden genel olarak bahsediyor. Ancak açılabilen sayfada İstanbul Prens Adaları için güncel hat ve kalkış saati yer almıyor. Bu genel ifade güncel bir tarife satırı değil.
 
 ## Sonuç ve alınan önlem
 
-İDO'nun İstanbul Adaları'na geçmişte sefer yaptığı doğrulanıyor. Ancak bugün için İDO adına belirli bir İstanbul Adaları hattı ve saatini doğrulayacak güncel, tarihli tarife bulamadım. İBB'nin güncel kaynak notu da Adalar'daki İDO iskele altyapısının atıl olduğunu söylüyor. Bu yüzden “İDO bugün Adalar'a sefer yapıyor” diyemem.
+İDO'nun İstanbul Adaları'na geçmişte sefer yaptığı doğrulanıyor. Bugün içinse İDO adına belirli bir İstanbul Adaları hattı ve saati içeren güncel, tarihli tarife bulamadım. İDO ana sayfasındaki genel ifade ve Adalar Kaymakamlığı'nın işletmeci listesi bu soruyu tek başına çözecek kadar ayrıntı vermiyor; İBB sayfasındaki “atıl” notunun tarihi de belirtilmemiş. Bu nedenle “İDO bugün kesinlikle sefer yapmıyor” da “yapıyor” da diyemem. Güvenle söyleyebileceğim: projedeki mevcut saat ve ücretlerin İDO'nun güncel tarifesinden geldiği kanıtlanmamıştı; bu kayıtları bu yüzden yayımdan çıkardım.
 
 Doğrulanmamış saat ve ücretleri uygulamanın sefer verisinden çıkardım. İDO adına yeni Adalar seferi ancak firmanın güncel tarifesinde hat, gün ve saat açıkça görülürse eklenebilir. Sayfa erişilemezse veya kaynak eskiyse kayıt gizli kalır; tahminle tamamlanmaz.
 
