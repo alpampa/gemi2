@@ -110,10 +110,10 @@ export function LastFerrySafeguardBanner({
   };
 
   return (
-    <div className="w-full px-3 pt-1.5 animate-fadeIn">
+    <div className="fixed inset-x-2 bottom-[calc(5rem_+_env(safe-area-inset-bottom))] z-[45] animate-fadeIn sm:left-auto sm:right-4 sm:w-[min(440px,calc(100%_-_2rem))]">
       <div
         onClick={onOpenNightTransit}
-        className={`w-full rounded-2xl border p-2.5 sm:p-3 text-white shadow-xs flex items-center justify-between gap-2.5 transition-all cursor-pointer ${
+        className={`w-full rounded-xl border px-2.5 py-2 text-white shadow-lg flex items-center justify-between gap-2 transition-all cursor-pointer backdrop-blur-md ${
           isLateNightWindow
             ? "border-rose-500/70 bg-gradient-to-r from-rose-950/80 via-slate-900/90 to-red-950/80 hover:from-rose-900/80"
             : "border-indigo-400/50 bg-gradient-to-r from-indigo-950/80 via-slate-900/90 to-blue-950/80 hover:from-indigo-900/80"
@@ -121,7 +121,7 @@ export function LastFerrySafeguardBanner({
       >
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
           <div
-            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
               isLateNightWindow
                 ? "bg-rose-500/20 border border-rose-400/40 text-rose-300 animate-pulse"
                 : "bg-indigo-500/20 border border-indigo-400/40 text-indigo-300"
@@ -130,21 +130,21 @@ export function LastFerrySafeguardBanner({
             {isLateNightWindow ? <Moon size={16} /> : <Sparkles size={16} />}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1.5 min-w-0">
               <span
-                className={`text-[10px] font-black uppercase tracking-wider flex items-center gap-1 ${
+                className={`text-[9px] font-black uppercase tracking-wide flex items-center gap-1 truncate ${
                   isLateNightWindow ? "text-rose-300" : "text-cyan-300"
                 }`}
               >
-                <ShieldAlert size={10} className={isLateNightWindow ? "text-amber-400" : "text-cyan-400"} />
-                {isLateNightWindow ? "Gece Son Sefer Uyarısı (23:45+)" : "Adadan Son Dönüş Vapuru Güvencesi"}
+                <ShieldAlert size={10} className={`shrink-0 ${isLateNightWindow ? "text-amber-400" : "text-cyan-400"}`} />
+                {isLateNightWindow ? "Gece son sefer" : "Adadan son dönüş"}
               </span>
-              <span className="text-[9.5px] px-1.5 py-0.2 rounded bg-black/40 text-slate-300 font-mono">
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/40 text-slate-300 font-mono shrink-0">
                 {activeTrip.operator}
               </span>
             </div>
-            <p className="text-[11px] font-bold text-slate-200 truncate mt-0.5">
-              Son Vapur: <strong className="text-amber-300 font-mono text-xs">{activeTrip.departureTime}</strong> • {activeTrip.origin} → {activeTrip.destination}
+            <p className="text-[10px] font-bold text-slate-200 truncate mt-0.5">
+              <strong className="text-amber-300 font-mono">{activeTrip.departureTime}</strong> · {activeTrip.origin} → {activeTrip.destination}
             </p>
           </div>
         </div>
@@ -154,19 +154,18 @@ export function LastFerrySafeguardBanner({
             type="button"
             onClick={handleSetLastTripAlarm}
             title={hasAlarm ? "Son vapur alarmı kurulu" : "Son vapura 45 dk kala hatırlatıcı kur"}
-            className={`min-h-[34px] px-2.5 rounded-xl text-[10px] font-black flex items-center gap-1 border transition-all cursor-pointer ${
+            aria-label={hasAlarm ? "Son vapur alarmı kurulu" : "Son vapur alarmı kur"}
+            className={`w-8 h-8 rounded-lg text-[10px] font-black flex items-center justify-center border transition-all cursor-pointer shrink-0 ${
               hasAlarm
                 ? "bg-amber-400 text-slate-950 border-amber-300 shadow-sm"
                 : "bg-white/10 hover:bg-white/20 text-slate-200 border-white/20"
             }`}
           >
             {hasAlarm ? <BellRing size={12} className="animate-bounce" /> : <Bell size={12} />}
-            <span className="hidden xs:inline">{hasAlarm ? "Alarm Kurulu" : "Alarm Kur"}</span>
           </button>
 
-          <span className="text-[10px] font-black bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded-xl shrink-0 flex items-center gap-1">
-            <span className="hidden sm:inline">Gece Rehberi</span>
-            <ChevronRight size={12} />
+          <span title="Gece rehberini aç" className="w-8 h-8 text-[10px] font-black bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shrink-0 flex items-center justify-center">
+            <ChevronRight size={14} />
           </span>
         </div>
       </div>
