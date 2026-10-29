@@ -492,11 +492,32 @@ html.text-scale-lg {
   animation-delay: 2.2s;
 }
 
+@keyframes pier-anchor-sway {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(-1px) rotate(5deg);
+  }
+}
+
+.pier-anchor {
+  transform-origin: 50% 35%;
+  animation: pier-anchor-sway 2.4s ease-in-out infinite;
+}
+
+.pier-anchor-soon {
+  animation-duration: 0.8s;
+  filter: drop-shadow(0 0 3px rgb(245 158 11 / 55%));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ferry-bob,
   .ferry-smoke,
   .ferry-wave,
   .ferry-gull,
+  .pier-anchor,
   .animate-time-blink {
     animation: none;
   }

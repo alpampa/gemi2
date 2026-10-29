@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { Anchor } from "lucide-react";
 import type { UnderwaySegment } from "@/lib/utils/dynamic-trip";
 import { AdaVapuruIcon } from "@/components/ui/AdaVapuruIcon";
 
@@ -147,11 +148,13 @@ export function TransitRouteSchematic({
                 (index <= live.fromIndex ||
                   (isLast && live.toIndex === index && live.hasArrived)));
 
-            const dotClass = isDoneNode
-              ? "bg-emerald-500 border-white dark:border-slate-900 shadow-xs ring-2 ring-emerald-500/30"
+            const anchorClass = isSoonPier
+              ? "text-amber-500"
+              : isDoneNode
+              ? "text-emerald-500"
               : isLast
-              ? "bg-blue-600 border-white dark:border-slate-900 shadow-xs ring-2 ring-blue-500/30"
-              : "bg-white dark:bg-slate-800 border-blue-400 dark:border-blue-500";
+              ? "text-blue-600 dark:text-blue-400"
+              : "text-slate-400 dark:text-slate-500";
 
             const isActiveSegment = live != null && index === live.fromIndex;
             const isDoneSegment = live != null && index < live.fromIndex;
@@ -178,11 +181,10 @@ export function TransitRouteSchematic({
                   )}
 
                   <div className="relative flex items-center justify-center">
-                    <span
-                      className={`w-3 h-3 rounded-full border-2 transition-all shrink-0 ${
-                        isSoonPier
-                          ? "bg-amber-400 border-white dark:border-slate-900 shadow-xs ring-4 ring-amber-400/30 animate-pulse"
-                          : dotClass
+                    <Anchor
+                      aria-label={`${stop.name} iskelesi`}
+                      className={`w-[15px] h-[15px] stroke-[2.5] shrink-0 transition-colors pier-anchor ${anchorClass} ${
+                        isSoonPier ? "pier-anchor-soon" : ""
                       }`}
                     />
                   </div>

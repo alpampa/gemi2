@@ -963,6 +963,38 @@ export function ScheduleListClient({
           </div>
 
           <div className="border-t border-slate-800/80 px-2 py-1">
+            <div className="grid grid-cols-2 gap-1 mb-1">
+              <button
+                type="button"
+                onClick={() => {
+                  updateCategory(selectedCategory === "ADALAR" ? "ALL" : "ADALAR");
+                  setSelectedOrigin("ALL");
+                  setSelectedDestination("ALL");
+                }}
+                aria-pressed={selectedCategory === "ADALAR"}
+                className={`${chipBase} w-full min-h-8 px-2 py-0 rounded-lg text-[10px] gap-1 ${
+                  selectedCategory === "ADALAR" ? chipOn : chipOff
+                }`}
+              >
+                <span>🏝️</span>
+                <span>Adalar</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  updateCategory(selectedCategory === "BOGAZ" ? "ALL" : "BOGAZ");
+                  setSelectedOrigin("ALL");
+                  setSelectedDestination("ALL");
+                }}
+                aria-pressed={selectedCategory === "BOGAZ"}
+                className={`${chipBase} w-full min-h-8 px-2 py-0 rounded-lg text-[10px] gap-1 ${
+                  selectedCategory === "BOGAZ" ? chipOn : chipOff
+                }`}
+              >
+                <span>🌊</span>
+                <span>Boğaz</span>
+              </button>
+            </div>
             <div className="w-full overflow-x-auto hide-scrollbar flex items-center gap-1.5 py-0.5">
               {favorites.map((routeKey) => {
                 const [origin, destination] = routeKey.split(" → ");
@@ -986,38 +1018,6 @@ export function ScheduleListClient({
                   </button>
                 );
               })}
-              <button
-                type="button"
-                onClick={() => {
-                  updateCategory(selectedCategory === "ADALAR" ? "ALL" : "ADALAR");
-                  setSelectedOrigin("ALL");
-                  setSelectedDestination("ALL");
-                }}
-                aria-pressed={selectedCategory === "ADALAR"}
-                className={`${chipBase} gap-1 ${
-                  selectedCategory === "ADALAR" ? chipOn : chipOff
-                }`}
-              >
-                <span>🏝️</span>
-                <span>Adalar</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  updateCategory(selectedCategory === "BOGAZ" ? "ALL" : "BOGAZ");
-                  setSelectedOrigin("ALL");
-                  setSelectedDestination("ALL");
-                }}
-                aria-pressed={selectedCategory === "BOGAZ"}
-                className={`${chipBase} gap-1 ${
-                  selectedCategory === "BOGAZ" ? chipOn : chipOff
-                }`}
-              >
-                <span>🌊</span>
-                <span>Boğaz</span>
-              </button>
-
               <button
                 type="button"
                 onClick={() => setShowAllDay(!showAllDay)}
