@@ -1,6 +1,7 @@
 "use client";
 
-import { Ship, Headphones, Clock, RotateCcw, Settings } from "lucide-react";
+import { Headphones, Clock, RotateCcw, Settings } from "lucide-react";
+import { AdaVapuruIcon } from "@/components/ui/AdaVapuruIcon";
 import { SettingsSheet } from "@/components/settings/SettingsSheet";
 import { purgeAllCachesAndReload } from "@/components/pwa/ServiceWorkerRegister";
 import { SUPPORTED_LANGUAGES } from "@/store/useLanguageStore";
@@ -52,8 +53,8 @@ export function TopBar() {
 
         {/* Logo & Portal Adı */}
         <div className="flex items-center gap-1.5 truncate">
-          <div className="bg-linear-to-br from-blue-600 to-indigo-600 p-1.5 rounded-lg items-center justify-center shadow-xs text-white shrink-0 hidden xs:flex">
-            <Ship size={14} />
+          <div className="shrink-0 flex items-center justify-center" title="Paşabahçe vapuru">
+            <AdaVapuruIcon className="w-12 h-7 sm:w-14 sm:h-8" />
           </div>
           <div className="truncate">
             <h1 className="font-black text-xs sm:text-sm tracking-tight text-slate-900 dark:text-white flex items-center gap-1 leading-none truncate">
