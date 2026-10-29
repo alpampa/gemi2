@@ -38,6 +38,11 @@ export interface RouteOption {
   transferWaitMinutes?: number;
 }
 
+export interface ReachableDestinations {
+  direct: string[];
+  transfer: string[];
+}
+
 function timeToMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(':').map(Number);
   return h * 60 + m;
@@ -268,4 +273,32 @@ export function planJourney(
   });
 
   return results.slice(0, MAX_ROUTE_RESULTS);
+}
+
+/** Returns only destinations that have a direct or catchable one-transfer route. */
+export function getReachableDestinations(
+  schedules: ScheduleCardDto[],
+  origin: string,
+  currentMinutes: number = 0
+): ReachableDestinations {
+  if (!origin) return { direct: [], transfer: [] };
+
+  const piers = new Set<string>();
+  for (const schedule of schedules) {
+    piers.add(schedule.origin);
+    piers.add(schedule.destination);
+    schedule.stops?.forEach((stop) => piers.add(stop.name));
+  }
+
+  const direct: string[] = [];
+  const transfer: string[] = [];
+  for (const destination of piers) {
+    if (destination === origin) continue;
+    const routes = planJourney(schedules, origin, destination, currentMinutes);
+    if (routes.some((route) => route.type === "DIRECT")) direct.push(destination);
+    else if (routes.some((route) => route.type === "TRANSFER")) transfer.push(destination);
+  }
+
+  const sortPiers = (a: string, b: string) => a.localeCompare(b, "tr");
+  return { direct: direct.sort(sortPiers), transfer: transfer.sort(sortPiers) };
 }

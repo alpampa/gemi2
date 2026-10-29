@@ -7,7 +7,7 @@
  * aktarma bekleme penceresi, sıralama ve sonuç sınırı.
  */
 import { describe, it, expect } from "vitest";
-import { planJourney } from "@/lib/services/route-planner";
+import { getReachableDestinations, planJourney } from "@/lib/services/route-planner";
 import type { ScheduleCardDto } from "@/lib/types/schedule";
 
 /** Zorunlu alanlar dolu bir ScheduleCardDto üretir. */
@@ -31,6 +31,33 @@ describe("planJourney — temel doğrulama", () => {
     expect(planJourney(schedules, "Kadıköy", "Kadıköy", 540)).toEqual([]);
     expect(planJourney(schedules, "", "Eminönü", 540)).toEqual([]);
     expect(planJourney(schedules, "Kadıköy", "", 540)).toEqual([]);
+  });
+});
+
+describe("getReachableDestinations — varış seçimi", () => {
+  it("yalnızca tarifede doğrudan veya yetişilebilir aktarmalı rota bulunan iskeleleri verir", () => {
+    const schedules = [
+      makeSchedule({ origin: "Bostancı", destination: "Kadıköy", departureTime: "10:00", id: "bostanci-kadikoy" }),
+      makeSchedule({ origin: "Kadıköy", destination: "Üsküdar", departureTime: "10:50", id: "kadikoy-uskudar" }),
+      makeSchedule({ origin: "Kartal", destination: "Maltepe", departureTime: "10:10", id: "unrelated" }),
+    ];
+
+    expect(getReachableDestinations(schedules, "Bostancı", 540)).toEqual({
+      direct: ["Kadıköy"],
+      transfer: ["Üsküdar"],
+    });
+  });
+
+  it("aktarma bağlantısı yetişilemiyorsa varışı seçeneklere eklemez", () => {
+    const schedules = [
+      makeSchedule({ origin: "Bostancı", destination: "Kadıköy", departureTime: "10:00" }),
+      makeSchedule({ origin: "Kadıköy", destination: "Üsküdar", departureTime: "18:00" }),
+    ];
+
+    expect(getReachableDestinations(schedules, "Bostancı", 540)).toEqual({
+      direct: ["Kadıköy"],
+      transfer: [],
+    });
   });
 });
 

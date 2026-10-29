@@ -72,7 +72,7 @@ import {
   selectContextualSponsoredAd,
   type SponsoredAdOffer,
 } from "@/lib/data/sponsored-ads";
-import { planJourney, type RouteOption } from "@/lib/services/route-planner";
+import { getReachableDestinations, planJourney, type RouteOption } from "@/lib/services/route-planner";
 
 interface ScheduleListClientProps {
   schedules: ScheduleCardDto[];
@@ -487,7 +487,8 @@ export function ScheduleListClient({
     return Array.from(set).sort((a, b) => a.localeCompare(b, "tr"));
   }, [dayFilteredSchedules]);
 
-  // Doğrudan seferi olan varış iskeleleri vs. Aktarmalı varış iskeleleri
+  // Varış seçeneklerini yalnızca seçili gün ve işletmede gerçekten yapılabilen
+  // doğrudan veya aktarmalı seferlerden oluştur.
   const { directDestinations, transferDestinations } = useMemo(() => {
     if (selectedOrigin === "ALL") {
       return {
@@ -495,33 +496,22 @@ export function ScheduleListClient({
         transferDestinations: [] as string[],
       };
     }
-    const directSet = new Set<string>();
-    dayFilteredSchedules.forEach((schedule) => {
-      const isDirectOrigin = schedule.origin === selectedOrigin;
-      const stopIndex = schedule.stops ? schedule.stops.findIndex((st) => st.name === selectedOrigin) : -1;
-
-      if (isDirectOrigin) {
-        directSet.add(schedule.destination);
-        if (schedule.stops) {
-          schedule.stops.forEach((st) => directSet.add(st.name));
-        }
-      } else if (stopIndex >= 0 && schedule.stops) {
-        directSet.add(schedule.destination);
-        for (let i = stopIndex + 1; i < schedule.stops.length; i++) {
-          directSet.add(schedule.stops[i].name);
-        }
-      }
-    });
-    directSet.delete(selectedOrigin);
-    const directList = Array.from(directSet).sort((a, b) => a.localeCompare(b, "tr"));
-    const transferList = allPiersInSystem.filter(
-      (p) => p !== selectedOrigin && !directSet.has(p)
-    );
+    const availableSchedules = selectedOperator === "ALL"
+      ? dayFilteredSchedules
+      : dayFilteredSchedules.filter((schedule) => schedule.operator === selectedOperator);
+    let currentMinutes = 0;
+    if (!isTimetablePreviewMode) {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit", hour12: false,
+      }).format(new Date(now)).split(":");
+      currentMinutes = Number(parts[0]) * 60 + Number(parts[1]);
+    }
+    const reachable = getReachableDestinations(availableSchedules, selectedOrigin, currentMinutes);
     return {
-      directDestinations: directList,
-      transferDestinations: transferList,
+      directDestinations: reachable.direct,
+      transferDestinations: reachable.transfer,
     };
-  }, [dayFilteredSchedules, selectedOrigin, allPiersInSystem]);
+  }, [dayFilteredSchedules, selectedOrigin, selectedOperator, allPiersInSystem, isTimetablePreviewMode, now]);
 
   const handleSelectOrigin = (newOrigin: string) => {
     setSelectedOrigin(newOrigin);
@@ -669,11 +659,12 @@ export function ScheduleListClient({
       currMinutes = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
     }
 
-    const routes = planJourney(dayFilteredSchedules, selectedOrigin, selectedDestination, currMinutes);
-    if (routes.length > 0) return routes;
-    // Eğer günün kalan saatlerinde aktarma kalmadıysa tüm günün aktarmalı seçeneklerini göster
-    return planJourney(dayFilteredSchedules, selectedOrigin, selectedDestination, 0);
-  }, [selectedOrigin, selectedDestination, upcomingTrips.length, dayFilteredSchedules, isTimetablePreviewMode, now]);
+    const availableSchedules = selectedOperator === "ALL"
+      ? dayFilteredSchedules
+      : dayFilteredSchedules.filter((schedule) => schedule.operator === selectedOperator);
+    return planJourney(availableSchedules, selectedOrigin, selectedDestination, currMinutes)
+      .filter((route) => route.type === "TRANSFER");
+  }, [selectedOrigin, selectedDestination, selectedOperator, upcomingTrips.length, dayFilteredSchedules, isTimetablePreviewMode, now]);
 
   const safeguardSchedules = useMemo(() => {
     if (selectedCategory === "ALL") return dayFilteredSchedules;
