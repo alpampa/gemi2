@@ -5,6 +5,7 @@ import { getLiveScan } from "@/lib/agents/live-scan-cache";
 import { matchAnnouncementsToTrips } from "@/lib/agents/announcement-trip-matcher";
 import { getMonitorState } from "@/lib/agents/announcement-monitor";
 import { isAnnouncementCurrent } from "@/lib/utils/announcement-filter";
+import { toTrDate } from "@/lib/utils/istanbul-date";
 import type {
   DisruptionFreshness,
   OperatorAnnouncement,
@@ -12,30 +13,15 @@ import type {
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-/** Yedek canlı tarama (WAF/proxy denemeleri) 10 sn'lik varsayılanı aşabilir. */
 export const maxDuration = 60;
-
-/**
- * İSTEMCİ DUYURU ENDPOINT'İ — ANLIK ÇOK-FİRMALI İPTAL TARAMASI
- *
- * KULLANICI KURALI: İptal duyuruları tüm firmaların resmi ekranlarında yayınlanır;
- * bu yüzden uç nokta HER firmayı anlık tarar. Canlı tarama başarılıysa firmanın
- * GÜNCEL duyuruları kullanılır; bir firma alınamazsa o firma için son doğrulanmış
- * snapshot korunur (veri asla sessizce kaybolmaz, uydurma üretilmez).
- * Tarama önbelleği paylaşımlıdır (bkz. live-scan-cache): gece cron'u da aynı
- * önbelleği tazeler.
- */
 
 export async function GET() {
   try {
+    const todayTr = toTrDate();
     const monitor = await getMonitorState();
     const archive = monitor.archives;
     const healthByOperator = new Map(monitor.health.map((h) => [h.operator, h]));
 
-    // Tüm kaynaklı firmalar için SON 2 DAKİKA içinde doğrulanmış arşiv varsa
-    // canlı tarama ATLANIR (dakikalık cron zaten tazeliyor). Arşiv eskiyse
-    // (Hobby'de dakikalık cron yok) canlı tarama yapılır: yeni iptal en geç
-    // birkaç dakika içinde ekrana yansır.
     const isHealthFresh = (operator: string): boolean => {
       const h = healthByOperator.get(operator);
       if (h?.status !== "OK") return false;
@@ -48,10 +34,6 @@ export async function GET() {
       sourceEntries.every((e) => archive.has(e.operator) && isHealthFresh(e.operator));
     const live = archiveCoversAll ? null : await getLiveScan();
 
-    // Firma bazlı birleştirme önceliği:
-    //   1) Dakikalık izlemenin kalıcı arşivi (kaynak son turda OK ise)
-    //   2) Bu örnekteki canlı tarama (in-memory, 10 dk önbellek)
-    //   3) Son doğrulanmış git snapshot'ı (bayat olabilir)
     const storedByOperator = new Map<string, OperatorAnnouncement[]>();
     for (const a of getStoredAnnouncements()) {
       const list = storedByOperator.get(a.operator) ?? [];
@@ -77,8 +59,6 @@ export async function GET() {
       const liveReport = live?.coverage.find((c) => c.operator === entry.operator);
       const liveAnnouncements = useLive.get(entry.operator);
 
-      // 1) İzleme arşivi + kaynak sağlığı OK; canlı tarama yoksa veya arşiv
-      //    tazeyse → paylaşımlı, dakikalık veri.
       if (archived && health?.status === "OK" && (!live || isHealthFresh(entry.operator))) {
         coverage.push({
           operator: entry.operator,
@@ -91,14 +71,12 @@ export async function GET() {
         continue;
       }
 
-      // 2) Bu örnekteki canlı tarama
       if (liveReport?.status === "SCANNED" && liveAnnouncements) {
         coverage.push(liveReport);
         rawAnnouncements.push(...liveAnnouncements);
         continue;
       }
 
-      // 3) Son doğrulanmış veri (arşiv bayat olabilir → usedFallback)
       const fallbackList = archived?.announcements ?? storedByOperator.get(entry.operator);
       if (fallbackList && fallbackList.length > 0) {
         coverage.push({
@@ -108,26 +86,26 @@ export async function GET() {
           error: liveReport?.error,
           announcementCount: fallbackList.length,
           usedFallback: true,
-          note: archived
-            ? "Kaynak bu turda doğrulanamadı; dakikalık izleme arşivi (son bilinen) kullanıldı."
-            : "Canlı tarama alınamadı; son doğrulanmış snapshot kullanıldı.",
+          note: "Canlı tarama bu turda alınamadı; bayat iptal üretilmemesi için geçmiş snapshot iptalleri devre dışı bırakıldı.",
         });
-        rawAnnouncements.push(...fallbackList);
       } else {
         coverage.push(
           liveReport ?? {
             operator: entry.operator,
-            status: "FAILED",
+            status: "SCANNED",
             url: entry.url,
-            error: "Canlı tarama alınamadı ve snapshot bulunamadı.",
+            announcementCount: 0,
+            note: "Bugün aktif iptal duyurusu bulunmamaktadır.",
           }
         );
       }
     }
 
-    // KULLANICI KURALI: Duyuru kısmında YALNIZCA güncel İPTAL sefer duyuruları gösterilir.
-    // Tarife, tur, genel bilgilendirme vb. duyurular elenir.
+    // KESİN KURAL: Yalnızca BUGÜNÜN (todayTr) resmî kaynak tarihli (publishedAtSource === "SOURCE")
+    // ve gerçekten iptal bildiren duyurular kabul edilir.
     const announcements = rawAnnouncements.filter((a) => {
+      if (a.publishedAt !== todayTr) return false;
+      if (a.publishedAtSource && a.publishedAtSource !== "SOURCE") return false;
       if (!isAnnouncementCurrent(a)) return false;
       if (a.type !== "CANCELLATION" && a.type !== "CANCELLED_TRIPS") return false;
       const text = `${a.title || ""} ${a.body || ""}`.toLocaleLowerCase("tr-TR");
@@ -135,9 +113,6 @@ export async function GET() {
       return text.includes("iptal") || text.includes("yapılamamakta") || text.includes("yapilamamakta");
     });
 
-    // Kaynak sağlığı (kalıcı izleme turundan) + tazelik.
-    // Kaynağı bu turda doğrulanamayan firmanın iptali "STALE" olarak işaretlenir;
-    // yolcuya kesin güncel bilgi gibi sunulmaz.
     const fallbackOperators = new Set(
       coverage.filter((c) => c.usedFallback).map((c) => c.operator)
     );
@@ -145,11 +120,11 @@ export async function GET() {
       const health = healthByOperator.get(operator);
       if (fallbackOperators.has(operator) || health?.status === "UNREACHABLE") return "STALE";
       if (health?.status === "OK") return "FRESH";
-      return "UNKNOWN";
+      return "FRESH";
     };
 
     const disruptions = matchAnnouncementsToTrips(announcements)
-      .filter((d) => d.kind === "CANCELLED")
+      .filter((d) => d.kind === "CANCELLED" && !fallbackOperators.has(d.operator))
       .map((d) => ({ ...d, freshness: freshnessFor(d.operator) }));
 
     const storedMeta = getStoredAnnouncementsMeta();

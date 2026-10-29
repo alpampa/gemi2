@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { ScheduleListClient } from "@/components/schedule/ScheduleListClient";
+import { ChameleonMobileCockpit } from "@/components/cockpit/ChameleonMobileCockpit";
 import { DepartureBoardView } from "@/components/views/DepartureBoardView";
 import { PiersDirectoryView } from "@/components/views/PiersDirectoryView";
 import { MarineWeatherSafetyCenter } from "@/components/views/MarineWeatherSafetyCenter";
@@ -22,21 +23,23 @@ interface MainAppShellProps {
 
 export function MainAppShell({ schedules, serverTimeIso, marineWeather, sourceFreshness }: MainAppShellProps) {
   const [activeTab, setActiveTab] = useState<string>("schedules");
+  const [uiExperienceMode, setUiExperienceMode] = useState<"chameleon" | "classic">("chameleon");
   const [forcedPierFilter, setForcedPierFilter] = useState<string | null>(null);
 
-  // Pano, İskeleler ve Favoriler sekmeleri varsayılan olarak bugünün aktif seferlerini kullanır
   const todaySchedules = useMemo(
     () => schedules.filter((s) => s.runsToday !== false),
     [schedules]
   );
 
-  // PWA App Shortcuts (Hızlı Kısayollar) Entegrasyonu (?view=piers, ?view=weather, vb.)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const view = params.get("view");
       if (view === "piers" || view === "weather" || view === "favorites" || view === "schedules" || view === "board") {
         setActiveTab(view);
+      }
+      if (params.get("ui") === "classic") {
+        setUiExperienceMode("classic");
       }
     }
   }, []);
@@ -50,14 +53,39 @@ export function MainAppShell({ schedules, serverTimeIso, marineWeather, sourceFr
     <>
       <PreferenceEffects />
 
-      {activeTab === "schedules" && (
-        <ScheduleListClient
+      {activeTab === "schedules" && uiExperienceMode === "chameleon" && (
+        <ChameleonMobileCockpit
           schedules={schedules}
           serverTimeIso={serverTimeIso}
           marineWeather={marineWeather}
           sourceFreshness={sourceFreshness}
-          initialOrigin={forcedPierFilter || undefined}
+          onSwitchToClassicView={() => setUiExperienceMode("classic")}
+          onSelectNavTab={(tab) => setActiveTab(tab)}
         />
+      )}
+
+      {activeTab === "schedules" && uiExperienceMode === "classic" && (
+        <div>
+          <div className="px-3 py-2 bg-sky-950/60 border-b border-sky-500/30 flex items-center justify-between">
+            <span className="text-xs font-bold text-sky-200">
+              📋 Klasik Arama & Tüm İskeleler Görünümü
+            </span>
+            <button
+              type="button"
+              onClick={() => setUiExperienceMode("chameleon")}
+              className="px-3 py-1 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-extrabold text-xs"
+            >
+              🎨 10-Kokpit Mobil Arayüze Dön
+            </button>
+          </div>
+          <ScheduleListClient
+            schedules={schedules}
+            serverTimeIso={serverTimeIso}
+            marineWeather={marineWeather}
+            sourceFreshness={sourceFreshness}
+            initialOrigin={forcedPierFilter || undefined}
+          />
+        </div>
       )}
 
       {activeTab === "board" && (
@@ -88,7 +116,6 @@ export function MainAppShell({ schedules, serverTimeIso, marineWeather, sourceFr
         />
       )}
 
-      {/* Controlled Interactive Bottom Navigation Bar */}
       <BottomNav
         activeTab={activeTab}
         onTabChange={(tab) => {

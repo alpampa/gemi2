@@ -28,46 +28,58 @@ const TR_MONTHS: Record<string, number> = {
   aralik: 12,
 };
 
+/** Metin içinde açıkça yazılmış GG.AA.YYYY tarihini çıkarır (uydurma yok). */
+export function extractTrDate(value?: string): string | undefined {
+  if (!value) return undefined;
+  const m = value.match(/\b(\d{2})\.(\d{2})\.(20\d{2})\b/);
+  if (!m) return undefined;
+  return `${m[1]}.${m[2]}.${m[3]}`;
+}
+
 /**
  * Duyurunun güncel olup olmadığını belirler.
- * Eski, süresi dolmuş veya geçmiş tarihlere ait iptal/tarife/ek sefer duyurularını eler.
+ * HAYATİ KURAL: İptal duyuruları (CANCELLATION / CANCELLED_TRIPS) yalnızca
+ * açık bir yayın tarihine (publishedAt) sahipse VE bu tarih BUGÜNÜN İstanbul
+ * tarihine (curKey) eşitse geçerli sayılır. Tarihsiz veya geçmiş tarihli
+ * hiçbir iptal duyurusu kabul edilmez.
  */
 export function isAnnouncementCurrent(
   announcement: Pick<OperatorAnnouncement, "title" | "body" | "type" | "publishedAt">,
   nowMs: number = Date.now()
 ): boolean {
   const text = `${announcement.title || ""} ${announcement.body || ""}`.toLowerCase();
-  // KULLANICI KURALI: gün 00:00'da İSTANBUL saatine göre biter. Sunucu UTC
-  // çalıştığı için takvim günü Europe/Istanbul üzerinden hesaplanır.
   const nowParts = getIstanbulDateParts(nowMs);
   const currentYear = nowParts.year;
   const currentMonth = nowParts.month;
   const curKey = toDateKey(nowParts);
   const curDayIndex = dateKeyToDayIndex(curKey);
 
-  // 1. Doğrudan yayın tarihi kontrolü (DD.MM.YYYY veya ISO format)
+  const isCancelType =
+    announcement.type === "CANCELLATION" || announcement.type === "CANCELLED_TRIPS";
+
+  // 1. İptal duyurularında yayın tarihi ZORUNLUDUR ve BUGÜN olmalıdır.
+  if (isCancelType && !announcement.publishedAt) {
+    return false;
+  }
+
   if (announcement.publishedAt) {
     const pubKey = announcement.publishedAt.includes(".")
       ? parseTrDateKey(announcement.publishedAt)
       : parseIsoDateKey(announcement.publishedAt);
 
-    if (pubKey) {
+    if (!pubKey) {
+      if (isCancelType) return false;
+    } else {
       const diffDays = curDayIndex - dateKeyToDayIndex(pubKey);
-      // KULLANICI KURALI: İptal duyuruları YALNIZCA yayınlandığı GÜN geçerlidir.
-      // Yayın günü dışındaki tüm iptal duyuruları elenir — bir gün öncesi dahil.
-      if (
-        announcement.type === "CANCELLATION" ||
-        announcement.type === "CANCELLED_TRIPS"
-      ) {
-        if (pubKey < curKey) return false;
+      if (isCancelType) {
+        if (pubKey !== curKey) return false;
       } else {
-        // Genel duyurular için makul güncellik penceresi (14 gün)
         if (diffDays > 14) return false;
       }
     }
   }
 
-  // 2. Başlık veya gövdede geçen açık tarih tespiti (Örn: '12-13 Eylül 2026', '23 Ağustos', '8 Ocak')
+  // 2. Başlık veya gövdede geçen açık tarih tespiti
   const dateRegex =
     /(?:(\d{1,2})[-–\s]+)?(\d{1,2})\s*(ocak|şubat|subat|mart|nisan|mayıs|mayis|haziran|temmuz|ağustos|agustos|eylül|eylul|ekim|kasım|kasim|aralık|aralik)(?:\s*(\d{4}))?/i;
   const match = text.match(dateRegex);
@@ -80,26 +92,21 @@ export function isAnnouncementCurrent(
       const targetKey = year * 10000 + month * 100 + endDay;
       const diffDays = curDayIndex - dateKeyToDayIndex(targetKey);
 
-      // İptal veya ek sefer duyurularında belirtilen gün geçmişse kesinlikle eskidir
       if (
-        announcement.type === "CANCELLATION" ||
-        announcement.type === "CANCELLED_TRIPS" ||
+        isCancelType ||
         announcement.type === "EXTRA_SERVICE"
       ) {
-        if (targetKey < curKey) return false;
+        if (targetKey !== curKey) return false;
       } else {
-        // Diğer düzenleme/tarife duyuruları için belirtilen tarihin üzerinden 3 günden fazla geçmişse eskidir
         if (diffDays > 3) return false;
       }
     }
   }
 
-  // 3. Geçmiş yıllar (2023, 2024, 2025 gibi geride kalmış arşiv duyuruları)
   if (text.includes("2023") || text.includes("2024") || text.includes("2025")) {
     return false;
   }
 
-  // 4. Özel dönem/gün duyuruları (Sevgililer Günü, Yılbaşı gecesi vb.)
   if (
     text.includes("sevgililer gunu") ||
     text.includes("sevgililer günü") ||
@@ -114,7 +121,6 @@ export function isAnnouncementCurrent(
     }
   }
 
-  // 5. İçinde bulunulan ayın çok gerisinde kalmış eski aylık duyurular (Ocak-Eylül arası duyurular)
   if (
     text.includes("haziran") ||
     text.includes("temmuz") ||
@@ -127,8 +133,6 @@ export function isAnnouncementCurrent(
     return false;
   }
 
-  // 6. KULLANICI KURALI: Sadece İPTAL SEFERLER ve doğrudan operasyonel sefer duyuruları gösterilir.
-  // Pazarlama, tur tanıtımı, proje ve genel idari PR haberleri duyuru bandından ayıklanır.
   if (
     text.includes("projesi") ||
     text.includes("sunset tur") ||

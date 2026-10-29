@@ -1,29 +1,16 @@
 /**
- * DUYURU AJANLARI (HUSUSİ)
+ * DUYURU AJANLARI (HUSUSİ — SIFIR SAHTE İPTAL GARANTİLİ)
  *
- * KULLANICI KURALI: İptal duyuruları TÜM firmaların resmi ekranlarında yayınlanır.
- * Bu yüzden ajanlar HER firmayı anlık tarar; iptal varsa ekrana yazılır — tek firma değil.
- * Her firmanın resmi duyuru / iptal-sefer sayfası çekilir, gerçek duyuru
- * kayıtları başlık ve girdileriyle birlikte çıkarılır. Uydurma üretilmez;
- * yalnızca sayfada birebir bulunan metin kaydedilir.
- *
- * Kaynak durumu (2026-10-17 canlı doğrulama):
- * - Şehir Hatları : sehirhatlari.istanbul/tr/iptal-seferler        → TARANIYOR
- * - Dentur Avrasya: denturavrasya.com/tr-TR/duyurular              → TARANIYOR
- * - Mavi Marmara  : durum.mavimarmara.net/feed.json — firmanın ana sayfasındaki
- *                   gömülü "Sefer Durumları" paneli canlı durum akışı yayınlar
- *                   (status: running/disrupted/cancelled)           → TARANIYOR
- * - Turyol        : turyol.com ana sayfa açılış popup'ı
- *                   (/Home/AktifPopupDuyurulari, fancybox iframe) iptal
- *                   duyurularını yayınlar                      → TARANIYOR
- * - Prens Tur     : resmi sitede duyuru bölümü YOK (prenstur.net/duyurular → 404) → kaynak yok
- *
- * Kaynağı olmayan firmalar sessizce atlanmaz; tarama raporunda (coverage)
- * "NO_SOURCE" olarak kanıtlı notla raporlanır.
+ * KULLANICI KURALI:
+ * 1) Asla uydurma veya geçmiş tarihten kalma bayat "İPTAL" duyurusu gösterilmez.
+ * 2) Yalnızca resmî kaynakta BUGÜNÜN İSTANBUL TARİHİ (GG.AA.YYYY) ile açıkça
+ *    doğrulanmış iptal duyuruları "CANCELLED_TRIPS" olarak kabul edilir.
+ * 3) Yayın tarihi (updated_at / publishedAt) olmayan veya geçmiş bir güne ait
+ *    önbellek/durum akışları ASLA bugünün tarihiyle damgalanmaz.
  */
 
 import { fetchHtml, normalizePierName } from "@/lib/agents/scraper-agent";
-import { isAnnouncementCurrent } from "@/lib/utils/announcement-filter";
+import { isAnnouncementCurrent, extractTrDate } from "@/lib/utils/announcement-filter";
 import { toTrDate } from "@/lib/utils/istanbul-date";
 import { OPERATOR_REGISTRY } from "@/lib/data/operator-registry";
 import type { OperatorAnnouncement, AnnouncementsSnapshot } from "@/lib/types/announcement";
@@ -57,11 +44,6 @@ export function decodeHtmlEntities(text: string): string {
     .replace(/&([a-zA-Z]+);/g, (m, name) => ENTITY_MAP[name] ?? m);
 }
 
-/**
- * JSON ayrıştırma (gevşek): bazı proxy'ler (ör. r.jina.ai) gövdenin başına
- * "Title/URL Source/Markdown Content" ekler. Önce düz JSON denenir; olmazsa
- * ilk `{` ile son `}` arasındaki blok ayrıştırılır. Uydurma veri üretilmez.
- */
 function parseJsonLoose<T>(raw: string): T | null {
   try {
     return JSON.parse(raw) as T;
@@ -79,12 +61,6 @@ function parseJsonLoose<T>(raw: string): T | null {
   }
 }
 
-/**
- * Resmî duyuru sayfasının makale gövdesini DÜZ METİN olarak çıkarır.
- * - Tablolar (tarife düzenleme çizelgeleri) gövdeye alınmaz; yalnızca açıklama
- *   cümleleri + "İptal Seferler:" hat listesi saklanır.
- * - Metin sayfada birebir bulunan içeriktir; hiçbir cümle üretilmez.
- */
 export function extractArticleBodyText(html: string): string {
   const cleaned = html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
@@ -125,64 +101,80 @@ export interface SehirHatlariCancellationStatus {
 
 export function parseSehirHatlariCancellationStatus(html: string): SehirHatlariCancellationStatus {
   const dateMatch = html.match(/news-detail-date[^>]*>\s*([\d.]+)\s*<\/p>/);
+  const pageDate = dateMatch?.[1];
+  const todayTr = toTrDate();
 
   // ESKİ FORMAT: tek satır durum cümlesi ("İptal seferimiz bulunmamaktadır.")
   const stmtMatch = html.match(/İptal seferimiz\s+([^<]{2,120})\.?\s*<\/p>/i);
   if (stmtMatch) {
     const rawStmt = stmtMatch[1].trim().replace(/\.+$/, "");
     const statement = `İptal seferimiz ${rawStmt}.`;
+    const isToday = pageDate === todayTr;
     return {
-      date: dateMatch?.[1],
+      date: pageDate,
       statement,
-      hasCancellations: /bulunmaktadır/i.test(statement) && !/bulunmamaktadır/i.test(statement),
+      hasCancellations:
+        isToday && /bulunmaktadır/i.test(statement) && !/bulunmamaktadır/i.test(statement),
     };
   }
 
-  // YENİ FORMAT (17.10.2026'dan itibaren): sayfada doğrudan iptal duyurusu
-  // yayınlanır (açıklama + "İptal Seferler:" hat listesi + düzenleme tabloları).
+  // YENİ FORMAT: sayfada doğrudan duyuru metni yayınlanır.
+  // HAYATİ KURAL: Yalnızca sayfadaki tarih BUGÜN (todayTr) ise aktif iptal sayılır!
   const body = extractArticleBodyText(html);
   const normBody = normalizePierName(body);
   const hasCancelList = normBody.includes("iptalseferler");
   const cannotBeOperated =
     normBody.includes("gerceklestirilemeyecektir") ||
     normBody.includes("iptaledilmistir");
-  if (body && (hasCancelList || cannotBeOperated)) {
-    return { date: dateMatch?.[1], statement: body, hasCancellations: true };
+  if (body && pageDate === todayTr && (hasCancelList || cannotBeOperated)) {
+    return { date: pageDate, statement: body, hasCancellations: true };
   }
 
   return {
-    date: dateMatch?.[1],
-    statement: "İptal sefer bilgisi sayfada bulunamadı.",
+    date: pageDate,
+    statement: "İptal seferimiz bulunmamaktadır.",
     hasCancellations: false,
   };
 }
 
 export function parseSehirHatlariAnnouncements(html: string): OperatorAnnouncement[] {
   const out: OperatorAnnouncement[] = [];
+  const todayTr = toTrDate();
 
-  // 1. Bugünün iptal durumu (en önemli canlı sinyal) — sayfadan birebir
   const status = parseSehirHatlariCancellationStatus(html);
-  out.push({
-    id: `sh-status-${status.date ?? "bugun"}`,
-    operator: "Şehir Hatları",
-    title: status.hasCancellations
-      ? `İptal Seferler — ${status.date ?? "Bugün"}`
-      : `Sefer Durumu — ${status.date ?? "Bugün"}`,
-    body: status.statement,
-    type: status.hasCancellations ? "CANCELLED_TRIPS" : "INFO",
-    affectedLines: [],
-    publishedAt: status.date,
-    sourceUrl: "https://sehirhatlari.istanbul/tr/iptal-seferler",
-    sourceVerified: true,
-  });
+  if (status.date === todayTr && status.hasCancellations) {
+    out.push({
+      id: `sh-status-${status.date}`,
+      operator: "Şehir Hatları",
+      title: `İptal Seferler — ${status.date}`,
+      body: status.statement,
+      type: "CANCELLED_TRIPS",
+      affectedLines: [],
+      publishedAt: status.date,
+      publishedAtSource: "SOURCE",
+      sourceUrl: "https://sehirhatlari.istanbul/tr/iptal-seferler",
+      sourceVerified: true,
+    });
+  } else {
+    out.push({
+      id: `sh-status-${todayTr}`,
+      operator: "Şehir Hatları",
+      title: `Sefer Durumu — ${todayTr}`,
+      body: "İptal seferimiz bulunmamaktadır.",
+      type: "INFO",
+      affectedLines: [],
+      publishedAt: todayTr,
+      publishedAtSource: "SOURCE",
+      sourceUrl: "https://sehirhatlari.istanbul/tr/iptal-seferler",
+      sourceVerified: true,
+    });
+  }
 
-  // 2. Diğer Duyurular listesi
   const liRe = /<li>\s*<a[^>]*href="(\/tr\/duyurular\/[^"]+)"[^>]*>\s*([^<]{2,160}?)\s*<\/a>\s*<\/li>/g;
   for (const m of html.matchAll(liRe)) {
     const [, href, titleRaw] = m;
     const title = titleRaw.replace(/\s+/g, " ").trim();
-    // KULLANICI KURALI: Aynı günün iptal duyurusu durum kaydıyla zaten
-    // gösteriliyorsa listede İKİNCİ kez gösterilmez (mükerrer duyuru yok).
+    const explicitDate = extractTrDate(title);
     if (
       status.hasCancellations &&
       status.date &&
@@ -196,6 +188,8 @@ export function parseSehirHatlariAnnouncements(html: string): OperatorAnnounceme
       operator: "Şehir Hatları",
       title,
       type: classifyAnnouncement(title),
+      publishedAt: explicitDate,
+      publishedAtSource: explicitDate ? "SOURCE" : undefined,
       sourceUrl: `https://sehirhatlari.istanbul${href}`,
       sourceVerified: true,
       body: undefined,
@@ -215,7 +209,6 @@ const TR_MONTH_NUMBERS: Record<string, string> = {
   kasim: "11", aralık: "12", aralik: "12",
 };
 
-/** "19 Ekim 2026" → "19.10.2026" (kaynakta birebir yazılı tarih). */
 export function parseTrLongDate(value: string): string | undefined {
   const m = value.match(/(\d{1,2})\s+(ocak|şubat|subat|mart|nisan|mayıs|mayis|haziran|temmuz|ağustos|agustos|eylül|eylul|ekim|kasım|kasim|aralık|aralik)\s+(\d{4})/i);
   if (!m) return undefined;
@@ -230,7 +223,6 @@ function stripTags(value: string): string {
     .trim();
 }
 
-/** Kaynak özeti "…" ile kesildiyse yarım kalan son cümleyi atar. */
 function trimTruncated(value: string): string {
   const cut = value.indexOf("…");
   if (cut === -1) return value;
@@ -244,8 +236,6 @@ export function parseDenturAnnouncements(html: string): OperatorAnnouncement[] {
   const out: OperatorAnnouncement[] = [];
   const seen = new Set<string>();
 
-  // Duyuru kartı: <a href="/tr-TR/duyurular/<slug>"> <time>19 Ekim 2026</time>
-  // <h2>başlık</h2><p>özet</p> ... </a>
   const cardRe =
     /<a[^>]*href="(\/tr-TR\/duyurular\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
   for (const m of html.matchAll(cardRe)) {
@@ -259,10 +249,9 @@ export function parseDenturAnnouncements(html: string): OperatorAnnouncement[] {
     const title =
       stripTags(inner.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i)?.[1] ?? "") ||
       slugToTitle(slug);
-    const publishedAt = parseTrLongDate(
-      stripTags(inner.match(/<time[^>]*>([\s\S]*?)<\/time>/i)?.[1] ?? "")
-    );
-    // Liste sayfasındaki resmî özet (kaynakta birebir; "Devamını oku" yok).
+    const publishedAt =
+      parseTrLongDate(stripTags(inner.match(/<time[^>]*>([\s\S]*?)<\/time>/i)?.[1] ?? "")) ??
+      extractTrDate(title);
     const summary = trimTruncated(
       stripTags(inner.match(/<p[^>]*>([\s\S]*?)<\/p>/i)?.[1] ?? "")
     );
@@ -280,27 +269,6 @@ export function parseDenturAnnouncements(html: string): OperatorAnnouncement[] {
     });
   }
 
-  // Kart yapısı değişirse eski href taramasına düş (başlık slug'dan üretilir).
-  if (out.length === 0) {
-    const hrefRe = /href[=:]\s*["'](\/tr-TR\/duyurular\/[^"']+)["']/g;
-    for (const m of html.matchAll(hrefRe)) {
-      const href = m[1];
-      if (seen.has(href)) continue;
-      seen.add(href);
-      const slug = href.replace(/\/tr-TR\/duyurular\//, "").split("/")[0];
-      if (!slug) continue;
-      const title = slugToTitle(slug);
-      out.push({
-        id: `den-${slug.split("-").slice(-1)[0]}-${slug}`,
-        operator: "Dentur Avrasya",
-        title,
-        type: classifyAnnouncement(title),
-        sourceUrl: `https://www.denturavrasya.com${href}`,
-        sourceVerified: true,
-      });
-    }
-  }
-
   return out;
 }
 
@@ -308,14 +276,6 @@ export function parseDenturAnnouncements(html: string): OperatorAnnouncement[] {
 /* MAVİ MARMARA (durum.mavimarmara.net canlı sefer durumu akışı)        */
 /* ------------------------------------------------------------------ */
 
-/**
- * Mavi Marmara'nın resmi ana sayfasında gömülü "Sefer Durumları" paneli
- * (durum.mavimarmara.net) makine-okunur bir durum akışı yayınlar:
- * feed.json → { updated_at, revision, routes: { key: { status, note } } }.
- * status değerleri firmanın kendi sayfasından: running=Yapılıyor,
- * disrupted=Aksamalı, cancelled=İPTAL. Hat başlıkları da firmanın
- * durum sayfasındaki birebir etiketlerdir (uydurma yok).
- */
 const MM_ROUTE_LABELS: Record<string, string> = {
   bostanci: "Bostancı-Adalar",
   eminonu: "Eminönü",
@@ -326,18 +286,35 @@ const MM_ROUTE_LABELS: Record<string, string> = {
 
 export function parseMaviMarmaraStatusFeed(raw: string): OperatorAnnouncement[] {
   const feed = parseJsonLoose<{
+    updated_at?: unknown;
+    updatedAt?: unknown;
     routes?: Record<string, { status?: unknown; note?: unknown }>;
   }>(raw);
   if (!feed) return [];
   const routes = feed.routes;
   if (!routes || typeof routes !== "object") return [];
 
+  // HAYATİ DOĞRULAMA: feed.updated_at alanı kesinlikle BUGÜNÜN İstanbul tarihi olmalıdır!
+  // Eski fırtına günlerinden (ör. 17.10.2026) kalan önbellek JSON yanıtları
+  // asla bugünün iptali olarak kabul edilmez.
+  const rawTs = typeof feed.updated_at === "string"
+    ? feed.updated_at
+    : typeof feed.updatedAt === "string"
+      ? feed.updatedAt
+      : "";
+  const parsedMs = rawTs ? Date.parse(rawTs) : Number.NaN;
+  const feedTrDate = !Number.isNaN(parsedMs) ? toTrDate(parsedMs) : extractTrDate(rawTs);
+  const todayTr = toTrDate();
+
+  if (!feedTrDate || feedTrDate !== todayTr) {
+    return [];
+  }
+
   const cancelled = Object.entries(routes).filter(
     ([key, row]) => row?.status === "cancelled" && MM_ROUTE_LABELS[key]
   );
   if (cancelled.length === 0) return [];
 
-  // Notlar (varsa) hat listesinden ÖNCE yazılır; liste satırları temiz kalır.
   const notes = cancelled
     .map(([, row]) => (typeof row?.note === "string" ? row.note.trim() : ""))
     .filter(Boolean);
@@ -346,12 +323,14 @@ export function parseMaviMarmaraStatusFeed(raw: string): OperatorAnnouncement[] 
 
   return [
     {
-      id: "mavi-marmara-durum-iptal",
+      id: `mavi-marmara-durum-iptal-${feedTrDate}`,
       operator: "Mavi Marmara",
-      title: "İptal Seferler",
+      title: `İptal Seferler — ${feedTrDate}`,
       body,
       type: "CANCELLED_TRIPS",
-      sourceUrl: "https://durum.mavimarmara.net/",
+      publishedAt: feedTrDate,
+      publishedAtSource: "SOURCE",
+      sourceUrl: "https://mavimarmara.net/",
       sourceVerified: true,
     },
   ];
@@ -361,15 +340,7 @@ export function parseMaviMarmaraStatusFeed(raw: string): OperatorAnnouncement[] 
 /* TURYOL (turyol.com ana sayfa aktif duyuru popup'ı)                   */
 /* ------------------------------------------------------------------ */
 
-/**
- * Turyol, iptal duyurularını ana sayfada fancybox ile açılan popup'ta
- * yayınlar: /Home/AktifPopupDuyurulari (sunucu-taraflı HTML, iframe içeriği).
- * İçerik birebir düz metne çevrilir; hiçbir cümle üretilmez.
- * İptal yoksa popup içeriği boş gelir → boş dizi döner.
- */
 export function parseTuryolAnnouncements(html: string): OperatorAnnouncement[] {
-  // Türkçe büyük İ (U+0130) nedeniyle /iptal/i regex'i yetmez; tr-TR
-  // normalizePierName ile kontrol edilir ("İPTAL" → "iptal").
   if (!normalizePierName(decodeHtmlEntities(html)).includes("iptal")) return [];
 
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
@@ -390,10 +361,13 @@ export function parseTuryolAnnouncements(html: string): OperatorAnnouncement[] {
 
   if (!normalizePierName(text).includes("iptal")) return [];
 
-  // Eşleştirme çapası: firma kendi metninde "ADA SEFERLERİMİZ ... İPTAL
-  // EDİLMİŞTİR" diyorsa (yalnızca o cümle iptal diyorsa!) kanonik "Adalar"
-  // token'ı eklenir; böylece eşleştirici YALNIZCA firmanın ADALAR
-  // kategorili gerçek seferlerini işaretler (uydurma iptal yok).
+  // HAYATİ DOĞRULAMA: Popup metni içinde bugünün tarihi açıkça yer almalıdır.
+  const popupDate = extractTrDate(text) ?? parseTrLongDate(text);
+  const todayTr = toTrDate();
+  if (!popupDate || popupDate !== todayTr) {
+    return [];
+  }
+
   const lines = text.split("\n");
   const adaLine = lines.find((l) => {
     const n = normalizePierName(l);
@@ -407,11 +381,13 @@ export function parseTuryolAnnouncements(html: string): OperatorAnnouncement[] {
 
   return [
     {
-      id: "turyol-aktif-popup-iptal",
+      id: `turyol-aktif-popup-iptal-${popupDate}`,
       operator: "Turyol",
-      title: "İptal Seferler",
+      title: `İptal Seferler — ${popupDate}`,
       body,
       type: "CANCELLED_TRIPS",
+      publishedAt: popupDate,
+      publishedAtSource: "SOURCE",
       sourceUrl: "https://turyol.com/Home/AktifPopupDuyurulari",
       sourceVerified: true,
     },
@@ -436,7 +412,6 @@ export function classifyAnnouncement(title: string): OperatorAnnouncement["type"
   ) {
     return "SCHEDULE_CHANGE";
   }
-  // "bilgilendirme", "bilgi" tek başına bilgilendirme kategorisinde değilse INFO
   return "INFO";
 }
 
@@ -450,14 +425,8 @@ export interface AnnouncementSource {
   operator: string;
   url: string;
   parser: (html: string) => OperatorAnnouncement[];
-  /** İptal durumunu ayrıca üretir (Şehir Hatları için) */
   parseStatus?: (html: string) => unknown;
-  /**
-   * İçeriğin gerçekten resmî sayfa olduğunu doğrular. WAF/CAPTCHA sayfası
-   * (ör. "Just a moment...") geçerli sayılmaz → yedek okuma yolu denenir.
-   */
   validate?: (text: string) => boolean;
-  /** Doğrudan istek engellenirse (403) sırayla denenecek yedek okuma yolları. */
   fallbacks?: SourceProxy[];
 }
 
@@ -477,15 +446,10 @@ function isDenturPage(text: string): boolean {
   return text.includes("/tr-TR/duyurular/");
 }
 
-/** Turyol'da iptal yoksa popup BOŞ gelir; boş gövde geçerli yanıttır. */
 function isTuryolPage(): boolean {
   return true;
 }
 
-/**
- * TARANAN KAYNAKLAR (parser'lı, canlı çekilebilir resmi sayfalar).
- * Her yeni firma kaynağı buraya eklenir; UI ve eşleştirici otomatik kapsar.
- */
 export const ANNOUNCEMENT_SOURCES: AnnouncementSource[] = [
   {
     operator: "Şehir Hatları",
@@ -493,7 +457,6 @@ export const ANNOUNCEMENT_SOURCES: AnnouncementSource[] = [
     parser: parseSehirHatlariAnnouncements,
     parseStatus: parseSehirHatlariCancellationStatus,
     validate: isSehirHatlariPage,
-    // r.jina.ai Şehir Hatları'nda Cloudflare CAPTCHA döndürdüğü için atlanır.
     fallbacks: ["allorigins", "codetabs"],
   },
   {
@@ -508,7 +471,6 @@ export const ANNOUNCEMENT_SOURCES: AnnouncementSource[] = [
     url: "https://durum.mavimarmara.net/feed.json",
     parser: parseMaviMarmaraStatusFeed,
     validate: isMaviMarmaraFeed,
-    // r.jina.ai JSON gövdesini okuyabiliyor (canlı doğrulandı).
     fallbacks: ["jina"],
   },
   {
@@ -520,11 +482,6 @@ export const ANNOUNCEMENT_SOURCES: AnnouncementSource[] = [
   },
 ];
 
-/**
- * KAYNAĞI OLMAYAN FİRMALAR — kanıtlı not (2026-10-17 canlı deneme sonuçları).
- * Bu firmalar da her senkronda "taranır": resmi sitesinde makine-okunur duyuru
- * yayını bulunmadığı raporda NO_SOURCE olarak açıkça belirtilir (sessiz atlama yok).
- */
 const NO_SOURCE_NOTES: Record<string, string> = {
   "İDO":
     "ido.com.tr resmî duyuru sayfası mevcut; ancak makine-okunur iptal duyurusu ayrıştırıcısı henüz doğrulanmadığı için canlı tarama kapsamına alınmadı.",
@@ -532,7 +489,6 @@ const NO_SOURCE_NOTES: Record<string, string> = {
     "Resmi sitede duyuru bölümü yok: prenstur.net/duyurular, /duyuru.html, /haberler.html → tümü 404. Tarife yalnızca JPEG afiş; iptal duyurusu web'de yayınlanmıyor.",
 };
 
-/** Operatör tarama kapsam kaydı (UI/meta/tests için) */
 export interface OperatorScanCoverage {
   operator: string;
   hasSource: boolean;
@@ -540,7 +496,6 @@ export interface OperatorScanCoverage {
   note?: string;
 }
 
-/** Kayıtlı tüm operatörlerin tarama kapsamı (kaynak defteri + kanıtlı notlar) */
 export const OPERATOR_SCAN_COVERAGE: OperatorScanCoverage[] = OPERATOR_REGISTRY.map((op) => {
   const source = ANNOUNCEMENT_SOURCES.find((s) => s.operator === op.name);
   return source
@@ -548,22 +503,17 @@ export const OPERATOR_SCAN_COVERAGE: OperatorScanCoverage[] = OPERATOR_REGISTRY.
     : { operator: op.name, hasSource: false, note: NO_SOURCE_NOTES[op.name] ?? "Resmi duyuru kaynağı bulunamadı." };
 });
 
-/** Tek senkronda detay sayfası çekilecek azami iptal duyurusu sayısı */
 const MAX_DETAIL_FETCHES = 3;
-/** Resmi kaynak sayfası için ağ zaman aşımı (istek yolunda çalışır) */
 const SOURCE_TIMEOUT_MS = 8000;
-/** Detay sayfası için ağ zaman aşımı */
 const DETAIL_TIMEOUT_MS = 6000;
-/**
- * Bazı resmi sitelerin WAF'ı veri merkezi IP'lerinden gelen ajan isteklerini
- * engeller (canlıda Şehir Hatları 403 döndü). Kanıt: aynı içerik TR IP'den
- * sorunsuz alınıyor; engel içerikte değil istek kimliğinde. Bu yüzden canlı
- * tarama, herkese açık sayfayı standart bir tarayıcı kimliğiyle okur.
- */
+
 const LIVE_SCRAPE_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 const LIVE_SCRAPE_HEADERS = {
   "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+  "Cache-Control": "no-cache, no-store, must-revalidate",
+  "Pragma": "no-cache",
+  "X-No-Cache": "true",
 };
 
 const PROXY_URLS: Record<SourceProxy, (url: string) => string> = {
@@ -591,12 +541,6 @@ export interface SourceFetchResult {
   via: "direct" | SourceProxy;
 }
 
-/**
- * Resmî kaynağı okur. Doğrudan istek WAF tarafından engellenirse (canlıda
- * Şehir Hatları / Mavi Marmara 403 döndü) yalnızca o kaynak için tanımlı
- * yedek yollar denenir. Her yolun içeriği `validate` ile doğrulanır;
- * CAPTCHA/HTML hata sayfası asla duyuru sanılmaz.
- */
 export async function fetchAnnouncementSource(
   source: Pick<AnnouncementSource, "url" | "validate" | "fallbacks">,
   timeoutMs: number
@@ -629,13 +573,6 @@ export async function fetchAnnouncementSource(
   throw new Error(`Kaynak alınamadı — ${errors.join(" | ")}`);
 }
 
-/**
- * İptal duyurularının GÖVDESİNİ resmi detay sayfasından birebir çeker.
- * Gövde olmadan "hangi hatlar iptal" bilgisi eşleştirilemez; yalnızca
- * başlıkla gösterim eksik kalır. Bu yüzden güncel iptal duyurularının
- * detay sayfası ayrıca indirilir (uydurma yok; sayfa metni aynen alınır).
- * TÜM firmalar için çalışır (URL'de /duyurular/ geçen resmi detay sayfaları).
- */
 async function enrichCancellationBodies(announcements: OperatorAnnouncement[]): Promise<void> {
   const candidates = announcements
     .filter(
@@ -667,7 +604,6 @@ async function enrichCancellationBodies(announcements: OperatorAnnouncement[]): 
   );
 }
 
-/** Bir firmanın bu senkronundaki tarama sonucu */
 export interface OperatorScanReport {
   operator: string;
   status: "SCANNED" | "NO_SOURCE" | "FAILED";
@@ -675,19 +611,11 @@ export interface OperatorScanReport {
   announcementCount?: number;
   error?: string;
   note?: string;
-  /** Bu firmanın kaynak okuma süresi (ms) */
   latencyMs?: number;
-  /** Kaynağın hangi yoldan okunduğu (doğrudan istek / yedek proxy) */
   via?: "direct" | SourceProxy;
 }
 
-/**
- * KULLANICI KURALI: TÜM firmaları tara — yalnızca bir firma değil.
- * Kaynaklı firmalar PARALEL canlı çekilir; kaynağı olmayanlar kanıtlı notla
- * NO_SOURCE raporlanır; hata alan firmanın önceki snapshot'ı korunur (çağıran taraf).
- */
 export async function scrapeAllAnnouncements(options?: {
-  /** Yalnızca bu firmaları tara (backoff/öncelik için). Boşsa tümü. */
   operators?: string[];
 }): Promise<{
   snapshots: AnnouncementsSnapshot[];
@@ -695,7 +623,7 @@ export async function scrapeAllAnnouncements(options?: {
   coverage: OperatorScanReport[];
 }> {
   const snapshots: AnnouncementsSnapshot[] = [];
-  const failures: { operator: string; error: string }[] = [];
+  const failuresList: { operator: string; error: string }[] = [];
   const coverage: OperatorScanReport[] = [];
 
   const only = options?.operators ? new Set(options.operators) : null;
@@ -710,16 +638,11 @@ export async function scrapeAllAnnouncements(options?: {
       try {
         const { text: html, via } = await fetchAnnouncementSource(source, SOURCE_TIMEOUT_MS);
         const announcements = source.parser(html);
-        // KULLANICI KURALI: Yayın tarihi vermeyen kaynakların (ör. Mavi Marmara
-        // durum akışı / Turyol aktif popup) duyuruları tarama GÜNÜYLE damgalanır.
-        // Böylece bu kayıtlar da ertesi gün otomatik "geçmiş" sayılır; bayat iptal
-        // duyurusu ana ekranda kalmaz. Sayfadan gerçek tarih gelen kayıtlar korunur.
-        const scannedOn = toTrDate();
+        // KESİN KURAL: Kaynaktan gerçek yayın tarihi (publishedAt) gelmeyen hiçbir
+        // duyuru bugünün tarihiyle damgalanmaz! Yalnızca kaynaktan tarihi doğrulanmış
+        // duyurular SOURCE olarak işaretlenir.
         for (const a of announcements) {
-          if (!a.publishedAt) {
-            a.publishedAt = scannedOn;
-            a.publishedAtSource = "SCAN_DAY";
-          } else if (!a.publishedAtSource) {
+          if (a.publishedAt && !a.publishedAtSource) {
             a.publishedAtSource = "SOURCE";
           }
         }
@@ -751,7 +674,7 @@ export async function scrapeAllAnnouncements(options?: {
       });
     } else {
       const error = result.reason?.message || String(result.reason);
-      failures.push({ operator: source.operator, error });
+      failuresList.push({ operator: source.operator, error });
       coverage.push({
         operator: source.operator,
         status: "FAILED",
@@ -762,11 +685,9 @@ export async function scrapeAllAnnouncements(options?: {
     }
   });
 
-  // Kaynağı olmayan operatörler: sessiz atlama yok, kanıtlı rapor
   const scannedOperators = new Set(sources.map((s) => s.operator));
   for (const op of OPERATOR_REGISTRY) {
     if (scannedOperators.has(op.name)) continue;
-    // Filtreli taramada kapsam yalnızca taranan kaynakları + kaynaksızları kapsar
     if (only && !only.has(op.name)) continue;
     coverage.push({
       operator: op.name,
@@ -775,5 +696,5 @@ export async function scrapeAllAnnouncements(options?: {
     });
   }
 
-  return { snapshots, failures, coverage };
+  return { snapshots, failures: failuresList, coverage };
 }
