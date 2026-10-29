@@ -1,5 +1,5 @@
 /**
- * VAPUR PWA SERVICE WORKER — ZERO-STALE NETWORK-FIRST ENGINE (v8)
+ * VAPUR PWA SERVICE WORKER — ZERO-STALE NETWORK-FIRST ENGINE (v9)
  *
  * KULLANICI KURALI:
  * 1. Harici (cross-origin) harita karoları (Esri World Imagery, CartoDB, OpenStreetMap)
@@ -10,7 +10,7 @@
  *    olarak işlenir.
  */
 
-const CACHE_NAME = 'vapur-cache-v8-network-first';
+const CACHE_NAME = 'vapur-cache-v9-network-first';
 
 const STATIC_FALLBACK_ASSETS = [
   '/manifest.json',
@@ -62,6 +62,12 @@ self.addEventListener('fetch', (event) => {
     if (url.origin !== self.location.origin) {
       return;
     }
+
+    // API responses may contain private/admin data and must never enter the
+    // Cache Storage API (which does not enforce HTTP Cache-Control headers).
+    if (url.pathname.startsWith('/api/')) {
+      return;
+    }
   } catch {
     return;
   }
@@ -70,6 +76,16 @@ self.addEventListener('fetch', (event) => {
     fetch(req)
       .then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
+          const url = new URL(req.url);
+          const cacheControl = networkResponse.headers.get('Cache-Control') || '';
+          const isOfflineHomeShell = req.mode === 'navigate' && url.pathname === '/';
+
+          // Respect no-store everywhere except the public home shell, which is
+          // intentionally retained as the app's offline fallback.
+          if (/\bno-store\b/i.test(cacheControl) && !isOfflineHomeShell) {
+            return networkResponse;
+          }
+
           const copy = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
         }
