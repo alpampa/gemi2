@@ -76,7 +76,6 @@ import {
 import { getReachableDestinations, planJourney, type RouteOption } from "@/lib/services/route-planner";
 import { useFavoritesStore } from "@/store/useFavoritesStore";
 import { checkTurkishHoliday } from "@/lib/utils/holiday-calendar";
-import { trackRouteSearch } from "@/lib/utils/analytics-tracker";
 
 interface ScheduleListClientProps {
   schedules: ScheduleCardDto[];
