@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Settings, Check, Languages, Type, Compass, Sparkles, Store, Palette } from "lucide-react";
-import { useLanguageStore, SUPPORTED_LANGUAGES, type AppLanguage } from "@/store/useLanguageStore";
+import { X, Settings, Check, Type, Compass, Sparkles, Store, Palette } from "lucide-react";
+import { useLanguageStore } from "@/store/useLanguageStore";
 import { usePreferencesStore } from "@/store/usePreferencesStore";
 import { useDashboardSkinStore, DASHBOARD_SKINS } from "@/store/useDashboardSkinStore";
 import { THEME_PRESETS } from "@/store/useThemeStore";
@@ -16,11 +16,10 @@ interface SettingsSheetProps {
 }
 
 /**
- * KULLANICI AYARLARI — Dil, yazı boyutu ve turist modu tek panelde.
- * Dil seçimi anında uygulanır (lang + RTL), diğerleri kalıcıdır (localStorage).
+ * KULLANICI AYARLARI — Yazı boyutu, görünüm ve turist modu.
  */
 export function SettingsSheet({ isOpen, onClose }: SettingsSheetProps) {
-  const { language, setLanguage, t } = useLanguageStore();
+  const { t } = useLanguageStore();
   const { fontScale, setFontScale, touristMode, setTouristMode } = usePreferencesStore();
   const { activeSkinId, setSkinId } = useDashboardSkinStore();
   const [mounted, setMounted] = useState(false);
@@ -33,10 +32,6 @@ export function SettingsSheet({ isOpen, onClose }: SettingsSheetProps) {
 
   const activeSkin =
     DASHBOARD_SKINS.find((skin) => skin.id === activeSkinId) ?? DASHBOARD_SKINS[0];
-
-  const handleSelectLanguage = (code: AppLanguage) => {
-    setLanguage(code);
-  };
 
   return createPortal(
     <AnimatePresence>
@@ -69,37 +64,7 @@ export function SettingsSheet({ isOpen, onClose }: SettingsSheetProps) {
           </div>
 
           <div className="overflow-y-auto px-5 py-4 space-y-5">
-            {/* 1. DİL */}
-            <section>
-              <h4 className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                <Languages size={13} className="text-blue-500" />
-                <span>{t("languageLabel")}</span>
-              </h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {SUPPORTED_LANGUAGES.map((lang) => {
-                  const isActive = language === lang.code;
-                  return (
-                    <button
-                      key={lang.code}
-                      type="button"
-                      onClick={() => handleSelectLanguage(lang.code)}
-                      aria-pressed={isActive}
-                      className={`px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer active:scale-95 ${
-                        isActive
-                          ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 shadow-xs"
-                          : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-blue-300"
-                      }`}
-                    >
-                      <span className="text-base">{lang.flag}</span>
-                      <span className="truncate">{lang.code === "ar" ? "العربية (Arabic)" : lang.nativeName}</span>
-                      {isActive && <Check size={13} className="text-blue-600 dark:text-blue-400 ml-auto shrink-0" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            {/* 2. YAZI BOYUTU */}
+            {/* YAZI BOYUTU */}
             <section>
               <h4 className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                 <Type size={13} className="text-emerald-500" />

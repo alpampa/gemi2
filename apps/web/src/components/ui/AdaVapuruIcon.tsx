@@ -13,7 +13,7 @@ export function AdaVapuruIcon({ className = "w-7 h-4" }: { className?: string })
       viewBox="0 -4 48 28"
       className={className}
       role="img"
-      aria-label="Ada vapuru"
+      aria-label="Paşabahçe vapuru"
       fill="none"
     >
       {/* MARTILAR — gemi çevresinde süzülen üç martı (konum grup transformunda,

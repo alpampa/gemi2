@@ -117,14 +117,14 @@ export function BosphorusAudioGuideModal({ isOpen, onClose }: BosphorusAudioGuid
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight truncate">
-                    BOĞAZ YALILARI VE TARİHİ ESERLER SESLİ REHBERİ
+                    İSTANBUL KEŞİF REHBERİ
                   </h3>
                   <span className="text-[9px] font-mono bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 px-2 py-0.2 rounded-full font-bold">
                     AUDIOGUIDE
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold truncate mt-0.5">
-                  Vapur seyrinde önünden geçtiğiniz tarihi anıtlar ve yalıların kültürel hikayesi
+                  İstanbul kıyılarını, tarihini ve kültür duraklarını keşfedin
                 </p>
               </div>
             </div>
@@ -216,8 +216,19 @@ export function BosphorusAudioGuideModal({ isOpen, onClose }: BosphorusAudioGuid
           {/* Horizontal / Grid Landmark Selector */}
           <div className="flex-1 overflow-y-auto pr-1">
             <h5 className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-              BOĞAZ ESERLERİ LİSTESİ ({BOSPHORUS_LANDMARKS.length} ANIT & YALI)
+              İSTANBUL’DAN SEÇİLMİŞ DURAKLAR ({BOSPHORUS_LANDMARKS.length})
             </h5>
+
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+              Bu seçki İstanbul’un farklı kıyılarını ve tarih katmanlarını tanıtır. Ziyaret öncesi güncel bilgi için resmî kaynaklara bakın.
+            </p>
+
+            <div className="flex flex-wrap gap-2 mb-4" aria-label="İstanbul için resmî keşif kaynakları">
+              <a href="https://visit.istanbul/historical-places" target="_blank" rel="noreferrer" className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 underline underline-offset-2">İstanbul tarihî yerleri</a>
+              <a href="https://kulturelmiras.ibb.istanbul/eserleriyle-istanbul/" target="_blank" rel="noreferrer" className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 underline underline-offset-2">İBB kültür mirası</a>
+              <a href="https://muze.gov.tr/" target="_blank" rel="noreferrer" className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 underline underline-offset-2">Bakanlık müzeleri</a>
+              <a href="https://sehirhatlari.istanbul/tr/seferler" target="_blank" rel="noreferrer" className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 underline underline-offset-2">Şehir Hatları seferleri</a>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {BOSPHORUS_LANDMARKS.map((item) => {

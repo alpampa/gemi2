@@ -16,7 +16,7 @@ interface FavoritesState {
 export const useFavoritesStore = create<FavoritesState>()(
   persist(
     (set, get) => ({
-      favorites: ["Kadıköy → Karaköy", "Kabataş → Büyükada"],
+      favorites: [],
       toggleFavorite: (rawKey: string) => {
         const routeKey = normalizeRouteKey(rawKey);
         const current = get().favorites.map(normalizeRouteKey);
@@ -37,7 +37,11 @@ export const useFavoritesStore = create<FavoritesState>()(
       name: 'vapur_favorites_v1',
       onRehydrateStorage: () => (state) => {
         if (state && Array.isArray(state.favorites)) {
-          state.favorites = state.favorites.map(normalizeRouteKey);
+          // Bunlar daha önce kullanıcı kaydı olmadan eklenen örnek kısayollardı.
+          // Başka hatırlara dokunmadan yalnızca bu hazır önerileri kaldır.
+          state.favorites = state.favorites
+            .map(normalizeRouteKey)
+            .filter((route) => route !== "Kadıköy → Karaköy" && route !== "Kabataş → Büyükada");
         }
       }
     }

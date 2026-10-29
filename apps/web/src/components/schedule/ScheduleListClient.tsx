@@ -33,6 +33,7 @@ import {
   Share2,
   Compass,
   ArrowRight,
+  Star,
 } from "lucide-react";
 import { matchesTurkishSearch } from "@/lib/utils/search-normalizer";
 import { LateNightTransitModal } from "@/components/night/LateNightTransitModal";
@@ -73,6 +74,9 @@ import {
   type SponsoredAdOffer,
 } from "@/lib/data/sponsored-ads";
 import { getReachableDestinations, planJourney, type RouteOption } from "@/lib/services/route-planner";
+import { useFavoritesStore } from "@/store/useFavoritesStore";
+import { checkTurkishHoliday } from "@/lib/utils/holiday-calendar";
+import { trackRouteSearch } from "@/lib/utils/analytics-tracker";
 
 interface ScheduleListClientProps {
   schedules: ScheduleCardDto[];
@@ -83,12 +87,43 @@ interface ScheduleListClientProps {
   sourceFreshness: SourceFreshnessMeta;
 }
 
-const DAY_PREVIEW_LABELS: Record<SelectedDayFilter, string | undefined> = {
-  TODAY: undefined,
-  WEEKDAY: "Hafta İçi",
-  SATURDAY: "Cumartesi",
-  SUNDAY: "Pazar / Tatil",
-};
+function getIstanbulDateKey(timestamp: number | string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date(timestamp));
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+function getDayTypeForDate(dateKey: string, todayKey: string): SelectedDayFilter {
+  if (dateKey === todayKey) return "TODAY";
+  const [year, month, day] = dateKey.split("-").map(Number);
+  if (checkTurkishHoliday(year, month, day).isHoliday) return "SUNDAY";
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Istanbul", weekday: "short",
+  }).format(new Date(`${dateKey}T12:00:00+03:00`));
+  if (weekday === "Sat") return "SATURDAY";
+  if (weekday === "Sun") return "SUNDAY";
+  return "WEEKDAY";
+}
+
+function addDateDays(dateKey: string, days: number): string {
+  const date = new Date(`${dateKey}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function formatShortDate(dateKey: string): string {
+  return new Intl.DateTimeFormat("tr-TR", {
+    timeZone: "Europe/Istanbul", day: "numeric", month: "short",
+  }).format(new Date(`${dateKey}T12:00:00+03:00`));
+}
+
+function formatDateWithWeekday(dateKey: string): string {
+  return new Intl.DateTimeFormat("tr-TR", {
+    timeZone: "Europe/Istanbul", weekday: "short", day: "numeric", month: "short",
+  }).format(new Date(`${dateKey}T12:00:00+03:00`)).replace(",", "");
+}
 
 export function ScheduleListClient({
   schedules,
@@ -99,16 +134,24 @@ export function ScheduleListClient({
 }: ScheduleListClientProps) {
   const { t, language } = useLanguageStore();
   const { touristMode, setTouristMode, proUnlocked, scheduleCategory, setScheduleCategory } = usePreferencesStore();
+  const favorites = useFavoritesStore((state) => state.favorites);
   const [tickMs, setTickMs] = useState(1000);
   const { nowMs } = useTransitClock(tickMs, { serverTimeIso });
   const now = nowMs;
+  const todayDateKey = getIstanbulDateKey(now);
 
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleCardDto | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<"ADALAR" | "BOGAZ" | "ALL">(scheduleCategory);
   const [selectedOrigin, setSelectedOrigin] = useState<string>(initialOrigin || "ALL");
   const [selectedDestination, setSelectedDestination] = useState<string>("ALL");
   const [selectedOperator, setSelectedOperator] = useState<string>("ALL");
-  const [selectedDayType, setSelectedDayType] = useState<SelectedDayFilter>("TODAY");
+  const initialDateKey = getIstanbulDateKey(serverTimeIso);
+  const [selectedDate, setSelectedDate] = useState(initialDateKey);
+  const activeDate = selectedDate < todayDateKey ? todayDateKey : selectedDate;
+  const selectedDayType = getDayTypeForDate(activeDate, todayDateKey);
+  const [urlPreferencesLoaded, setUrlPreferencesLoaded] = useState(false);
+  const dateChoices = Array.from({ length: 7 }, (_, index) => addDateDays(todayDateKey, index));
+  const selectedDateLabel = activeDate === todayDateKey ? undefined : formatDateWithWeekday(activeDate);
   const [showAllDay, setShowAllDay] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showPlanner, setShowPlanner] = useState<boolean>(false);
@@ -116,6 +159,7 @@ export function ScheduleListClient({
   const [isCompactDensity, setIsCompactDensity] = useState<boolean>(false);
   const [isToolsOpen, setIsToolsOpen] = useState<boolean>(false);
   const [copiedRouteLink, setCopiedRouteLink] = useState<boolean>(false);
+
 
   const toolFilterCount =
     (selectedOperator !== "ALL" ? 1 : 0) +
@@ -139,6 +183,7 @@ export function ScheduleListClient({
         const fromParam = params.get("from");
         const toParam = params.get("to");
         const dayParam = params.get("day");
+        const dateParam = params.get("date");
         const catParam = params.get("cat");
         const allDayParam = params.get("allDay");
 
@@ -151,19 +196,27 @@ export function ScheduleListClient({
         if (catParam === "ADALAR" || catParam === "BOGAZ" || catParam === "ALL") {
           setSelectedCategory(catParam);
         }
-        if (dayParam === "TODAY" || dayParam === "WEEKDAY" || dayParam === "SATURDAY" || dayParam === "SUNDAY") {
-          setSelectedDayType(dayParam);
+        if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dateParam >= initialDateKey && dateParam <= addDateDays(initialDateKey, 14)) {
+          setSelectedDate(dateParam);
+        } else if (dayParam === "WEEKDAY" || dayParam === "SATURDAY" || dayParam === "SUNDAY") {
+          const mappedDate = Array.from({ length: 8 }, (_, index) => addDateDays(initialDateKey, index))
+            .find((date) => getDayTypeForDate(date, initialDateKey) === dayParam);
+          if (mappedDate) {
+            setSelectedDate(mappedDate);
+          }
         }
         if (allDayParam === "1" || allDayParam === "true") {
           setShowAllDay(true);
         }
       }
-    } catch {}
+    } catch {} finally {
+      setUrlPreferencesLoaded(true);
+    }
   }, []);
 
   // URL Deep-Linking Senkronizasyonu: Seçilen rota ve gün tipini URL'ye yansıt (Paylaşılabilir URL)
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !urlPreferencesLoaded) return;
     try {
       const params = new URLSearchParams(window.location.search);
       if (selectedOrigin !== "ALL") params.set("from", selectedOrigin);
@@ -172,8 +225,9 @@ export function ScheduleListClient({
       if (selectedDestination !== "ALL") params.set("to", selectedDestination);
       else params.delete("to");
 
-      if (selectedDayType !== "TODAY") params.set("day", selectedDayType);
-      else params.delete("day");
+      params.delete("day");
+      if (activeDate !== todayDateKey) params.set("date", activeDate);
+      else params.delete("date");
 
       if (showAllDay) params.set("allDay", "1");
       else params.delete("allDay");
@@ -184,7 +238,7 @@ export function ScheduleListClient({
         window.history.replaceState(null, "", nextUrl);
       }
     } catch {}
-  }, [selectedOrigin, selectedDestination, selectedDayType, showAllDay]);
+  }, [selectedOrigin, selectedDestination, activeDate, selectedDate, showAllDay, todayDateKey, urlPreferencesLoaded]);
 
   const handleToggleDensity = () => {
     setIsCompactDensity((prev) => {
@@ -355,7 +409,7 @@ export function ScheduleListClient({
     );
   };
 
-  // Seçilen gün tipine (Bugün / Hafta İçi / Cumartesi / Pazar-Tatil) göre uygun sefer kümesi
+  // Seçilen tarihin gününe uygun seferleri göster.
   const dayFilteredSchedules = useMemo(() => {
     return effectiveSchedules.filter((s) => {
       if (selectedDayType === "WEEKDAY") return s.runsWeekday !== false;
@@ -365,8 +419,8 @@ export function ScheduleListClient({
     });
   }, [effectiveSchedules, selectedDayType]);
 
-  const isTimetablePreviewMode = showAllDay || selectedDayType !== "TODAY";
-  const dayPreviewLabel = DAY_PREVIEW_LABELS[selectedDayType];
+  const isTimetablePreviewMode = showAllDay || activeDate !== todayDateKey;
+  const dayPreviewLabel = selectedDateLabel;
 
   // 1. Filter and resolve dynamic state for active trips
   const activeSchedulesWithDyn = useMemo(() => {
@@ -487,6 +541,30 @@ export function ScheduleListClient({
     return Array.from(set).sort((a, b) => a.localeCompare(b, "tr"));
   }, [dayFilteredSchedules]);
 
+  const originOptions = useMemo(() => {
+    if (selectedCategory === "ALL") return allPiersInSystem;
+    const origins = new Set<string>();
+    dayFilteredSchedules.forEach((schedule) => {
+      const island = isIslandRoute(schedule.origin, schedule.destination);
+      if ((selectedCategory === "ADALAR") !== island) return;
+      origins.add(schedule.origin);
+    });
+    return Array.from(origins).sort((a, b) => a.localeCompare(b, "tr"));
+  }, [allPiersInSystem, dayFilteredSchedules, selectedCategory]);
+
+  const categoryPiers = useMemo(() => {
+    if (selectedCategory === "ALL") return allPiersInSystem;
+    const piers = new Set<string>();
+    dayFilteredSchedules.forEach((schedule) => {
+      const island = isIslandRoute(schedule.origin, schedule.destination);
+      if ((selectedCategory === "ADALAR") !== island) return;
+      piers.add(schedule.origin);
+      piers.add(schedule.destination);
+      schedule.stops?.forEach((stop) => piers.add(stop.name));
+    });
+    return Array.from(piers).sort((a, b) => a.localeCompare(b, "tr"));
+  }, [allPiersInSystem, dayFilteredSchedules, selectedCategory]);
+
   // Varış seçeneklerini yalnızca seçili gün ve işletmede gerçekten yapılabilen
   // doğrudan veya aktarmalı seferlerden oluştur.
   const { directDestinations, transferDestinations } = useMemo(() => {
@@ -534,6 +612,8 @@ export function ScheduleListClient({
     setSelectedDestination(newDest);
     if (newDest !== "ALL" && newDest === selectedOrigin) {
       setSelectedOrigin("ALL");
+    }
+    if (newDest !== "ALL" && selectedOrigin !== "ALL" && newDest !== selectedOrigin) {
     }
     if (newDest !== "ALL" && selectedCategory !== "ALL") {
       const hasInCat = dayFilteredSchedules.some((s) => {
@@ -723,33 +803,46 @@ export function ScheduleListClient({
 
       {/* 1. GÜN SEÇİCİ VE KALKIŞ ↔ VARIŞ FİLTRELERİ */}
       <div className="px-3 pt-3 pb-2 bg-[#070e1e] text-white space-y-2.5 relative z-20">
-        {/* iOS Segmented Control Gün Seçici (Bugün | Hafta İçi | Cumartesi | Pazar) */}
-        <div className="w-full rounded-2xl bg-slate-900/95 p-1 border border-slate-800 grid grid-cols-4 gap-1 shadow-inner">
-          {(
-            [
-              { id: "TODAY", label: "Bugün" },
-              { id: "WEEKDAY", label: "Hafta İçi" },
-              { id: "SATURDAY", label: "Cumartesi" },
-              { id: "SUNDAY", label: "Pazar" },
-            ] as const
-          ).map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              onClick={() => {
-                triggerHaptic("light");
-                setSelectedDayType(d.id);
+        {/* Yakın tarihler görünür; daha ilerisi takvimden seçilir. */}
+        <div className="w-full flex items-stretch gap-1.5 overflow-x-auto hide-scrollbar">
+          {dateChoices.map((date, index) => {
+            const active = activeDate === date;
+            const title = index === 0 ? "Bugün" : index === 1 ? "Yarın" : formatDateWithWeekday(date);
+            return (
+              <button
+                key={date}
+                type="button"
+                onClick={() => {
+                  triggerHaptic("light");
+                  setSelectedDate(date);
+                }}
+                aria-pressed={active}
+                className={`min-w-[68px] shrink-0 rounded-xl px-2 py-1.5 text-center border transition-colors ${active
+                  ? "bg-white text-slate-950 border-white shadow-sm"
+                  : "bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-600"}`}
+              >
+                <span className="block text-[10px] font-bold leading-tight">{title}</span>
+                <span className="block text-[11px] font-black leading-tight mt-0.5">{formatShortDate(date)}</span>
+              </button>
+            );
+          })}
+          <label className="relative min-w-[72px] shrink-0 rounded-xl px-2 py-1.5 text-center border border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-600 cursor-pointer flex flex-col items-center justify-center">
+            <Calendar size={14} aria-hidden="true" />
+            <span className="text-[10px] font-bold mt-0.5">Tarih seç</span>
+            <input
+              type="date"
+              aria-label="Sefer tarihini seç"
+              min={todayDateKey}
+              max={addDateDays(todayDateKey, 14)}
+              value={activeDate}
+              onChange={(event) => {
+                const date = event.target.value;
+                if (!date) return;
+                setSelectedDate(date);
               }}
-              aria-pressed={selectedDayType === d.id}
-              className={`py-1.5 px-2 rounded-xl text-xs font-black transition-all cursor-pointer truncate ${
-                selectedDayType === d.id
-                  ? "bg-white text-slate-950 shadow-md"
-                  : "text-slate-300 hover:text-white"
-              }`}
-            >
-              {d.label}
-            </button>
-          ))}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+          </label>
         </div>
 
         {/* Kalkış ↔ Varış Seçici ve Hızlı Filtre Kapsülleri */}
@@ -763,7 +856,7 @@ export function ScheduleListClient({
                 className="w-full min-h-10 pl-3 pr-5 py-1.5 bg-slate-950/60 text-xs font-bold text-slate-100 appearance-none rounded-xl border border-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 cursor-pointer truncate"
               >
                 <option value="ALL">🟢 Nereden (Tümü)</option>
-                {allPiersInSystem.map((pier) => (
+                {originOptions.map((pier) => (
                   <option key={pier} value={pier}>{pier}</option>
                 ))}
               </select>
@@ -792,7 +885,7 @@ export function ScheduleListClient({
               >
                 <option value="ALL">🔴 Nereye (Tümü)</option>
                 {selectedOrigin === "ALL" ? (
-                  allPiersInSystem.map((pier) => (
+                  categoryPiers.map((pier) => (
                     <option key={pier} value={pier}>{pier}</option>
                   ))
                 ) : (
@@ -847,6 +940,28 @@ export function ScheduleListClient({
 
           <div className="border-t border-slate-800/80 px-2 py-1">
             <div className="w-full overflow-x-auto hide-scrollbar flex items-center gap-1.5 py-0.5">
+              {favorites.map((routeKey) => {
+                const [origin, destination] = routeKey.split(" → ");
+                if (!origin || !destination) return null;
+                return (
+                  <button
+                    key={routeKey}
+                    type="button"
+                    onClick={() => {
+                      setSelectedOrigin(origin);
+                      setSelectedDestination(destination);
+                      setSelectedOperator("ALL");
+                      updateCategory(isIslandRoute(origin, destination) ? "ADALAR" : "BOGAZ");
+                      setShowAllDay(true);
+                    }}
+                    title={`${origin} → ${destination} seferlerini göster`}
+                    className={`${chipBase} gap-1 shrink-0 bg-amber-500/10 text-amber-200 border-amber-500/40 hover:bg-amber-500/20`}
+                  >
+                    <Star size={11} fill="currentColor" />
+                    <span>{origin} → {destination}</span>
+                  </button>
+                );
+              })}
               <button
                 type="button"
                 onClick={() => {
@@ -966,15 +1081,15 @@ export function ScheduleListClient({
             <span className="flex items-center gap-1.5">
               <Calendar size={12} className="text-blue-600 dark:text-blue-400 shrink-0" />
               <span>
-                {selectedDayType !== "TODAY"
-                  ? `${dayPreviewLabel} Resmi Tarifesi (Tüm Gün 06:00–00:30) inceleniyor`
+                {activeDate !== todayDateKey
+                  ? `${dayPreviewLabel} seferleri (Tüm Gün 06:00–00:30) inceleniyor`
                   : "Bugünün 24 Saatlik Tüm Sefer Tarifesi (06:00–00:30) gösteriliyor"}
               </span>
             </span>
             <button
               type="button"
               onClick={() => {
-                setSelectedDayType("TODAY");
+                setSelectedDate(todayDateKey);
                 setShowAllDay(false);
               }}
               className="px-2 py-0.5 rounded-lg bg-blue-600 text-white text-[10px] font-black cursor-pointer shrink-0 hover:bg-blue-500"
@@ -1319,7 +1434,7 @@ export function ScheduleListClient({
                       setSelectedDestination("ALL");
                       updateCategory("ALL");
                       setSelectedOperator("ALL");
-                      setSelectedDayType("TODAY");
+                      setSelectedDate(todayDateKey);
                       setShowAllDay(false);
                     }}
                     className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs shadow-md transition-all cursor-pointer inline-flex items-center gap-1.5"
@@ -1367,7 +1482,7 @@ export function ScheduleListClient({
         onClearFilters={() => {
           setSelectedOperator("ALL");
           setShowPlanner(false);
-          setSelectedDayType("TODAY");
+          setSelectedDate(todayDateKey);
           setShowAllDay(false);
           if (isCompactDensity) handleToggleDensity();
         }}
