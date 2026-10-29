@@ -730,33 +730,8 @@ export function ScheduleListClient({
         selectedDestination={selectedDestination}
       />
 
-      {/* 1. ARGON + APPLE HIG KAHRAMAN ROTA BAŞLIĞI, HAVA KAPSÜLÜ VE GÜN SEÇİCİ */}
+      {/* 1. GÜN SEÇİCİ VE KALKIŞ ↔ VARIŞ FİLTRELERİ */}
       <div className="px-3 pt-3 pb-2 bg-[#070e1e] text-white space-y-2.5 relative z-20">
-        {/* Rota Başlığı ve Hava Durumu Kapsülü */}
-        <div className="flex flex-col items-center text-center gap-1.5">
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center justify-center gap-2 flex-wrap">
-            <span>
-              {selectedOrigin === "ALL"
-                ? upcomingTrips[0]?.schedule.origin || "Bostancı"
-                : selectedOrigin}
-            </span>
-            <span className="text-cyan-400 font-normal">↔</span>
-            <span>
-              {selectedDestination === "ALL"
-                ? upcomingTrips[0]?.schedule.destination || "Büyükada"
-                : selectedDestination}
-            </span>
-          </h2>
-
-          <div className="px-3.5 py-1 rounded-full bg-slate-800/90 border border-slate-700/80 text-[11px] font-bold text-slate-200 inline-flex items-center gap-1.5 shadow-sm">
-            <Wind size={12} className="text-cyan-400 shrink-0" />
-            <span>
-              {marineWeather?.temperature ?? 18}°C • {marineWeather?.windName ?? "Lodos"}{" "}
-              {marineWeather?.windSpeedKnots ?? 12}kt
-            </span>
-          </div>
-        </div>
-
         {/* iOS Segmented Control Gün Seçici (Bugün | Hafta İçi | Cumartesi | Pazar) */}
         <div className="w-full rounded-2xl bg-slate-900/95 p-1 border border-slate-800 grid grid-cols-4 gap-1 shadow-inner">
           {(
