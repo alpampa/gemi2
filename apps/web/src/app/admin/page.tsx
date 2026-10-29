@@ -1063,7 +1063,7 @@ export default function AdminDashboard() {
                       {action.beforeValue && action.afterValue && (
                         <div className="flex items-center gap-2 mt-1 text-[11px] font-mono">
                           <span className="text-rose-400 line-through">Eski: {action.beforeValue}</span>
-                          <span className="text-slate-500">➔</span>
+                          <span className="text-slate-500">→</span>
                           <span className="text-emerald-400 font-bold">Otonom Onarıldı: {action.afterValue}</span>
                         </div>
                       )}

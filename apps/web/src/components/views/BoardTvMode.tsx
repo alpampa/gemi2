@@ -267,7 +267,7 @@ export function BoardTvMode({
                   </span>
                   {trip.stops && trip.stops.length > 0 && (
                     <span className="text-[10px] text-slate-400 truncate block font-medium">
-                      Ara duraklar: {trip.stops.map((s) => s.name).join(" ➔ ")}
+                      Ara duraklar: {trip.stops.map((s) => s.name).join(" → ")}
                     </span>
                   )}
                 </div>

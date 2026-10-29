@@ -33,7 +33,7 @@ export function PierSharingQrCard({
     if (typeof navigator !== "undefined" && navigator.share) {
       navigator.share({
         title: "İBB Deniz Taksi İskele Paylaşım Grubu",
-        text: `${origin} ➔ ${destination} arası İBB Deniz Taksi masrafını bölüşüyoruz! Kişi başı: ${perPersonFare} ₺. Katılmak için linke tıkla:`,
+        text: `${origin} → ${destination} arası İBB Deniz Taksi masrafını bölüşüyoruz! Kişi başı: ${perPersonFare} ₺. Katılmak için linke tıkla:`,
         url: shareUrl
       }).catch(() => {});
     } else {
@@ -108,7 +108,7 @@ export function PierSharingQrCard({
             <text x="80" y="84" textAnchor="middle" fill="#ffffff" fontSize="15" fontWeight="bold">🚤</text>
           </svg>
           <span className="text-[10px] font-mono font-bold text-slate-700 mt-1.5">
-            {origin} ➔ {destination}
+            {origin} → {destination}
           </span>
         </div>
       </div>

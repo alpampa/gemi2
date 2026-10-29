@@ -34,7 +34,7 @@ describe("Mavi Marmara — gerçek resmi tarife verisi", () => {
   it("aynı (kalkış, varış, saat) kombinasyonu iki kez geçmez", () => {
     const seen = new Set<string>();
     for (const t of MM) {
-      const key = `${t.origin}➔${t.destination}@${t.departureTime}`;
+      const key = `${t.origin}→${t.destination}@${t.departureTime}`;
       expect(seen.has(key)).toBe(false);
       seen.add(key);
     }
@@ -79,15 +79,15 @@ describe("Mavi Marmara — gerçek resmi tarife verisi", () => {
   it("yıldızlı seferler Pazar/Tatil günü kapalıdır, normal seferler her gün açıktır", () => {
     // Yıldızlılar: Bostancı 07:10 (H ve K), Büyükada 07:25, Heybeliada 07:10, Burgazada 06:15, Kınalıada 06:30
     const starredTimes = [
-      "Bostancı➔Büyükada@07:10",
-      "Bostancı➔Kınalıada@07:10",
-      "Büyükada➔Bostancı@07:25",
-      "Heybeliada➔Bostancı@07:10",
-      "Burgazada➔Bostancı@06:15",
-      "Kınalıada➔Bostancı@06:30",
+      "Bostancı→Büyükada@07:10",
+      "Bostancı→Kınalıada@07:10",
+      "Büyükada→Bostancı@07:25",
+      "Heybeliada→Bostancı@07:10",
+      "Burgazada→Bostancı@06:15",
+      "Kınalıada→Bostancı@06:30",
     ];
     for (const t of MM) {
-      const key = `${t.origin}➔${t.destination}@${t.departureTime}`;
+      const key = `${t.origin}→${t.destination}@${t.departureTime}`;
       if (starredTimes.includes(key)) {
         expect(t.runsSunday).toBe(false);
         expect(t.runsWeekday).toBe(true);
@@ -103,14 +103,14 @@ describe("Mavi Marmara — gerçek resmi tarife verisi", () => {
       (t) => t.origin === "Kabataş" || t.destination === "Kabataş"
     ).filter((t) => !t.runsWeekday);
     const expectedWeekendOnly = [
-      "Kabataş➔Büyükada@10:45",
-      "Kabataş➔Büyükada@13:00",
-      "Büyükada➔Kabataş@17:00",
-      "Büyükada➔Kabataş@18:00",
-      "Heybeliada➔Kabataş@17:15",
-      "Heybeliada➔Kabataş@18:15",
+      "Kabataş→Büyükada@10:45",
+      "Kabataş→Büyükada@13:00",
+      "Büyükada→Kabataş@17:00",
+      "Büyükada→Kabataş@18:00",
+      "Heybeliada→Kabataş@17:15",
+      "Heybeliada→Kabataş@18:15",
     ];
-    expect(weekendOnly.map((t) => `${t.origin}➔${t.destination}@${t.departureTime}`).sort()).toEqual(
+    expect(weekendOnly.map((t) => `${t.origin}→${t.destination}@${t.departureTime}`).sort()).toEqual(
       [...expectedWeekendOnly].sort()
     );
     for (const t of weekendOnly) {

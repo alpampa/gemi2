@@ -61,7 +61,7 @@ export function TouristTripList({ items, onExitTouristMode }: TouristTripListPro
 
               <div className="flex-1 min-w-0">
                 <div className="text-base font-extrabold text-slate-900 dark:text-white truncate">{dyn.currentOrigin}</div>
-                <div className="text-sm font-bold text-blue-600 dark:text-blue-400 truncate">➔ {schedule.destination}</div>
+                <div className="text-sm font-bold text-blue-600 dark:text-blue-400 truncate">→ {schedule.destination}</div>
                 {schedule.price && (
                   <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1">💳 {schedule.price}</div>
                 )}

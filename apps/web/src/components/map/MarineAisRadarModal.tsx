@@ -89,7 +89,7 @@ export function MarineAisRadarModal({
                 Gemi Sicili ve Harici Canlı Takip
               </h3>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                {origin} ➔ {destination} · uygulama içinde AIS konumu gösterilmez
+                {origin} → {destination} · uygulama içinde AIS konumu gösterilmez
               </p>
             </div>
             <button

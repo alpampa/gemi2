@@ -185,7 +185,7 @@ export function PierDepartureBoard({
 
                     {/* Destination */}
                     <div className="flex items-center gap-1.5 mt-1 font-black text-sm text-white group-hover:text-blue-300 transition-colors">
-                      <span className="text-blue-400 font-extrabold">➔</span>
+                      <span className="text-blue-400 font-extrabold">→</span>
                       <span className="truncate">{schedule.destination}</span>
                     </div>
                   </div>

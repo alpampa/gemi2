@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, SlidersHorizontal, Moon, Compass, LayoutGrid, List, RotateCcw, Calendar, Clock } from "lucide-react";
+import { X, SlidersHorizontal, Moon, Compass, LayoutGrid, List, RotateCcw } from "lucide-react";
 import { SmartCommutePills } from "@/components/schedule/SmartCommutePills";
 import { chipBase, chipOff, chipOn } from "@/lib/ui/button-styles";
 import { useLanguageStore } from "@/store/useLanguageStore";
@@ -23,10 +23,6 @@ interface ScheduleToolsSheetProps {
   isCompactDensity: boolean;
   onToggleDensity: () => void;
   onClearFilters: () => void;
-  selectedDayType?: "TODAY" | "WEEKDAY" | "SATURDAY" | "SUNDAY";
-  onSelectDayType?: (day: "TODAY" | "WEEKDAY" | "SATURDAY" | "SUNDAY") => void;
-  showAllDay?: boolean;
-  onToggleShowAllDay?: () => void;
 }
 
 export function ScheduleToolsSheet({
@@ -44,10 +40,6 @@ export function ScheduleToolsSheet({
   isCompactDensity,
   onToggleDensity,
   onClearFilters,
-  selectedDayType = "TODAY",
-  onSelectDayType,
-  showAllDay = false,
-  onToggleShowAllDay,
 }: ScheduleToolsSheetProps) {
   const { t } = useLanguageStore();
   const [mounted, setMounted] = useState(false);
@@ -101,7 +93,6 @@ export function ScheduleToolsSheet({
           </div>
 
           <div className="overflow-y-auto px-5 py-4 space-y-5">
-            {/* Hızlı Rota Kısayolları */}
             <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40 px-3 py-2.5">
               <SmartCommutePills
                 currentOrigin={currentOrigin}
@@ -113,39 +104,6 @@ export function ScheduleToolsSheet({
               />
             </section>
 
-            {/* Gün ve Tarife Seçimi (Ana ekranı işgal etmeyen temiz seçenek) */}
-            <section>
-              <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
-                <Calendar size={13} className="text-blue-500" />
-                <span>Tarife Günü İncele</span>
-              </h4>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: "TODAY", label: "Bugün (Canlı Seferler)" },
-                  { id: "WEEKDAY", label: "Hafta İçi Tarifesi" },
-                  { id: "SATURDAY", label: "Cumartesi Tarifesi" },
-                  { id: "SUNDAY", label: "Pazar / Tatil Tarifesi" },
-                ].map((d) => (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => {
-                      onSelectDayType?.(d.id as any);
-                      onClose();
-                    }}
-                    className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer ${
-                      selectedDayType === d.id
-                        ? "bg-blue-600 text-white border-blue-500 shadow-sm"
-                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-400"
-                    }`}
-                  >
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            {/* Operatör Filtresi */}
             <section>
               <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                 {t("operatorLabel")}
@@ -163,33 +121,11 @@ export function ScheduleToolsSheet({
               </select>
             </section>
 
-            {/* Görünüm ve Ek Araçlar */}
             <section>
               <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                Görünüm Yoğunluğu & Harita
+                Tahmini Sefer Haritası & Görünüm
               </h4>
               <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={onToggleDensity}
-                  className={`${chipBase} min-h-11 gap-1.5 ${isCompactDensity ? chipOn : chipOff}`}
-                  title={isCompactDensity ? "Detaylı Görünüme Geç" : "Özet Görünüme Geç"}
-                >
-                  {isCompactDensity ? <LayoutGrid size={13} /> : <List size={13} />}
-                  <span>{isCompactDensity ? "Özet Görünüm (Kompakt)" : "Detaylı Görünüm"}</span>
-                </button>
-
-                {onToggleShowAllDay && (
-                  <button
-                    type="button"
-                    onClick={onToggleShowAllDay}
-                    className={`${chipBase} min-h-11 gap-1.5 ${showAllDay ? chipOn : chipOff}`}
-                  >
-                    <Clock size={13} />
-                    <span>{showAllDay ? "Tüm Gün Açık" : "Sadece Yaklaşanlar"}</span>
-                  </button>
-                )}
-
                 <button
                   type="button"
                   onClick={() => {
@@ -212,7 +148,17 @@ export function ScheduleToolsSheet({
                   className={`${chipBase} min-h-11 gap-1.5 ${showPlanner ? chipOn : chipOff}`}
                 >
                   <Compass size={13} />
-                  <span>Aktarma Haritası</span>
+                  <span>Tahmini Sefer ve Aktarma Haritası</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onToggleDensity}
+                  className={`${chipBase} min-h-11 gap-1.5 ${chipOff}`}
+                  title={isCompactDensity ? t("viewComfort") : t("viewCompact")}
+                >
+                  {isCompactDensity ? <LayoutGrid size={13} /> : <List size={13} />}
+                  <span>{isCompactDensity ? t("viewComfort") : t("viewCompact")}</span>
                 </button>
               </div>
             </section>

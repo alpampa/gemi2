@@ -13,8 +13,8 @@ import { RawOfficialTrip } from "./official-schedules";
  * gösterilir (onay 2026-10-18); sayı uydurulmaz.
  * 
  * Hatlar:
- * 1. Kartal ➔ Büyükada ➔ Heybeliada
- * 2. Heybeliada ➔ Büyükada ➔ Kartal
+ * 1. Kartal → Büyükada → Heybeliada
+ * 2. Heybeliada → Büyükada → Kartal
  */
 
 const PRICE_UNVERIFIED = "İstanbul Kart";
@@ -81,12 +81,12 @@ function addMinutes(timeStr: string, mins: number): string {
 export function getPrensTurSchedules(): RawOfficialTrip[] {
   const trips: RawOfficialTrip[] = [];
 
-  // 1. Kartal ➔ Büyükada & Heybeliada
+  // 1. Kartal → Büyükada & Heybeliada
   KARTAL_DEPARTURES.forEach((k, idx) => {
     const buyukadaArr = addMinutes(k.dep, 25);
     const heybeliadaArr = addMinutes(k.dep, 35);
 
-    // Kartal ➔ Heybeliada (Ana bacak: Kartal -> Büyükada -> Heybeliada)
+    // Kartal → Heybeliada (Ana bacak: Kartal -> Büyükada -> Heybeliada)
     trips.push({
       id: `prenstur-kartal-adalar-${idx}`,
       origin: "Kartal",
@@ -104,7 +104,7 @@ export function getPrensTurSchedules(): RawOfficialTrip[] {
       lineName: "Kartal - Adalar Hattı",
     });
 
-    // Kartal ➔ Büyükada (Doğrudan Büyükada'ya giden direkt sefer)
+    // Kartal → Büyükada (Doğrudan Büyükada'ya giden direkt sefer)
     trips.push({
       id: `prenstur-kartal-buyukada-${idx}`,
       origin: "Kartal",
@@ -121,9 +121,9 @@ export function getPrensTurSchedules(): RawOfficialTrip[] {
     });
   });
 
-  // 2. Adalar ➔ Kartal
+  // 2. Adalar → Kartal
   ADALAR_DEPARTURES.forEach((a, idx) => {
-    // Heybeliada ➔ Kartal (Heybeliada -> Büyükada -> Kartal)
+    // Heybeliada → Kartal (Heybeliada -> Büyükada -> Kartal)
     trips.push({
       id: `prenstur-heybeliada-kartal-${idx}`,
       origin: "Heybeliada",
@@ -141,7 +141,7 @@ export function getPrensTurSchedules(): RawOfficialTrip[] {
       lineName: "Adalar - Kartal Hattı",
     });
 
-    // Büyükada ➔ Kartal (Büyükada'dan doğrudan Kartal'a)
+    // Büyükada → Kartal (Büyükada'dan doğrudan Kartal'a)
     trips.push({
       id: `prenstur-buyukada-kartal-${idx}`,
       origin: "Büyükada",
@@ -157,7 +157,7 @@ export function getPrensTurSchedules(): RawOfficialTrip[] {
       lineName: "Büyükada - Kartal Hattı",
     });
 
-    // Heybeliada ➔ Büyükada (Ada içi geçiş)
+    // Heybeliada → Büyükada (Ada içi geçiş)
     trips.push({
       id: `prenstur-heybeliada-buyukada-${idx}`,
       origin: "Heybeliada",

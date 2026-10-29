@@ -11,7 +11,7 @@ describe("İDO Seferleri Doğrulama", () => {
     expect(trips.every((t) => t.category === "ADALAR")).toBe(true);
   });
 
-  it("Bostancı ➔ Büyükada ve Kabataş ➔ Büyükada hızlı deniz otobüsü seferlerini içerir", () => {
+  it("Bostancı → Büyükada ve Kabataş → Büyükada hızlı deniz otobüsü seferlerini içerir", () => {
     const trips = getIdoSchedules();
     const bosToAda = trips.filter((t) => t.origin === "Bostancı");
     expect(bosToAda.length).toBeGreaterThan(0);

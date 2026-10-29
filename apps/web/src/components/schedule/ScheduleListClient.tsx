@@ -1,6 +1,19 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import dynamic from "next/dynamic";
+
+const InteractiveMarineMap = dynamic(
+  () => import("@/components/map/InteractiveMarineMap").then((m) => m.InteractiveMarineMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[250px] bg-slate-900 rounded-2xl animate-pulse flex items-center justify-center text-slate-400 text-xs font-bold">
+        Harita Yükleniyor...
+      </div>
+    ),
+  }
+);
 import { ScheduleCard } from "@/components/schedule/ScheduleCard";
 import { TripDetailsSheet } from "@/components/schedule/TripDetailsSheet";
 import type { ScheduleCardDto } from "@/lib/types/schedule";
@@ -52,6 +65,8 @@ import { parseNaturalTransitQuery } from "@/lib/services/ai-transit-assistant";
 import { predictFerryDisruption } from "@/lib/services/predictive-disruption-model";
 import { saveSchedulesOffline, loadSchedulesOffline } from "@/lib/services/offline-db";
 import { trackAppOpenOnce } from "@/lib/utils/analytics-tracker";
+import { SponsoredTripRow } from "@/components/schedule/SponsoredTripRow";
+import { AdSlot } from "@/components/commercial/AdSlot";
 import {
   getSponsoredAdsStore,
   selectContextualSponsoredAd,
@@ -187,7 +202,7 @@ export function ScheduleListClient({
     const shareUrl = window.location.href;
     const routeLabel =
       selectedOrigin !== "ALL" && selectedDestination !== "ALL"
-        ? `${selectedOrigin} ➔ ${selectedDestination}`
+        ? `${selectedOrigin} → ${selectedDestination}`
         : selectedOrigin !== "ALL"
         ? `${selectedOrigin} Kalkışlı Seferler`
         : selectedDestination !== "ALL"
@@ -392,7 +407,6 @@ export function ScheduleListClient({
         if (!isTimetablePreviewMode && dyn.isExpired) return false;
         if (dyn.currentOrigin.trim() === dyn.destination.trim()) return false;
         if (schedule.origin.trim() === schedule.destination.trim()) return false;
-        if (schedule.isContinuous) return false;
 
         // Kullanıcı belirli bir kalkış ve varış iskelesi seçtiyse veya arama yapıyorsa kategori kilidi kalkar
         if (searchQuery.trim().length > 0) return true;
@@ -424,7 +438,7 @@ export function ScheduleListClient({
 
     const dedupMap = new Map<string, { schedule: ScheduleCardDto; dyn: DynamicTripResolution }>();
     for (const item of masterList) {
-      const key = `${item.schedule.operator}:${item.dyn.currentOrigin}➔${item.dyn.destination}@${item.dyn.currentDepartureTime}`;
+      const key = `${item.schedule.operator}:${item.dyn.currentOrigin}→${item.dyn.destination}@${item.dyn.currentDepartureTime}`;
       if (!dedupMap.has(key)) {
         dedupMap.set(key, item);
       } else {
@@ -635,7 +649,7 @@ export function ScheduleListClient({
 
   const upcomingTrips = filteredList;
 
-  // P1-2: Doğrudan sefer bulunmayan iki iskele seçildiğinde (ör. Sarıyer ➔ Büyükada veya Beykoz ➔ Kartal)
+  // P1-2: Doğrudan sefer bulunmayan iki iskele seçildiğinde (ör. Sarıyer → Büyükada veya Beykoz → Kartal)
   // otomatik olarak 1-Aktarmalı Deniz Rotalarını hesapla!
   const transferSuggestions = useMemo<RouteOption[]>(() => {
     if (selectedOrigin === "ALL" || selectedDestination === "ALL" || selectedOrigin === selectedDestination) {
@@ -692,7 +706,7 @@ export function ScheduleListClient({
       <AnnouncementBanner announcements={announcements} />
 
       {/* ÇEVRİMDIŞI PWA GÖSTERGESİ — Yalnızca gerçek çevrimdışı durumda tek satır olarak görünür */}
-      {!isOnline && (
+      {false && !isOnline && (
         <div className="px-3 pt-1.5 animate-fadeIn">
           <div className="px-3 py-1.5 rounded-xl bg-slate-900/90 text-slate-200 border border-slate-700/80 text-[11px] font-bold flex items-center justify-between shadow-xs">
             <div className="flex items-center gap-2">
@@ -716,67 +730,71 @@ export function ScheduleListClient({
         selectedDestination={selectedDestination}
       />
 
-      {/* 1. KONTROL PANELİ: Kategori + İskele Seçici + Hızlı Araçlar */}
-      <div className="px-3 pt-2 pb-2 bg-[#070e1e] text-white space-y-2 relative z-20">
-        {/* Kategori Seçici (Tam Genişlikte 3'lü Segment: Tümü | 🏝️ Adalar | 🌊 Boğaz) */}
-        <div className="w-full rounded-xl bg-slate-900/90 p-0.5 border border-slate-800 grid grid-cols-3 gap-1 shadow-inner">
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic("light");
-              updateCategory("ALL");
-            }}
-            className={`py-1.5 px-2 rounded-lg text-xs font-black transition-all cursor-pointer truncate ${
-              selectedCategory === "ALL"
-                ? "bg-blue-600 text-white shadow-sm"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            Tüm Hatlar
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic("light");
-              updateCategory("ADALAR");
-              setSelectedOrigin("ALL");
-              setSelectedDestination("ALL");
-            }}
-            className={`py-1.5 px-2 rounded-lg text-xs font-black transition-all cursor-pointer truncate ${
-              selectedCategory === "ADALAR"
-                ? "bg-cyan-600 text-white shadow-sm"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            🏝️ Adalar
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic("light");
-              updateCategory("BOGAZ");
-              setSelectedOrigin("ALL");
-              setSelectedDestination("ALL");
-            }}
-            className={`py-1.5 px-2 rounded-lg text-xs font-black transition-all cursor-pointer truncate ${
-              selectedCategory === "BOGAZ"
-                ? "bg-indigo-600 text-white shadow-sm"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            🌊 Boğaz
-          </button>
+      {/* 1. ARGON + APPLE HIG KAHRAMAN ROTA BAŞLIĞI, HAVA KAPSÜLÜ VE GÜN SEÇİCİ */}
+      <div className="px-3 pt-3 pb-2 bg-[#070e1e] text-white space-y-2.5 relative z-20">
+        {/* Rota Başlığı ve Hava Durumu Kapsülü */}
+        <div className="flex flex-col items-center text-center gap-1.5">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center justify-center gap-2 flex-wrap">
+            <span>
+              {selectedOrigin === "ALL"
+                ? upcomingTrips[0]?.schedule.origin || "Bostancı"
+                : selectedOrigin}
+            </span>
+            <span className="text-cyan-400 font-normal">↔</span>
+            <span>
+              {selectedDestination === "ALL"
+                ? upcomingTrips[0]?.schedule.destination || "Büyükada"
+                : selectedDestination}
+            </span>
+          </h2>
+
+          <div className="px-3.5 py-1 rounded-full bg-slate-800/90 border border-slate-700/80 text-[11px] font-bold text-slate-200 inline-flex items-center gap-1.5 shadow-sm">
+            <Wind size={12} className="text-cyan-400 shrink-0" />
+            <span>
+              {marineWeather?.temperature ?? 18}°C • {marineWeather?.windName ?? "Lodos"}{" "}
+              {marineWeather?.windSpeedKnots ?? 12}kt
+            </span>
+          </div>
         </div>
 
-        {/* Kalkış ⇄ Varış Seçici */}
-        <div className="w-full rounded-xl bg-slate-900/90 border border-slate-800 shadow-sm overflow-hidden p-1">
-          <div className="w-full flex items-center gap-1">
+        {/* iOS Segmented Control Gün Seçici (Bugün | Hafta İçi | Cumartesi | Pazar) */}
+        <div className="w-full rounded-2xl bg-slate-900/95 p-1 border border-slate-800 grid grid-cols-4 gap-1 shadow-inner">
+          {(
+            [
+              { id: "TODAY", label: "Bugün" },
+              { id: "WEEKDAY", label: "Hafta İçi" },
+              { id: "SATURDAY", label: "Cumartesi" },
+              { id: "SUNDAY", label: "Pazar" },
+            ] as const
+          ).map((d) => (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => {
+                triggerHaptic("light");
+                setSelectedDayType(d.id);
+              }}
+              aria-pressed={selectedDayType === d.id}
+              className={`py-1.5 px-2 rounded-xl text-xs font-black transition-all cursor-pointer truncate ${
+                selectedDayType === d.id
+                  ? "bg-white text-slate-950 shadow-md"
+                  : "text-slate-300 hover:text-white"
+              }`}
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Kalkış ↔ Varış Seçici ve Hızlı Filtre Kapsülleri */}
+        <div className="w-full rounded-2xl bg-slate-900/90 border border-slate-800 shadow-sm overflow-hidden">
+          <div className="w-full flex items-center gap-1 p-1">
             <div className="relative flex-1 min-w-0">
               <select
                 value={selectedOrigin}
                 onChange={(e) => handleSelectOrigin(e.target.value)}
                 aria-label="Kalkış iskelesi seçin"
-                className="w-full min-h-10 pl-2.5 pr-5 py-1.5 bg-slate-950/60 text-xs font-bold text-slate-100 appearance-none rounded-lg border border-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 cursor-pointer truncate"
+                className="w-full min-h-10 pl-3 pr-5 py-1.5 bg-slate-950/60 text-xs font-bold text-slate-100 appearance-none rounded-xl border border-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 cursor-pointer truncate"
               >
                 <option value="ALL">🟢 Nereden (Tümü)</option>
                 {allPiersInSystem.map((pier) => (
@@ -794,7 +812,7 @@ export function ScheduleListClient({
               }}
               title="Kalkış ve Varış İskelesini Değiştir"
               aria-label="Kalkış ve varış iskelesini değiştir"
-              className="w-10 h-10 rounded-lg bg-slate-800 text-cyan-300 border border-slate-700 hover:bg-cyan-500 hover:text-slate-950 transition-all cursor-pointer active:scale-95 shrink-0 flex items-center justify-center touch-manipulation"
+              className="w-10 h-10 rounded-xl bg-slate-800 text-cyan-300 border border-slate-700 hover:bg-cyan-500 hover:text-slate-950 transition-all cursor-pointer active:scale-95 shrink-0 flex items-center justify-center touch-manipulation"
             >
               <ArrowLeftRight size={14} />
             </button>
@@ -804,7 +822,7 @@ export function ScheduleListClient({
                 value={selectedDestination}
                 onChange={(e) => handleSelectDestination(e.target.value)}
                 aria-label="Varış iskelesi seçin"
-                className="w-full min-h-10 pl-2.5 pr-5 py-1.5 bg-slate-950/60 text-xs font-bold text-slate-100 appearance-none rounded-lg border border-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 cursor-pointer truncate"
+                className="w-full min-h-10 pl-3 pr-5 py-1.5 bg-slate-950/60 text-xs font-bold text-slate-100 appearance-none rounded-xl border border-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 cursor-pointer truncate"
               >
                 <option value="ALL">🔴 Nereye (Tümü)</option>
                 {selectedOrigin === "ALL" ? (
@@ -840,7 +858,7 @@ export function ScheduleListClient({
                   onClick={handleShareCurrentRoute}
                   title="Seçili rotanın bağlantısını paylaş veya kopyala"
                   aria-label="Rotayı paylaş"
-                  className="w-10 h-10 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
+                  className="w-10 h-10 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
                 >
                   <Share2 size={14} />
                 </button>
@@ -853,74 +871,117 @@ export function ScheduleListClient({
                   }}
                   title="İskele seçimini temizle"
                   aria-label="İskele seçimini temizle"
-                  className="w-10 h-10 rounded-lg bg-rose-950/70 hover:bg-rose-900 text-rose-300 border border-rose-700/60 transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
+                  className="w-10 h-10 rounded-xl bg-rose-950/70 hover:bg-rose-900 text-rose-300 border border-rose-700/60 transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
                 >
                   <X size={14} />
                 </button>
               </>
             )}
           </div>
-        </div>
 
-        {/* Tek Satır Hızlı Araçlar — Mobilde %100 sığar, kesilmez, kaydırılmaz */}
-        <div className="w-full grid grid-cols-4 gap-1.5 pt-0.5">
-          {/* 1. Özet / Detay Görünüm Anahtarı */}
-          <button
-            type="button"
-            onClick={handleToggleDensity}
-            title={isCompactDensity ? "Detaylı Görünüm (Ara duraklar açık)" : "Özet Görünüm (Yalnızca kalkış, varış, saat)"}
-            className={`min-h-9 px-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1 cursor-pointer truncate ${
-              isCompactDensity
-                ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300"
-                : "bg-slate-900/80 border-slate-800 text-slate-300 hover:text-white"
-            }`}
-          >
-            <span className="text-[11px]">{isCompactDensity ? "📋" : "📑"}</span>
-            <span className="truncate">{isCompactDensity ? "Özet" : "Detaylı"}</span>
-          </button>
+          <div className="border-t border-slate-800/80 px-2 py-1">
+            <div className="w-full overflow-x-auto hide-scrollbar flex items-center gap-1.5 py-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  updateCategory(selectedCategory === "ADALAR" ? "ALL" : "ADALAR");
+                  setSelectedOrigin("ALL");
+                  setSelectedDestination("ALL");
+                }}
+                aria-pressed={selectedCategory === "ADALAR"}
+                className={`${chipBase} gap-1 ${
+                  selectedCategory === "ADALAR" ? chipOn : chipOff
+                }`}
+              >
+                <span>🏝️</span>
+                <span>Adalar</span>
+              </button>
 
-          {/* 2. Arama Aç/Kapa */}
-          <button
-            type="button"
-            onClick={() => setIsSearchVisible(!isSearchVisible)}
-            className={`min-h-9 px-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1 cursor-pointer truncate ${
-              isSearchVisible || searchQuery.trim().length > 0
-                ? "bg-blue-600 border-blue-500 text-white"
-                : "bg-slate-900/80 border-slate-800 text-slate-300 hover:text-white"
-            }`}
-          >
-            <Search size={12} />
-            <span className="truncate">Ara</span>
-          </button>
+              <button
+                type="button"
+                onClick={() => {
+                  updateCategory(selectedCategory === "BOGAZ" ? "ALL" : "BOGAZ");
+                  setSelectedOrigin("ALL");
+                  setSelectedDestination("ALL");
+                }}
+                aria-pressed={selectedCategory === "BOGAZ"}
+                className={`${chipBase} gap-1 ${
+                  selectedCategory === "BOGAZ" ? chipOn : chipOff
+                }`}
+              >
+                <span>🌊</span>
+                <span>Boğaz</span>
+              </button>
 
-          {/* 3. En Yakın İskele */}
-          <button
-            type="button"
-            onClick={requestLocation}
-            disabled={geoStatus === "LOCATING"}
-            className={`min-h-9 px-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1 cursor-pointer truncate ${
-              geoStatus === "ACTIVE"
-                ? "bg-emerald-600 border-emerald-500 text-white"
-                : "bg-slate-900/80 border-slate-800 text-slate-300 hover:text-white"
-            }`}
-          >
-            <Navigation size={12} className={geoStatus === "LOCATING" ? "animate-spin" : geoStatus === "ACTIVE" ? "fill-white" : ""} />
-            <span className="truncate">En Yakın</span>
-          </button>
+              <button
+                type="button"
+                onClick={() => setShowAllDay(!showAllDay)}
+                aria-pressed={showAllDay}
+                title="Sabah ilk vapurdan gece son sefere kadar tüm gün saatlerini göster"
+                className={`${chipBase} gap-1 ${showAllDay ? chipOn : chipOff}`}
+              >
+                <Clock size={11} />
+                <span>Tüm Gün</span>
+              </button>
 
-          {/* 4. Filtreler & Araçlar */}
-          <button
-            type="button"
-            onClick={() => setIsToolsOpen(true)}
-            className={`min-h-9 px-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1 cursor-pointer truncate ${
-              toolFilterCount > 0
-                ? "bg-amber-500/20 border-amber-500/50 text-amber-300"
-                : "bg-slate-900/80 border-slate-800 text-slate-300 hover:text-white"
-            }`}
-          >
-            <SlidersHorizontal size={12} />
-            <span className="truncate">Filtre{toolFilterCount > 0 ? ` (${toolFilterCount})` : ""}</span>
-          </button>
+              <button
+                type="button"
+                onClick={() => setOnlyImminent(!onlyImminent)}
+                aria-pressed={onlyImminent}
+                className={`${chipBase} gap-1 ${
+                  onlyImminent ? chipOn : chipOff
+                }`}
+              >
+                <span>⚡</span>
+                <span>≤15 dk</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={requestLocation}
+                disabled={geoStatus === "LOCATING"}
+                className={`${chipBase} gap-1 ${
+                  geoStatus === "ACTIVE" ? chipSuccess : chipOff
+                }`}
+                title="Konumuma en yakın iskeleyi bul"
+              >
+                <Navigation size={11} className={geoStatus === "LOCATING" ? "animate-spin" : geoStatus === "ACTIVE" ? "fill-white" : ""} />
+                <span>{t("nearestShort")}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsSearchVisible(!isSearchVisible)}
+                aria-pressed={isSearchVisible || searchQuery.trim().length > 0}
+                className={`${chipBase} gap-1 ${
+                  isSearchVisible || searchQuery.trim().length > 0 ? chipOn : chipOff
+                }`}
+              >
+                <Search size={11} />
+                <span>{t("search")}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowPlanner(!showPlanner)}
+                aria-pressed={showPlanner}
+                className={`${chipBase} gap-1 ${showPlanner ? chipOn : chipOff}`}
+              >
+                <Compass size={11} />
+                <span>Harita</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsToolsOpen(true)}
+                aria-pressed={toolFilterCount > 0}
+                className={`${chipBase} gap-1 ${toolFilterCount > 0 ? chipOn : chipOff}`}
+              >
+                <SlidersHorizontal size={11} />
+                <span>{t("filtersTools")}{toolFilterCount > 0 ? ` · ${toolFilterCount}` : ""}</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1018,19 +1079,31 @@ export function ScheduleListClient({
         </div>
       )}
 
-      {/* 4. SAKİN İPTAL SEFERLER UYARISI */}
+      {/* 4. KAYAN İPTAL SEFERLER DUYURU BANDI */}
       {cancelledTrips.length > 0 && (
         <div className="px-3 pt-1.5 animate-fadeIn">
-          <div className="py-2 px-3 rounded-xl bg-rose-950/80 border border-rose-600/70 text-rose-200 shadow-sm flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
-              <span className="text-xs font-bold truncate">
-                ⚠️ Hava Muhalefeti: <strong>{cancelledTrips.length} seferde</strong> iptal ve tarife değişikliği var
-              </span>
+          <div className="py-1.5 px-3 rounded-xl bg-linear-to-r from-rose-600 via-rose-700 to-red-800 text-white shadow-sm flex items-center gap-2 overflow-hidden border border-rose-500">
+            <div className="flex items-center gap-1.5 shrink-0 bg-black/40 px-2 py-0.5 rounded-lg font-black text-[10px] tracking-wider uppercase border border-rose-400/50">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+              <span>İPTAL SEFERLER</span>
             </div>
-            <span className="text-[10px] uppercase font-mono font-bold bg-rose-500/20 px-2 py-0.5 rounded border border-rose-500/40 shrink-0">
-              RESMİ
-            </span>
+
+            <MarqueeTicker
+              speedPxPerSec={60}
+              ariaLabel="İptal edilen seferler"
+              className="text-xs font-bold text-white"
+            >
+              {cancelledTrips.map(({ schedule, dyn }, idx) => (
+                <span key={idx} className="inline-flex items-center gap-1.5 bg-black/20 px-2 py-0.5 rounded-md">
+                  <span className="bg-white/15 px-1.5 py-px rounded text-[9.5px] font-black tracking-wide uppercase">
+                    {schedule.operator}
+                  </span>
+                  <span>🔴 {schedule.origin} → {schedule.destination}</span>
+                  <span className="font-mono">{dyn.currentDepartureTime}</span>
+                  <span className="text-amber-200">İPTAL</span>
+                </span>
+              ))}
+            </MarqueeTicker>
           </div>
         </div>
       )}
@@ -1099,6 +1172,10 @@ export function ScheduleListClient({
           <div className={`px-3 flex flex-col ${isCompactDensity ? "gap-1.5" : "gap-2"} pb-36 sm:pb-28 mt-1`}>
             {upcomingTrips.length > 0 ? (
               upcomingTrips.map(({ schedule, dyn }, idx) => {
+                const shouldShowSponsoredRowHere =
+                  activeSponsoredAd != null &&
+                  ((upcomingTrips.length >= 2 && idx === 1) || (upcomingTrips.length === 1 && idx === 0));
+
                 return (
                   <div key={`${schedule.id}-${dyn.currentOrigin}-${dyn.currentDepartureTime}`} className="contents">
                     <ScheduleCard
@@ -1123,12 +1200,43 @@ export function ScheduleListClient({
                       isContinuous={schedule.isContinuous}
                       continuousUntil={schedule.continuousUntil}
                       isCompact={isCompactDensity}
+                      isFeaturedHero={idx === 0 && !isTimetablePreviewMode}
                       highlightStopName={searchQuery}
                       isTimetablePreview={isTimetablePreviewMode}
                       dayPreviewLabel={dayPreviewLabel}
+                      userSelectedOrigin={selectedOrigin}
+                      userSelectedDestination={selectedDestination}
                       onClick={() => setSelectedSchedule(schedule)}
                       onSelectHop={(s) => setSelectedHopSchedule(s)}
                     />
+                    {idx === 0 && !isTimetablePreviewMode && !isCompactDensity && (
+                      <div className="my-1.5 space-y-2">
+                        <div className="rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700/90 shadow-lg bg-slate-950">
+                          <InteractiveMarineMap
+                            selectedOrigin={selectedOrigin !== "ALL" ? selectedOrigin : schedule.origin}
+                            selectedDestination={selectedDestination !== "ALL" ? selectedDestination : schedule.destination}
+                            schedules={upcomingTrips.slice(0, 8).map((u) => u.schedule)}
+                            height="250px"
+                          />
+                        </div>
+                        {upcomingTrips.length > 1 && (
+                          <div className="pt-1 px-1 flex items-center justify-between">
+                            <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                              Diğer Seferler ({upcomingTrips.length - 1} Alternatif)
+                            </h3>
+                            <span className="text-[10px] font-bold text-slate-400">
+                              Şehir Hatları • İDO • Mavi Marmara • Turyol • Dentur
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {shouldShowSponsoredRowHere && (
+                      <SponsoredTripRow ad={activeSponsoredAd} isCompact={isCompactDensity} />
+                    )}
+                    {idx === 7 && upcomingTrips.length > 10 && (
+                      <AdSlot slotId="sefer-listesi" className="pt-1" />
+                    )}
                   </div>
                 );
               })
@@ -1141,7 +1249,7 @@ export function ScheduleListClient({
                       AKILLI DENİZ AKTARMA REHBERİ (1 AKTARMA)
                     </span>
                     <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
-                      {selectedOrigin} ➔ {selectedDestination} Aktarmalı Deniz Rotaları
+                      {selectedOrigin} → {selectedDestination} Aktarmalı Deniz Rotaları
                     </h3>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       Bu iki iskele arasında doğrudan (direkt) vapur seferi bulunmuyor; aşağıdaki ana aktarma iskeleleri üzerinden deniz yoluyla ulaşabilirsiniz:
@@ -1319,10 +1427,6 @@ export function ScheduleListClient({
           setShowAllDay(false);
           if (isCompactDensity) handleToggleDensity();
         }}
-              selectedDayType={selectedDayType}
-        onSelectDayType={setSelectedDayType}
-        showAllDay={showAllDay}
-        onToggleShowAllDay={() => setShowAllDay(!showAllDay)}
       />
 
       {/* Gece Seferleri & Sabaha Karşı Dolmuş/Taksi Rehberi Modalı */}

@@ -37,7 +37,7 @@ export function AlarmManager({ schedules }: AlarmManagerProps) {
         if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
           const minutesLeft = Math.ceil(diff / 60000);
           new Notification(`⏰ Vapur Kalkıyor: Son ${minutesLeft} Dakika!`, {
-            body: `${trip.origin} ➔ ${trip.destination} (${trip.operator}) peronu: ${trip.platform || 'Ana Rıhtım'}. İyi yolculuklar!`,
+            body: `${trip.origin} → ${trip.destination} (${trip.operator}) peronu: ${trip.platform || 'Ana Rıhtım'}. İyi yolculuklar!`,
             icon: '/favicon.ico',
             tag: trip.id
           });

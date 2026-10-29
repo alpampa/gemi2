@@ -144,7 +144,7 @@ export function LastFerrySafeguardBanner({
               </span>
             </div>
             <p className="text-[11px] font-bold text-slate-200 truncate mt-0.5">
-              Son Vapur: <strong className="text-amber-300 font-mono text-xs">{activeTrip.departureTime}</strong> • {activeTrip.origin} ➔ {activeTrip.destination}
+              Son Vapur: <strong className="text-amber-300 font-mono text-xs">{activeTrip.departureTime}</strong> • {activeTrip.origin} → {activeTrip.destination}
             </p>
           </div>
         </div>
@@ -172,7 +172,7 @@ export function LastFerrySafeguardBanner({
       </div>
       {alarmJustSet && (
         <div className="text-[10px] text-amber-300 font-bold px-2 pt-1 animate-fadeIn">
-          ✓ {activeTrip.departureTime} {activeTrip.origin} ➔ {activeTrip.destination} son vapuruna hatırlatıcı kuruldu!
+          ✓ {activeTrip.departureTime} {activeTrip.origin} → {activeTrip.destination} son vapuruna hatırlatıcı kuruldu!
         </div>
       )}
     </div>

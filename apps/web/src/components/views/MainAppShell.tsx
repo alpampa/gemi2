@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { ScheduleListClient } from "@/components/schedule/ScheduleListClient";
+import { DepartureBoardView } from "@/components/views/DepartureBoardView";
 import { PiersDirectoryView } from "@/components/views/PiersDirectoryView";
 import { MarineWeatherSafetyCenter } from "@/components/views/MarineWeatherSafetyCenter";
 import { FavoritesAlarmsView } from "@/components/views/FavoritesAlarmsView";
@@ -23,18 +24,18 @@ export function MainAppShell({ schedules, serverTimeIso, marineWeather, sourceFr
   const [activeTab, setActiveTab] = useState<string>("schedules");
   const [forcedPierFilter, setForcedPierFilter] = useState<string | null>(null);
 
-  // İskeleler ve Favoriler sekmeleri varsayılan olarak bugünün aktif seferlerini kullanır
+  // Pano, İskeleler ve Favoriler sekmeleri varsayılan olarak bugünün aktif seferlerini kullanır
   const todaySchedules = useMemo(
     () => schedules.filter((s) => s.runsToday !== false),
     [schedules]
   );
 
-  // PWA App Shortcuts Entegrasyonu (?view=piers, ?view=weather, vb.)
+  // PWA App Shortcuts (Hızlı Kısayollar) Entegrasyonu (?view=piers, ?view=weather, vb.)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const view = params.get("view");
-      if (view === "piers" || view === "weather" || view === "favorites" || view === "schedules") {
+      if (view === "piers" || view === "weather" || view === "favorites" || view === "schedules" || view === "board") {
         setActiveTab(view);
       }
     }
@@ -56,6 +57,13 @@ export function MainAppShell({ schedules, serverTimeIso, marineWeather, sourceFr
           marineWeather={marineWeather}
           sourceFreshness={sourceFreshness}
           initialOrigin={forcedPierFilter || undefined}
+        />
+      )}
+
+      {activeTab === "board" && (
+        <DepartureBoardView
+          schedules={todaySchedules}
+          serverTimeIso={serverTimeIso}
         />
       )}
 

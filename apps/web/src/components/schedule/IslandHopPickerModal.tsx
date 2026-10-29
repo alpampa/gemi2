@@ -210,7 +210,7 @@ export function IslandHopPickerModal({
                 <span className="font-bold">Ara Duraklar ({intermediateStops.length}):</span>
                 {intermediateStops.map((s, idx) => (
                   <span key={idx} className="font-semibold text-slate-700 dark:text-slate-300">
-                    {s.name} ({s.time}){idx < intermediateStops.length - 1 ? " ➔ " : ""}
+                    {s.name} ({s.time}){idx < intermediateStops.length - 1 ? " → " : ""}
                   </span>
                 ))}
               </div>

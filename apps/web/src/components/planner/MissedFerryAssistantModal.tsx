@@ -61,7 +61,7 @@ export function MissedFerryAssistantModal({
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                  {origin} ➔ {destination} ({missedDepartureTime} seferi kaçırıldı)
+                  {origin} → {destination} ({missedDepartureTime} seferi kaçırıldı)
                 </p>
               </div>
             </div>
@@ -105,7 +105,7 @@ export function MissedFerryAssistantModal({
               onClick={() => setIsSeaTaxiOpen(true)}
               className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-colors cursor-pointer shrink-0"
             >
-              Hesapla ➔
+              Hesapla →
             </button>
           </div>
 
@@ -140,7 +140,7 @@ export function MissedFerryAssistantModal({
                 <div className="space-y-1.5 my-2.5 pl-2 border-l-2 border-slate-300 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300">
                   {alt.instructions.map((inst, i) => (
                     <div key={i} className="flex items-start gap-1.5">
-                      <span className="text-blue-500 font-bold shrink-0">➔</span>
+                      <span className="text-blue-500 font-bold shrink-0">→</span>
                       <span>{inst}</span>
                     </div>
                   ))}

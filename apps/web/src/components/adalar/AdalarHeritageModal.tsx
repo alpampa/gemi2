@@ -298,7 +298,7 @@ export function AdalarHeritageModal({
                     <div className="flex items-center justify-between gap-2">
                       <h5 className="text-sm font-black text-white flex items-center gap-1.5">
                         <Ship size={14} className="text-blue-400" />
-                        <span>{route.departurePier} ➔ {currentIsland.name}</span>
+                        <span>{route.departurePier} → {currentIsland.name}</span>
                       </h5>
                       <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
                         ~{route.approxDurationMin} dk

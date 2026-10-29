@@ -67,7 +67,7 @@ export function LiveTripTrackerBar() {
             </div>
             {/* KULLANICI KURALI: rota satırı ASLA kırpılmaz — "nereye gidiyor" her zaman okunur */}
             <div className="text-[11px] text-blue-300 font-semibold mt-0.5 leading-snug">
-              {activeVoyage.origin} ➔ {activeVoyage.destination}
+              {activeVoyage.origin} → {activeVoyage.destination}
             </div>
           </div>
         </div>

@@ -12,11 +12,11 @@ interface CommuteRoute {
 }
 
 const TOP_COMMUTE_ROUTES: CommuteRoute[] = [
-  { id: "bos-ada", title: "Bostancı ⇄ Adalar", origin: "Bostancı", destination: "Büyükada", category: "ADALAR" },
-  { id: "kad-bes", title: "Kadıköy ⇄ Beşiktaş", origin: "Kadıköy", destination: "Beşiktaş", category: "BOGAZ" },
-  { id: "kab-ada", title: "Kabataş ⇄ Adalar", origin: "Kabataş", destination: "Büyükada", category: "ADALAR" },
-  { id: "emi-kad", title: "Eminönü ⇄ Kadıköy", origin: "Eminönü", destination: "Kadıköy", category: "BOGAZ" },
-  { id: "usk-kar", title: "Üsküdar ⇄ Karaköy", origin: "Üsküdar", destination: "Karaköy", category: "BOGAZ" },
+  { id: "bos-ada", title: "Bostancı ↔ Adalar", origin: "Bostancı", destination: "Büyükada", category: "ADALAR" },
+  { id: "kad-bes", title: "Kadıköy ↔ Beşiktaş", origin: "Kadıköy", destination: "Beşiktaş", category: "BOGAZ" },
+  { id: "kab-ada", title: "Kabataş ↔ Adalar", origin: "Kabataş", destination: "Büyükada", category: "ADALAR" },
+  { id: "emi-kad", title: "Eminönü ↔ Kadıköy", origin: "Eminönü", destination: "Kadıköy", category: "BOGAZ" },
+  { id: "usk-kar", title: "Üsküdar ↔ Karaköy", origin: "Üsküdar", destination: "Karaköy", category: "BOGAZ" },
 ];
 
 interface SmartCommutePillsProps {

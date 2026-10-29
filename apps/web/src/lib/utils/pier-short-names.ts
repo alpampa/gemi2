@@ -1,5 +1,5 @@
 /**
- * Mobil iskele kısaltmaları: 320px genişlikte rota (ör. "Büyükada ➔ Bostancı")
+ * Mobil iskele kısaltmaları: 320px genişlikte rota (ör. "Büyükada → Bostancı")
  * ekrana sığmadığında ilk üç harflik kısa adlar kullanılır (kullanıcı kuralı).
  * Masaüstünde tam adlar değişmeden gösterilir; erişilebilir metin (aria-label)
  * her zaman tam adı taşır — kısaltma yalnız görsel katmandır.

@@ -19,9 +19,9 @@ export function FavoritesAlarmsView({ schedules, serverTimeIso, onNavigateToSche
   const { alarms, toggleAlarm } = useAlarmStore();
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleCardDto | null>(null);
 
-  // Filter schedules that match favorited routes: "Kadıköy ➔ Karaköy"
+  // Filter schedules that match favorited routes: "Kadıköy → Karaköy"
   const favoritedSchedules = schedules.filter(s => {
-    const routeKey = `${s.origin} ➔ ${s.destination}`;
+    const routeKey = `${s.origin} → ${s.destination}`;
     return favorites.includes(routeKey);
   });
 
@@ -76,7 +76,7 @@ export function FavoritesAlarmsView({ schedules, serverTimeIso, onNavigateToSche
                   <span className="text-base">🚢</span>
                   <div className="min-w-0">
                     <div className="font-bold text-xs truncate">
-                      {schedule.origin} ➔ {schedule.destination}
+                      {schedule.origin} → {schedule.destination}
                     </div>
                     <div className="text-[10px] text-amber-300 font-mono">
                       Kalkış Saati: <strong>{schedule.departureTime}</strong> ({schedule.operator})
@@ -136,7 +136,7 @@ export function FavoritesAlarmsView({ schedules, serverTimeIso, onNavigateToSche
           </span>
           <div className="flex items-center gap-1.5 flex-wrap">
             {popularSuggestions.map(sug => {
-              const key = `${sug.origin} ➔ ${sug.destination}`;
+              const key = `${sug.origin} → ${sug.destination}`;
               const isFav = favorites.includes(key);
               return (
                 <button

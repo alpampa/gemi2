@@ -244,7 +244,7 @@ export function TripPlannerWithMap({ schedules, serverTimeIso, onClose }: TripPl
             selectedDestination={destination}
             schedules={schedules}
             height="440px"
-            onSelectPier={(pier: string, role?: "origin" | "destination") => {
+            onSelectPier={(pier, role) => {
               if (role === "origin") setOrigin(pier);
               else setDestination(pier);
             }}

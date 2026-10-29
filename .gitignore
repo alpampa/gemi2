@@ -124,9 +124,7 @@ test-results/
 playwright-report/
 blob-report/
 
+
 # Vercel
-.vercel
-
-
 .vercel
 .env*

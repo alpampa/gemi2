@@ -3,8 +3,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+function normalizeRouteKey(key: string): string {
+  return key.replace(/➔/g, "→");
+}
+
 interface FavoritesState {
-  favorites: string[]; // array of route keys: "Kadıköy ➔ Karaköy"
+  favorites: string[]; // array of route keys: "Kadıköy → Karaköy"
   toggleFavorite: (routeKey: string) => boolean;
   isFavorite: (routeKey: string) => boolean;
 }
@@ -12,9 +16,10 @@ interface FavoritesState {
 export const useFavoritesStore = create<FavoritesState>()(
   persist(
     (set, get) => ({
-      favorites: ["Kadıköy ➔ Karaköy", "Kabataş ➔ Büyükada"], // Defaults popular
-      toggleFavorite: (routeKey: string) => {
-        const current = get().favorites;
+      favorites: ["Kadıköy → Karaköy", "Kabataş → Büyükada"],
+      toggleFavorite: (rawKey: string) => {
+        const routeKey = normalizeRouteKey(rawKey);
+        const current = get().favorites.map(normalizeRouteKey);
         const exists = current.includes(routeKey);
         const next = exists
           ? current.filter(r => r !== routeKey)
@@ -23,10 +28,18 @@ export const useFavoritesStore = create<FavoritesState>()(
         set({ favorites: next });
         return !exists;
       },
-      isFavorite: (routeKey: string) => get().favorites.includes(routeKey)
+      isFavorite: (rawKey: string) => {
+        const routeKey = normalizeRouteKey(rawKey);
+        return get().favorites.map(normalizeRouteKey).includes(routeKey);
+      }
     }),
     {
-      name: 'vapur_favorites_v1'
+      name: 'vapur_favorites_v1',
+      onRehydrateStorage: () => (state) => {
+        if (state && Array.isArray(state.favorites)) {
+          state.favorites = state.favorites.map(normalizeRouteKey);
+        }
+      }
     }
   )
 );

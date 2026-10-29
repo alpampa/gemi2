@@ -92,7 +92,7 @@ export function isIslandPier(pierName: string): boolean {
 
 /**
  * Seferin en az bir ucunun (kalkış veya varış) Adalar olup olmadığını denetler.
- * Her iki uç da anakara ise (örn: Kadıköy ➔ Kabataş), bu bir Ada seferi DEĞİLDİR (anakaradan anakarayadır).
+ * Her iki uç da anakara ise (örn: Kadıköy → Kabataş), bu bir Ada seferi DEĞİLDİR (anakaradan anakarayadır).
  */
 export function isIslandRoute(origin: string, destination: string): boolean {
   return isIslandPier(origin) || isIslandPier(destination);

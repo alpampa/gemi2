@@ -5,10 +5,10 @@ import { RawOfficialTrip } from "./official-schedules";
  *
  * Kaynak: https://www.ido.com.tr/tr/sefer-saatleri
  * Kapsam: Marmara & Prens Adaları Hızlı Deniz Otobüsü Hatları:
- *   1. Bostancı ➔ Büyükada ➔ Heybeliada (Hızlı Hat)
- *   2. Heybeliada ➔ Büyükada ➔ Bostancı
- *   3. Kabataş ➔ Kadıköy ➔ Kınalıada ➔ Büyükada
- *   4. Büyükada ➔ Kınalıada ➔ Kadıköy ➔ Kabataş
+ *   1. Bostancı → Büyükada → Heybeliada (Hızlı Hat)
+ *   2. Heybeliada → Büyükada → Bostancı
+ *   3. Kabataş → Kadıköy → Kınalıada → Büyükada
+ *   4. Büyükada → Kınalıada → Kadıköy → Kabataş
  *
  * Ücret: İDO Adalar hatlarında dinamik/kademeli bilet tarifesi uygulanır;
  * standart bilet ortalaması baz alınmıştır.

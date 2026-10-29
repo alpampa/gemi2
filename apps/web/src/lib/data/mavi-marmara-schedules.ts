@@ -86,7 +86,7 @@ const PIER_BUYUK = "Tarihi İskele Rıhtımı";
 const PIER_KABATAS = "Kabataş Adalar İskelesi";
 
 /**
- * HATTI H — Bostancı ⇄ Heybeliada ⇄ Büyükada (2026 Güz, HERGÜN)
+ * HATTI H — Bostancı ↔ Heybeliada ↔ Büyükada (2026 Güz, HERGÜN)
  * Resmi sayfa: /tarifeler/bostanci-buyukada/ ve /tarifeler/bostanci-heybeliada/
  *
  * Güzergah deseni "VARIŞ GÜZERGAHI" kolonundan:
@@ -113,7 +113,7 @@ const LINE_H_BOSTANCI: { time: string; pattern: "HB" | "BH"; starred?: boolean }
 ];
 
 /**
- * HATTI K — Bostancı ⇄ Kınalıada ⇄ Burgazada (2026 Güz, HERGÜN)
+ * HATTI K — Bostancı ↔ Kınalıada ↔ Burgazada (2026 Güz, HERGÜN)
  * Resmi sayfa: /tarifeler/bostanci-kinaliada/ ve /tarifeler/bostanci-burgazada/
  *
  *  - "KINALIADA - BURGAZADA": Bostancı → Kınalıada (+25) → Burgazada (varış +40)
@@ -234,7 +234,7 @@ const KINALIADA_DEPARTURES: {
 ];
 
 /**
- * KABATAŞ ⇄ ADALAR TURİZM SEFERLERİ (2026 Kış Turizm Tarifesi)
+ * KABATAŞ ↔ ADALAR TURİZM SEFERLERİ (2026 Kış Turizm Tarifesi)
  * Resmi sayfa: /tarifeler/kabatas-buyukada/, /tarifeler/kabatas-heybeliada/,
  *              /tarifeler/buyukada-kabatas/, /tarifeler/heybeliada-kabatas/
  *

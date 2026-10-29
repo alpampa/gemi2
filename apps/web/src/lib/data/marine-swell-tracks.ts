@@ -27,7 +27,7 @@ export const MARINE_SWELL_TRACKS: MarineSwellTrack[] = [
   {
     id: 'kandilli-seytan',
     name: 'Kandilli Şeytan Akıntısı Hattı',
-    corridor: 'Kandilli ➔ Aşiyan / Bebek Boğazı',
+    corridor: 'Kandilli → Aşiyan / Bebek Boğazı',
     startCoords: [41.0750, 29.0600],
     endCoords: [41.0820, 29.0430],
     currentSpeedKnots: 4.8,
@@ -41,7 +41,7 @@ export const MARINE_SWELL_TRACKS: MarineSwellTrack[] = [
   {
     id: 'bostanci-adalar-open',
     name: 'Bostancı - Adalar Açık Marmara Koridoru',
-    corridor: 'Bostancı ➔ Kınalıada & Büyükada',
+    corridor: 'Bostancı → Kınalıada & Büyükada',
     startCoords: [40.9525, 29.0944],
     endCoords: [40.8744, 29.1283],
     currentSpeedKnots: 1.8,
@@ -55,7 +55,7 @@ export const MARINE_SWELL_TRACKS: MarineSwellTrack[] = [
   {
     id: 'sarayburnu-uskudar',
     name: 'Sarayburnu - Üsküdar Boğaz Giriş Hattı',
-    corridor: 'Eminönü / Karaköy ➔ Üsküdar',
+    corridor: 'Eminönü / Karaköy → Üsküdar',
     startCoords: [41.0186, 28.9850],
     endCoords: [41.0267, 29.0152],
     currentSpeedKnots: 3.4,
@@ -69,7 +69,7 @@ export const MARINE_SWELL_TRACKS: MarineSwellTrack[] = [
   {
     id: 'kadikoy-karakoy-inner',
     name: 'Kadıköy - Tarihi Yarımada Hattı',
-    corridor: 'Kadıköy ➔ Karaköy & Eminönü',
+    corridor: 'Kadıköy → Karaköy & Eminönü',
     startCoords: [40.9908, 29.0225],
     endCoords: [41.0222, 28.9772],
     currentSpeedKnots: 2.1,

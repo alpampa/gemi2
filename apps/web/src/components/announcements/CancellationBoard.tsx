@@ -170,7 +170,7 @@ export function CancellationBoard({
                           </span>
                           <span className="truncate max-w-[170px]">
                             {schedule
-                              ? `${schedule.origin} ➔ ${schedule.destination}`
+                              ? `${schedule.origin} → ${schedule.destination}`
                               : d.tripId}
                           </span>
                           <span className="text-rose-600 dark:text-rose-300 uppercase">İptal</span>

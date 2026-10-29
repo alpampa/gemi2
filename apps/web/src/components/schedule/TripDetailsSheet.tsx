@@ -121,7 +121,7 @@ export function TripDetailsSheet({
 
   if (!schedule) return null;
 
-  const routeKey = `${schedule.origin} ➔ ${schedule.destination}`;
+  const routeKey = `${schedule.origin} → ${schedule.destination}`;
   const isFav = isFavorite(routeKey);
   const hasAlarm = isAlarmSet(schedule.id);
 
@@ -209,10 +209,10 @@ export function TripDetailsSheet({
                   )}
                 </div>
 
-                <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5 truncate">
-                  <span className="truncate">{dynState?.currentOrigin || schedule.origin}</span>
-                  <span className="text-blue-500 font-extrabold shrink-0">➔</span>
-                  <span className="text-amber-500 dark:text-amber-400 truncate">
+                <h2 className="text-base sm:text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5 flex-wrap leading-snug">
+                  <span>{dynState?.currentOrigin || schedule.origin}</span>
+                  <span className="text-blue-500 font-extrabold shrink-0">→</span>
+                  <span className="text-amber-500 dark:text-amber-400">
                     {dynState?.destination || schedule.destination}
                   </span>
                 </h2>
@@ -287,7 +287,7 @@ export function TripDetailsSheet({
                     const dst = dynState?.destination || schedule.destination;
                     const dep = dynState?.currentDepartureTime || schedule.departureTime;
                     const deepLinkUrl = `https://adalar-sefer-asistani.vercel.app/?from=${encodeURIComponent(org)}&to=${encodeURIComponent(dst)}`;
-                    const shareText = `⛴️ ${dep} ${org} ➔ ${dst} (${schedule.operator}) vapurunda buluşalım! Sefer ve iskele durumu: ${deepLinkUrl}`;
+                    const shareText = `⛴️ ${dep} ${org} → ${dst} (${schedule.operator}) vapurunda buluşalım! Sefer ve iskele durumu: ${deepLinkUrl}`;
                     if (typeof navigator !== "undefined" && navigator.share) {
                       navigator.share({
                         title: `${dep} ${org} - ${dst} Vapuru`,
@@ -608,7 +608,7 @@ export function TripDetailsSheet({
                       <AlertOctagon size={13} className="text-amber-500 shrink-0" />
                       <span className="truncate">Kaçırdım Asistanı</span>
                     </span>
-                    <span>➔</span>
+                    <span>→</span>
                   </button>
 
                   <button
@@ -620,7 +620,7 @@ export function TripDetailsSheet({
                       <Anchor size={13} className="text-cyan-500 shrink-0" />
                       <span className="truncate">İBB Deniz Taksi</span>
                     </span>
-                    <span>➔</span>
+                    <span>→</span>
                   </button>
                 </div>
               </div>
@@ -677,7 +677,7 @@ export function TripDetailsSheet({
                                     rel="noopener noreferrer"
                                     className="text-[10px] font-black text-emerald-600 hover:underline flex items-center gap-0.5"
                                   >
-                                    <span>WhatsApp Rezervasyon ➔</span>
+                                    <span>WhatsApp Rezervasyon →</span>
                                   </a>
                                 )}
                               </div>

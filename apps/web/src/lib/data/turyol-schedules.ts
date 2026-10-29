@@ -41,7 +41,7 @@ export function getTuryolSchedules(): RawOfficialTrip[] {
       let runsSunday = true;
 
       if (maxFreqInRoute === 1) {
-        // Tek sütunlu akşam mesai hattı (Karaköy/Eminönü ⇄ Kadıköy): yalnızca Hafta İçi
+        // Tek sütunlu akşam mesai hattı (Karaköy/Eminönü ↔ Kadıköy): yalnızca Hafta İçi
         runsWeekday = true;
         runsSaturday = false;
         runsSunday = false;
@@ -59,7 +59,7 @@ export function getTuryolSchedules(): RawOfficialTrip[] {
           runsSunday = false;
         }
       } else {
-        // Boğaz hattı (Üsküdar ⇄ Eminönü / Karaköy): 2 kez geçen sabah erken/akşam seferleri H.İçi + Cumartesi çalışır, Pazar çalışmaz
+        // Boğaz hattı (Üsküdar ↔ Eminönü / Karaköy): 2 kez geçen sabah erken/akşam seferleri H.İçi + Cumartesi çalışır, Pazar çalışmaz
         if (count === 2) {
           runsWeekday = true;
           runsSaturday = true;

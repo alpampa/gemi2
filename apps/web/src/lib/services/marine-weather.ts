@@ -227,7 +227,7 @@ export function calculateMaritimeLinesRisk(weather: MarineWeatherStatus | null |
   return [
     {
       lineId: "adalar_bostanci",
-      name: "Bostancı / Maltepe ➔ Adalar",
+      name: "Bostancı / Maltepe → Adalar",
       corridor: "ADALAR",
       riskPercentage: adalarRisk,
       riskLevel: adalarLevel,
@@ -238,7 +238,7 @@ export function calculateMaritimeLinesRisk(weather: MarineWeatherStatus | null |
     },
     {
       lineId: "adalar_kabatas",
-      name: "Kabataş / Kadıköy ➔ Adalar",
+      name: "Kabataş / Kadıköy → Adalar",
       corridor: "ADALAR",
       riskPercentage: kabatasAdaRisk,
       riskLevel: kabatasAdaLevel,
@@ -249,7 +249,7 @@ export function calculateMaritimeLinesRisk(weather: MarineWeatherStatus | null |
     },
     {
       lineId: "bogaz_kandilli",
-      name: "Aşiyan ➔ Kandilli / Bebek (Şeytan Akıntısı)",
+      name: "Aşiyan → Kandilli / Bebek (Şeytan Akıntısı)",
       corridor: "KANDILLI_CURRENT",
       riskPercentage: kandilliRisk,
       riskLevel: kandilliLevel,
@@ -260,7 +260,7 @@ export function calculateMaritimeLinesRisk(weather: MarineWeatherStatus | null |
     },
     {
       lineId: "bogaz_cross",
-      name: "Kadıköy ➔ Karaköy / Beşiktaş (Çapraz Hatlar)",
+      name: "Kadıköy → Karaköy / Beşiktaş (Çapraz Hatlar)",
       corridor: "BOGAZ_CROSS",
       riskPercentage: crossRisk,
       riskLevel: crossLevel,
@@ -271,7 +271,7 @@ export function calculateMaritimeLinesRisk(weather: MarineWeatherStatus | null |
     },
     {
       lineId: "bogaz_north",
-      name: "Sarıyer ➔ Rumeli Kavağı / Anadolu Kavağı",
+      name: "Sarıyer → Rumeli Kavağı / Anadolu Kavağı",
       corridor: "BOGAZ_NORTH",
       riskPercentage: northRisk,
       riskLevel: northLevel,
@@ -282,7 +282,7 @@ export function calculateMaritimeLinesRisk(weather: MarineWeatherStatus | null |
     },
     {
       lineId: "halic",
-      name: "Üsküdar ➔ Kasımpaşa ➔ Eyüpsultan (Haliç)",
+      name: "Üsküdar → Kasımpaşa → Eyüpsultan (Haliç)",
       corridor: "HALIC",
       riskPercentage: halicRisk,
       riskLevel: "SAFE",

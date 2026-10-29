@@ -85,7 +85,7 @@ export function SettingsSheet({ isOpen, onClose }: SettingsSheetProps) {
                       }`}
                     >
                       <span className="text-base">{lang.flag}</span>
-                      <span className="truncate">{lang.nativeName}</span>
+                      <span className="truncate">{lang.code === "ar" ? "العربية (Arabic)" : lang.nativeName}</span>
                       {isActive && <Check size={13} className="text-blue-600 dark:text-blue-400 ml-auto shrink-0" />}
                     </button>
                   );

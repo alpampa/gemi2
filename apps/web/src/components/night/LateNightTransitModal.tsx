@@ -119,7 +119,7 @@ export function LateNightTransitModal({ isOpen, onClose }: LateNightTransitModal
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-black text-slate-900 dark:text-white">
-                              {route.departurePierHub} ➔ {route.destination}
+                              {route.departurePierHub} → {route.destination}
                             </span>
                             <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-300 dark:border-emerald-600/40">
                               {route.operatingHours}

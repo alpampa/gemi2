@@ -102,7 +102,7 @@ export function OnboardVoyageModal({
                 </span>
               </div>
               <span className="text-xs font-bold text-amber-300">
-                {origin} ➔ {destination}
+                {origin} → {destination}
               </span>
             </div>
 

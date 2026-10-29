@@ -139,7 +139,7 @@ export const NIGHT_TAXI_ESTIMATES: NightTaxiEstimate[] = [
 
 export const METROBUS_NIGHT_INFO = {
   service: 'Metrobüs 7/24 Kesintisiz Gece Seferi',
-  coverage: 'Beylikdüzü Son Durak ➔ Zincirlikuyu ➔ Söğütlüçeşme (Kadıköy)',
+  coverage: 'Beylikdüzü Son Durak → Zincirlikuyu → Söğütlüçeşme (Kadıköy)',
   nightInterval: '01:00 - 05:30 arası her 8-12 dakikada bir',
   pierHubConnection: 'Kadıköy İskelesi\'nden Söğütlüçeşme Metrobüs İstasyonu\'na 12 dk yürüyüş veya sarı dolmuş.',
   fareInfo: 'İstanbulkart Gece Tarifesi Geçerlidir (Gece Çift Tarife Kuralı Uygulanmaz).'

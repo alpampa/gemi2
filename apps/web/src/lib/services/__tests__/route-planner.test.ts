@@ -15,7 +15,7 @@ function makeSchedule(overrides: Partial<ScheduleCardDto> & Pick<ScheduleCardDto
   return {
     id: `trip-${Math.random().toString(36).slice(2, 8)}`,
     operator: "Şehir Hatları",
-    routeTitle: `${overrides.origin} ➔ ${overrides.destination}`,
+    routeTitle: `${overrides.origin} → ${overrides.destination}`,
     departureTime12: `${overrides.departureTime} AM`,
     status: "ON_TIME",
     platform: "3",
@@ -179,7 +179,7 @@ describe("planJourney — aktarmalı rota", () => {
     expect(transfer!.durationMinutes).toBe(85); // 10:00 → 11:25 (2×35 dk + 15 dk bekleme)
   });
 
-  it("Eminönü, Üsküdar ve Beşiktaş gibi ana Boğaz düğümleri üzerinden aktarma hesaplar (Sarıyer ➔ Büyükada)", () => {
+  it("Eminönü, Üsküdar ve Beşiktaş gibi ana Boğaz düğümleri üzerinden aktarma hesaplar (Sarıyer → Büyükada)", () => {
     const schedules = [
       makeSchedule({ origin: "Sarıyer", destination: "Eminönü", departureTime: "09:00", id: "sariyer-eminonu" }),
       makeSchedule({ origin: "Eminönü", destination: "Büyükada", departureTime: "09:50", id: "eminonu-buyukada" }),

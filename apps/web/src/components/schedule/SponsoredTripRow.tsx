@@ -264,7 +264,7 @@ export function SponsoredTripRow({ ad, isCompact = false }: SponsoredTripRowProp
                   className="w-full text-center text-[11px] text-slate-500 hover:text-amber-500 font-bold flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <Building2 size={12} />
-                  <span>Ada oteli veya restoran işletmecisi misiniz? Sefer satırına reklam verin ➔</span>
+                  <span>Ada oteli veya restoran işletmecisi misiniz? Sefer satırına reklam verin →</span>
                 </button>
               ) : (
                 <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[11px] space-y-1.5">

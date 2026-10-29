@@ -147,7 +147,7 @@ export function parseNaturalTransitQuery(query: string): AiParsedQuery {
   let message = "";
   if (isAiUnderstood) {
     const parts: string[] = [];
-    if (matchedOrigin && matchedDestination) parts.push(`🎯 ${matchedOrigin} ➔ ${matchedDestination}`);
+    if (matchedOrigin && matchedDestination) parts.push(`🎯 ${matchedOrigin} → ${matchedDestination}`);
     else if (matchedOrigin) parts.push(`⚓ Kalkış: ${matchedOrigin}`);
     else if (matchedDestination) parts.push(`🏝️ Varış: ${matchedDestination}`);
 
