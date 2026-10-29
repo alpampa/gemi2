@@ -9,23 +9,29 @@ import { MarineWeatherStatus } from "./marine-weather";
  */
 
 export interface DisruptionPrediction {
-  cancellationRiskPercent: number; // 0 - 100
+  cancellationRiskPercent: number; // 0 - 100 (tahmini model çıktısı)
   riskLevel: "DUSUK" | "ORTA" | "YUKSEK" | "KRITIK";
   headline: string;
   recommendation: string;
   affectedCorridors: string[];
   isPredictiveAlertActive: boolean;
+  /** Canlı hava verisi var mı? Yoksa hiçbir risk yüzdesi üretilmez. */
+  hasWeatherData: boolean;
 }
 
 export function predictFerryDisruption(weather?: MarineWeatherStatus | null): DisruptionPrediction {
+  // KURAL: Hava verisi yokken "normal" veya "%5 risk" gibi bir sonuç üretilmez.
+  // Veri yokluğu, güvenli liman varsayımı değildir.
   if (!weather) {
     return {
-      cancellationRiskPercent: 5,
+      cancellationRiskPercent: 0,
       riskLevel: "DUSUK",
-      headline: "Normal Deniz Koşulları",
-      recommendation: "Seferlerin zamanında icra edilmesi beklenmektedir.",
+      headline: "Canlı hava verisi alınamadı",
+      recommendation:
+        "Meteoroloji kaynağına şu anda ulaşılamıyor. Sefer iptalleri için resmî duyuruları kontrol edin.",
       affectedCorridors: [],
       isPredictiveAlertActive: false,
+      hasWeatherData: false,
     };
   }
 
@@ -92,5 +98,6 @@ export function predictFerryDisruption(weather?: MarineWeatherStatus | null): Di
     recommendation,
     affectedCorridors: Array.from(new Set(affected)),
     isPredictiveAlertActive: clampedRisk >= 40,
+    hasWeatherData: true,
   };
 }

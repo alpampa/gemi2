@@ -1097,9 +1097,9 @@ export function ScheduleListClient({
             <Wind size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <span className="font-bold tracking-tight">Meteorolojik Seyir Riski: {disruptionForecast.headline}</span>
+                <span className="font-bold tracking-tight">Tahmini Meteorolojik Seyir Riski: {disruptionForecast.headline}</span>
                 <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-bold">
-                  Risk: %{disruptionForecast.cancellationRiskPercent}
+                  Tahmini risk: %{disruptionForecast.cancellationRiskPercent}
                 </span>
               </div>
               <p className="text-[11px] mt-0.5 opacity-90 leading-tight">
