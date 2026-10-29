@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, Compass, Star, CloudRain, Ship } from "lucide-react";
+import { Calendar, Compass, Star, CloudRain } from "lucide-react";
 import { useLanguageStore } from "@/store/useLanguageStore";
 
 interface BottomNavProps {
@@ -10,7 +10,6 @@ interface BottomNavProps {
 
 const NAV_ITEMS = [
   { id: "schedules", labelKey: "navSchedules", Icon: Calendar },
-  { id: "board", labelKey: "navBoard", Icon: Ship },
   { id: "piers", labelKey: "navPiers", Icon: Compass },
   { id: "weather", labelKey: "navWeather", Icon: CloudRain },
   { id: "favorites", labelKey: "navFavorites", Icon: Star }

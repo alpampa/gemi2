@@ -29,6 +29,8 @@ import {
   AlertOctagon,
   SlidersHorizontal,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Share2,
   Compass,
@@ -149,7 +151,7 @@ export function ScheduleListClient({
   const activeDate = selectedDate < todayDateKey ? todayDateKey : selectedDate;
   const selectedDayType = getDayTypeForDate(activeDate, todayDateKey);
   const [urlPreferencesLoaded, setUrlPreferencesLoaded] = useState(false);
-  const dateChoices = Array.from({ length: 7 }, (_, index) => addDateDays(todayDateKey, index));
+  const lastSelectableDateKey = addDateDays(todayDateKey, 14);
   const selectedDateLabel = activeDate === todayDateKey ? undefined : formatDateWithWeekday(activeDate);
   const [showAllDay, setShowAllDay] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -802,46 +804,69 @@ export function ScheduleListClient({
 
       {/* 1. GÜN SEÇİCİ VE KALKIŞ ↔ VARIŞ FİLTRELERİ */}
       <div className="px-3 pt-3 pb-2 bg-[#070e1e] text-white space-y-2.5 relative z-20">
-        {/* Yakın tarihler görünür; daha ilerisi takvimden seçilir. */}
-        <div className="w-full flex items-stretch gap-1.5 overflow-x-auto hide-scrollbar">
-          {dateChoices.map((date, index) => {
-            const active = activeDate === date;
-            const title = index === 0 ? "Bugün" : index === 1 ? "Yarın" : formatDateWithWeekday(date);
-            return (
-              <button
-                key={date}
-                type="button"
-                onClick={() => {
-                  triggerHaptic("light");
-                  setSelectedDate(date);
-                }}
-                aria-pressed={active}
-                className={`min-w-[68px] shrink-0 rounded-xl px-2 py-1.5 text-center border transition-colors ${active
-                  ? "bg-white text-slate-950 border-white shadow-sm"
-                  : "bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-600"}`}
-              >
-                <span className="block text-[10px] font-bold leading-tight">{title}</span>
-                <span className="block text-[11px] font-black leading-tight mt-0.5">{formatShortDate(date)}</span>
-              </button>
-            );
-          })}
-          <label className="relative min-w-[72px] shrink-0 rounded-xl px-2 py-1.5 text-center border border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-600 cursor-pointer flex flex-col items-center justify-center">
-            <Calendar size={14} aria-hidden="true" />
-            <span className="text-[10px] font-bold mt-0.5">Tarih seç</span>
+        {/* Tek satır: önceki gün, seçili tarih, sonraki gün ve gerekirse Bugün kısayolu. */}
+        <div className="w-full flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Önceki gün"
+            disabled={activeDate <= todayDateKey}
+            onClick={() => {
+              triggerHaptic("light");
+              setSelectedDate(addDateDays(activeDate, -1));
+            }}
+            className="w-11 h-11 shrink-0 rounded-xl border border-slate-800 bg-slate-900 text-slate-200 flex items-center justify-center disabled:opacity-35 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft size={18} aria-hidden="true" />
+          </button>
+
+          <label className="relative flex-1 min-w-0 h-11 rounded-xl px-3 border border-slate-700 bg-slate-900 text-white cursor-pointer flex items-center justify-center gap-2">
+            <Calendar size={15} className="shrink-0 text-cyan-300" aria-hidden="true" />
+            <span className="truncate text-xs font-extrabold">
+              {activeDate === todayDateKey
+                ? `Bugün · ${formatShortDate(activeDate)}`
+                : formatDateWithWeekday(activeDate)}
+            </span>
             <input
               type="date"
               aria-label="Sefer tarihini seç"
               min={todayDateKey}
-              max={addDateDays(todayDateKey, 14)}
+              max={lastSelectableDateKey}
               value={activeDate}
               onChange={(event) => {
                 const date = event.target.value;
                 if (!date) return;
+                triggerHaptic("light");
                 setSelectedDate(date);
               }}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
           </label>
+
+          <button
+            type="button"
+            aria-label="Sonraki gün"
+            disabled={activeDate >= lastSelectableDateKey}
+            onClick={() => {
+              triggerHaptic("light");
+              setSelectedDate(addDateDays(activeDate, 1));
+            }}
+            className="w-11 h-11 shrink-0 rounded-xl border border-slate-800 bg-slate-900 text-slate-200 flex items-center justify-center disabled:opacity-35 disabled:cursor-not-allowed"
+          >
+            <ChevronRight size={18} aria-hidden="true" />
+          </button>
+
+          {activeDate !== todayDateKey && (
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic("light");
+                setSelectedDate(todayDateKey);
+              }}
+              className="h-11 shrink-0 px-3 rounded-xl bg-cyan-500/15 text-cyan-200 border border-cyan-400/30 text-xs font-extrabold"
+            >
+              Bugün
+            </button>
+          )}
         </div>
 
         {/* Kalkış ↔ Varış Seçici ve Hızlı Filtre Kapsülleri */}

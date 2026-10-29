@@ -1,120 +1,85 @@
-/**
- * Ada Vapuru ikonu — yandan görünüm, pruva sağa (seyir yönü sağa).
- * Klasik İstanbul ada vapuru profili: beyaz gövde, sarı sancak şeridi,
- * lacivert su hattı, sarı-siyah baca, önde köprüüstü, pruvada direk + bayrak.
- * Canlı efektler (globals.css): yalpalama, baca dumanı, dalgalar ve martılar.
- * prefers-reduced-motion'da tüm animasyonlar durur.
- *
- * viewBox üst payı (-4): dumanın yükselip kaybolması için nefes alanı.
- */
-export function AdaVapuruIcon({ className = "w-7 h-4" }: { className?: string }) {
+/** Paşabahçe esintili, uzun gövdeli ve iki direkli vapur çizimi. */
+export function AdaVapuruIcon({ className = "w-20 h-9" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 -4 48 28"
+      viewBox="0 0 220 100"
       className={className}
       role="img"
       aria-label="Paşabahçe vapuru"
       fill="none"
+      xmlns="http://www.w3.org/2000/svg"
     >
-      {/* MARTILAR — gemi çevresinde süzülen üç martı (konum grup transformunda,
-          animasyon path üzerinde: CSS transform SVG transform attribute'unu ezer) */}
-      <g stroke="#94a3b8" strokeWidth="0.9" strokeLinecap="round">
-        <g transform="translate(5.5 4.4)">
-          <path className="ferry-gull" d="M-2.2,0.6 Q-1.1,-0.8 0,0.1 Q1.1,-0.8 2.2,0.6" />
-        </g>
-        <g transform="translate(15 2.6)">
-          <path className="ferry-gull ferry-gull-2" d="M-1.8,0.5 Q-0.9,-0.7 0,0.1 Q0.9,-0.7 1.8,0.5" />
-        </g>
-        <g transform="translate(43.5 8.6)">
-          <path className="ferry-gull ferry-gull-3" d="M-2,0.55 Q-1,-0.75 0,0.1 Q1,-0.75 2,0.55" />
-        </g>
+      {/* Uzakta süzülen martılar */}
+      <g stroke="#94a3b8" strokeWidth="1.7" strokeLinecap="round">
+        <path className="ferry-gull" d="M25 20q5-6 10 0 5-6 10 0" />
+        <path className="ferry-gull ferry-gull-2" d="M168 15q4-5 8 0 4-5 8 0" />
+        <path className="ferry-gull ferry-gull-3" d="M199 27q4-5 8 0" />
       </g>
 
-      {/* DALGALAR — iki katmanlı, dikişsiz akış (4 birim periyot) */}
-      <path
-        className="ferry-wave"
-        d="M1,20.9 q2,-1.1 4,0 t4,0 t4,0 t4,0 t4,0 t4,0 t4,0 t4,0 t4,0 t4,0 t4,0"
-        stroke="#7dd3fc"
-        strokeWidth="0.7"
-        strokeLinecap="round"
-        opacity="0.5"
-      />
-      <path
-        className="ferry-wave ferry-wave-2"
-        d="M-3,22.5 q2,-1.1 4,0 t4,0 t4,0 t4,0 t4,0 t4,0 t4,0 t4,0 t4,0 t4,0 t4,0 t4,0"
-        stroke="#38bdf8"
-        strokeWidth="0.8"
-        strokeLinecap="round"
-        opacity="0.85"
-      />
-
-      {/* Pruva köpüğü */}
-      <g stroke="#bae6fd" strokeWidth="0.7" strokeLinecap="round" opacity="0.9">
-        <path d="M39.5,20.1 q1.5,-2.2 3.6,-1" />
-        <path d="M41.6,19.7 q1.1,-1.5 2.6,-0.7" />
+      {/* İki yüksek direk ve aralarındaki ince halatlar */}
+      <g stroke="#d19a35" strokeWidth="2" strokeLinecap="round">
+        <path d="M60 7v48M157 3v49" />
+        <path d="M60 14L27 54M60 17L87 43M157 10L127 40M157 12l42 44" stroke="#9aa5b1" strokeWidth=".9" />
+        <path d="M52 18h16M148 14h18" strokeWidth="1.2" />
       </g>
 
       <g className="ferry-bob">
-        {/* BACADAN DUMAN — üç kademeli puff */}
-        <circle className="ferry-smoke" cx="21.8" cy="0.9" r="1.7" fill="#cbd5e1" />
-        <circle className="ferry-smoke ferry-smoke-2" cx="22.4" cy="1" r="1.2" fill="#e2e8f0" />
-        <circle className="ferry-smoke ferry-smoke-3" cx="21.2" cy="1.2" r="0.85" fill="#f1f5f9" />
+        {/* Tek baca ve hafifçe yükselen duman */}
+        <circle className="ferry-smoke" cx="111" cy="21" r="4.2" fill="#cbd5e1" />
+        <circle className="ferry-smoke ferry-smoke-2" cx="116" cy="17" r="3" fill="#e2e8f0" />
+        <circle className="ferry-smoke ferry-smoke-3" cx="106" cy="16" r="2.4" fill="#f1f5f9" />
 
-        {/* BACA — sarı gövde, siyah şapka + ince kuşak */}
-        <rect x="19.6" y="1.6" width="4.4" height="5" rx="0.6" fill="#f59e0b" stroke="#d97706" strokeWidth="0.4" />
-        <rect x="19.6" y="1.6" width="4.4" height="1.3" rx="0.5" fill="#0f172a" />
-        <rect x="19.6" y="4.7" width="4.4" height="0.5" fill="#0f172a" opacity="0.85" />
+        {/* Uzun, alçak gövde; önde sivri burun, arkada yükselen kıç */}
+        <path d="M21 53Q34 51 49 53L177 55Q196 56 211 66L199 82Q194 88 184 89H39Q28 88 25 80L11 63Q8 59 12 56Z" fill="#f8fafc" stroke="#354252" strokeWidth="1.8" />
+        <path d="M20 61Q28 59 43 60L182 62Q197 63 207 68" stroke="#d8a23b" strokeWidth="2.4" />
+        <path d="M25 78Q36 81 49 81H194L199 82Q194 88 184 89H39Q28 88 25 80Z" fill="#176b51" />
+        <path d="M33 89Q41 93 52 93H179Q189 93 195 89" stroke="#a74637" strokeWidth="3" strokeLinecap="round" />
 
-        {/* PRUVA DİREĞİ + kırmızı bayrak */}
-        <line x1="39.8" y1="3.8" x2="39.8" y2="14.6" stroke="#94a3b8" strokeWidth="0.7" />
-        <path d="M39.8,4 L43.4,5.05 L39.8,6.1 Z" fill="#ef4444" />
-
-        {/* ÜST GÜVERTE + pencereler */}
-        <rect x="12" y="6.6" width="21" height="3.6" rx="0.4" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="0.5" />
-        <g fill="#3b82f6" opacity="0.9">
-          <rect x="13.4" y="7.7" width="1.8" height="1.5" rx="0.25" />
-          <rect x="16.3" y="7.7" width="1.8" height="1.5" rx="0.25" />
-          <rect x="19.2" y="7.7" width="1.8" height="1.5" rx="0.25" />
-          <rect x="22.1" y="7.7" width="1.8" height="1.5" rx="0.25" />
-          <rect x="25" y="7.7" width="1.8" height="1.5" rx="0.25" />
-          <rect x="27.9" y="7.7" width="1.8" height="1.5" rx="0.25" />
+        {/* Alt yolcu salonu: gövde boyunca uzanan pencere sırası */}
+        <path d="M38 60L178 62L176 77H40Z" fill="#f7f8f7" stroke="#687584" strokeWidth="1" />
+        <g fill="#26384c">
+          <rect x="46" y="64" width="5" height="8" rx="1" /><rect x="55" y="64" width="5" height="8" rx="1" />
+          <rect x="64" y="64" width="5" height="8" rx="1" /><rect x="73" y="64" width="5" height="8" rx="1" />
+          <rect x="82" y="64" width="5" height="8" rx="1" /><rect x="91" y="64" width="5" height="8" rx="1" />
+          <rect x="100" y="64" width="5" height="8" rx="1" /><rect x="109" y="64" width="5" height="8" rx="1" />
+          <rect x="118" y="64" width="5" height="8" rx="1" /><rect x="127" y="64" width="5" height="8" rx="1" />
+          <rect x="136" y="64" width="5" height="8" rx="1" /><rect x="145" y="64" width="5" height="8" rx="1" />
+          <rect x="154" y="64" width="5" height="8" rx="1" /><rect x="163" y="64" width="5" height="8" rx="1" />
         </g>
 
-        {/* KÖPRÜÜSTÜ — önde yükseltilmiş kaptan köşkü */}
-        <rect x="29.6" y="4.6" width="5" height="3.6" rx="0.5" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="0.5" />
-        <g fill="#3b82f6">
-          <rect x="30.5" y="5.6" width="1.5" height="1.4" rx="0.2" />
-          <rect x="32.4" y="5.6" width="1.5" height="1.4" rx="0.2" />
+        {/* Üst güverte uzun ve basık; kıçta açık yolcu bölümü */}
+        <path d="M34 52L47 39Q51 35 59 35H162Q172 36 180 43L188 57L47 55Z" fill="#f4f5f3" stroke="#475569" strokeWidth="1.5" />
+        <path d="M40 46H175" stroke="#d8a23b" strokeWidth="1.8" />
+        <g fill="#26384c">
+          <rect x="50" y="40" width="7" height="6" rx="1" /><rect x="60" y="40" width="7" height="6" rx="1" />
+          <rect x="70" y="40" width="7" height="6" rx="1" /><rect x="80" y="40" width="7" height="6" rx="1" />
+          <rect x="90" y="40" width="7" height="6" rx="1" /><rect x="100" y="40" width="7" height="6" rx="1" />
+          <rect x="110" y="40" width="7" height="6" rx="1" /><rect x="120" y="40" width="7" height="6" rx="1" />
+          <rect x="130" y="40" width="7" height="6" rx="1" /><rect x="140" y="40" width="7" height="6" rx="1" />
+          <rect x="150" y="40" width="7" height="6" rx="1" /><rect x="160" y="40" width="7" height="6" rx="1" />
         </g>
 
-        {/* ANA KAMARA + alt sıra pencereler */}
-        <rect x="8" y="10.2" width="30" height="4.8" rx="0.4" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="0.5" />
-        <g fill="#3b82f6">
-          <rect x="9.6" y="11.5" width="1.9" height="1.8" rx="0.3" />
-          <rect x="12.4" y="11.5" width="1.9" height="1.8" rx="0.3" />
-          <rect x="15.2" y="11.5" width="1.9" height="1.8" rx="0.3" />
-          <rect x="18" y="11.5" width="1.9" height="1.8" rx="0.3" />
-          <rect x="20.8" y="11.5" width="1.9" height="1.8" rx="0.3" />
-          <rect x="23.6" y="11.5" width="1.9" height="1.8" rx="0.3" />
-          <rect x="26.4" y="11.5" width="1.9" height="1.8" rx="0.3" />
-          <rect x="29.2" y="11.5" width="1.9" height="1.8" rx="0.3" />
-          <rect x="32" y="11.5" width="1.9" height="1.8" rx="0.3" />
-          <rect x="34.8" y="11.5" width="1.9" height="1.8" rx="0.3" />
+        {/* Köprüüstü ve bacanın ayrı, belirgin silueti */}
+        <path d="M88 35V29Q91 23 99 23H119Q127 25 129 35Z" fill="#f8fafc" stroke="#475569" strokeWidth="1.3" />
+        <g fill="#26384c">
+          <rect x="94" y="28" width="7" height="5" rx=".8" /><rect x="104" y="28" width="7" height="5" rx=".8" /><rect x="114" y="28" width="7" height="5" rx=".8" />
         </g>
+        <path d="M104 23V12Q104 10 107 10H118Q121 11 121 14V25Z" fill="#d6a13b" stroke="#475569" strokeWidth="1.2" />
+        <path d="M104 14H121" stroke="#263238" strokeWidth="3" />
 
-        {/* GÖVDE — pruvada öne devrilen kaş; sarı sancak şeridi + lacivert su hattı */}
-        <path
-          d="M3,15 L40.6,15 L43,19.7 Q42.4,20.7 41,20.7 L6,20.7 Q4,20.7 3.5,19.4 Z"
-          fill="#ffffff"
-          stroke="#cbd5e1"
-          strokeWidth="0.5"
-        />
-        <rect x="3.2" y="15.5" width="37.4" height="1" rx="0.3" fill="#fbbf24" />
-        <path
-          d="M4,18.4 L42.3,18.4 L43,19.7 Q42.4,20.7 41,20.7 L6,20.7 Q4,20.7 3.5,19.4 Z"
-          fill="#1e3a8a"
-        />
+        {/* Kırmızı can simitleri ve burun çapası */}
+        <g fill="#e5533d" stroke="#fff7ed" strokeWidth="1">
+          <circle cx="66" cy="51" r="3.5" /><circle cx="76" cy="51" r="3.5" /><circle cx="86" cy="51" r="3.5" />
+          <circle cx="96" cy="51" r="3.5" /><circle cx="106" cy="51" r="3.5" /><circle cx="116" cy="51" r="3.5" />
+        </g>
+        <path d="M22 57v9m-4-3q4 4 8 0m-8 0-3 3m11-3 3 3" stroke="#354252" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M185 42v12m0-12 8 3-8 3" stroke="#64748b" strokeWidth="1.2" strokeLinejoin="round" />
+        <path d="M185 42l8 3-8 3z" fill="#e5533d" />
       </g>
+
+      {/* İnce köpük ve birbirinden farklı hızda akan dalgalar */}
+      <path className="ferry-wave" d="M5 96q8-4 16 0t16 0t16 0t16 0t16 0t16 0t16 0t16 0t16 0t16 0t16 0t16 0t16 0" stroke="#38bdf8" strokeWidth="1.8" strokeLinecap="round" opacity=".85" />
+      <path className="ferry-wave ferry-wave-2" d="M0 99q8-3 16 0t16 0t16 0t16 0t16 0t16 0t16 0t16 0t16 0t16 0t16 0t16 0t16 0t16 0" stroke="#7dd3fc" strokeWidth="1.2" strokeLinecap="round" opacity=".7" />
     </svg>
   );
 }

@@ -54,7 +54,7 @@ export function TopBar() {
         {/* Logo & Portal Adı */}
         <div className="flex items-center gap-1.5 truncate">
           <div className="shrink-0 flex items-center justify-center" title="Paşabahçe vapuru">
-            <AdaVapuruIcon className="w-12 h-7 sm:w-14 sm:h-8" />
+            <AdaVapuruIcon className="w-16 h-7 sm:w-20 sm:h-9" />
           </div>
           <div className="truncate">
             <h1 className="font-black text-xs sm:text-sm tracking-tight text-slate-900 dark:text-white flex items-center gap-1 leading-none truncate">
