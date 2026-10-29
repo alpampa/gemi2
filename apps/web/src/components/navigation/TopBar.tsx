@@ -1,7 +1,6 @@
 "use client";
 
-import { Ship, Headphones, Palette, Clock, RotateCcw, Settings } from "lucide-react";
-import { ThemeSelectorModal } from "@/components/theme/ThemeSelectorModal";
+import { Ship, Headphones, Clock, RotateCcw, Settings } from "lucide-react";
 import { SettingsSheet } from "@/components/settings/SettingsSheet";
 import { purgeAllCachesAndReload } from "@/components/pwa/ServiceWorkerRegister";
 import { SUPPORTED_LANGUAGES } from "@/store/useLanguageStore";
@@ -22,7 +21,6 @@ const DATE_FMT = {
 
 export function TopBar() {
   const [isAudioGuideOpen, setIsAudioGuideOpen] = useState<boolean>(false);
-  const [isThemeModalOpen, setIsThemeModalOpen] = useState<boolean>(false);
   const [isToolsMenuOpen, setIsToolsMenuOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
@@ -109,17 +107,6 @@ export function TopBar() {
               <button
                 type="button"
                 onClick={() => {
-                  setIsThemeModalOpen(true);
-                  setIsToolsMenuOpen(false);
-                }}
-                className="w-full px-3 py-2 min-h-11 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 flex items-center gap-2 cursor-pointer"
-              >
-                <Palette size={14} className="text-amber-500" />
-                <span>Tema & Renk Paleti</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
                   setIsAudioGuideOpen(true);
                   setIsToolsMenuOpen(false);
                 }}
@@ -137,7 +124,7 @@ export function TopBar() {
                 className="w-full px-3 py-2 min-h-11 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 flex items-center gap-2 cursor-pointer"
               >
                 <Settings size={14} className="text-slate-500" />
-                <span>Ayarlar: Dil & Görünüm</span>
+                <span>Ayarlar: Dil, Görünüm & Erişilebilirlik</span>
               </button>
               <button
                 type="button"
@@ -168,18 +155,6 @@ export function TopBar() {
             <span>Ayarlar</span>
           </button>
 
-          {/* Temalar Butonu */}
-          <button
-            type="button"
-            onClick={() => setIsThemeModalOpen(true)}
-            title="Tasarım ve Renk Paletleri"
-            aria-label="Tema seç"
-            className="h-9 px-2.5 rounded-lg text-xs font-black transition-all border flex items-center justify-center gap-1 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 border-amber-200 dark:border-amber-800/60 text-amber-700 dark:text-amber-300 shadow-2xs cursor-pointer active:scale-95"
-          >
-            <Palette size={13} className="text-amber-600 dark:text-amber-400 shrink-0" />
-            <span>Tema</span>
-          </button>
-
           {/* Sesli Rehber */}
           <button
             type="button"
@@ -208,7 +183,6 @@ export function TopBar() {
 
       {/* Modallar */}
       <BosphorusAudioGuideModal isOpen={isAudioGuideOpen} onClose={() => setIsAudioGuideOpen(false)} />
-      <ThemeSelectorModal isOpen={isThemeModalOpen} onClose={() => setIsThemeModalOpen(false)} />
       <SettingsSheet isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </header>
   );

@@ -4,149 +4,102 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useThemeStore, type ThemePresetId } from "./useThemeStore";
 
-export type DashboardSkinId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+export type DashboardSkinId = 1 | 2 | 3 | 4 | 5;
 
 export interface DashboardSkinMeta {
   id: DashboardSkinId;
-  shortName: string;
-  title: string;
-  tier: "FREE" | "PRO" | "B2B_PRO";
-  tierBadge: string;
-  aiTrigger: string;
-  targetUser: string;
+  name: string;
+  summary: string;
+  bestFor: string;
+  tag: string;
   themePreset: ThemePresetId;
 }
 
+/**
+ * İSTANBUL ODAKLI 5 GÖRÜNÜM MODU
+ *
+ * 10 kokpitlik deneme, tek veri çekirdeği üzerinde yalnızca renk değiştirdiği
+ * için kullanıcıya gerçek bir fayda sağlamıyordu. Burada her mod, İstanbul'da
+ * gerçekten farklı bir kullanım bağlamına karşılık gelir:
+ *
+ * 1) Standart / Boğaz  → günlük commuter, dengeli varsayılan
+ * 2) Gün Işığı         → güneş altında okunabilirlik + düşük görüş
+ * 3) Gece / OLED       → gece yolculuğu, düşük parlama, pil tasarrufu
+ * 4) Adalar            → ada sakini, son dönüş vapuru odağı
+ * 5) Kültür & Turist   → tarihi vapur kültürü, turist ve çok dilli kullanım
+ */
 export const DASHBOARD_SKINS: DashboardSkinMeta[] = [
   {
     id: 1,
-    shortName: "1. Boğaz Komuta ⭐",
-    title: "Boğaz Komuta & Kıyı Asistanı (iOS 18 HIG + SBB Hibrit)",
-    tier: "FREE",
-    tierBadge: "ÜCRETSİZ ANA MOD",
-    aiTrigger: "Genel Günlük Kullanım (Varsayılan)",
-    targetUser: "Tüm İstanbul Yolcuları (1 Odak Kartı + 4 Alternatif Sefer + Alt İskele Yürüme)",
-    themePreset: "deep-navy"
+    name: "Standart / Boğaz",
+    summary: "Dengeli lacivert tema; günlük sefer takibi için sade görünüm.",
+    bestFor: "Tüm İstanbul yolcuları, sabah-akşam commuter",
+    tag: "Varsayılan",
+    themePreset: "deep-navy",
   },
   {
     id: 2,
-    shortName: "2. Canlı Harita + Sheet",
-    title: "Canlı Harita-Öncelikli & Kademeli Alt Çekmece (Apple Maps / Citymapper)",
-    tier: "PRO",
-    tierBadge: "👑 VAPUR PRO",
-    aiTrigger: "Harita & Gezgin Keşif Modu",
-    targetUser: "Görsel Rota Takipçileri & Boğaz/Adalar Gezginleri",
-    themePreset: "deep-navy"
+    name: "Gün Işığı & Erişilebilir",
+    summary: "Yüksek kontrast, açık zemin ve büyük yazı; güneş altında ve az görenler için.",
+    bestFor: "Güvertede oturanlar, 65+ ve az gören kullanıcılar",
+    tag: "Gündüz",
+    themePreset: "sun-contrast",
   },
   {
     id: 3,
-    shortName: "3. İsviçre SBB Güneş",
-    title: "İsviçre SBB Yüksek Yoğunluklu Kronometre (14:1 Güneş Işığı Modu)",
-    tier: "FREE",
-    tierBadge: "ÜCRETSİZ (ERİŞİLEBİLİRLİK)",
-    aiTrigger: "☀️ Parlak Öğle Güneşi (>40.000 Lux)",
-    targetUser: "Açık Güvertede Doğrudan Güneş Altındaki Yolcular & Hız Odaklı Banliyö",
-    themePreset: "sun-contrast"
+    name: "Gece / OLED",
+    summary: "Siyah zemin ve düşük parlama; gece ile fırtına takibi için.",
+    bestFor: "Gece yolcuları ve pil tasarrufu isteyenler",
+    tag: "Gece",
+    themePreset: "cyber-radar",
   },
   {
     id: 4,
-    shortName: "4. Android M3 Koşu Modu",
-    title: "Material You (Android 15) Turnike & Rıhtım Koşu Asistanı",
-    tier: "PRO",
-    tierBadge: "👑 VAPUR PRO (AI KOŞU)",
-    aiTrigger: "🏃 Sabah/Akşam Mesai + İskele Yürüyüşü (<500m)",
-    targetUser: "Vapur İskelesi vs Motor Rıhtımı Arasında Koşan Sabah/Akşam Yolcuları",
-    themePreset: "aegean-emerald"
+    name: "Adalar / Son Vapur",
+    summary: "Ada hattı ve son dönüş odağı; sakin Ege denizi tonları.",
+    bestFor: "Büyükada, Heybeliada, Burgazada, Kınalıada sakinleri",
+    tag: "Adalar",
+    themePreset: "aegean-emerald",
   },
   {
     id: 5,
-    shortName: "5. Adalar Çift Yön Kalkan",
-    title: "Adalar Gidiş-Dönüş & Gece Son Vapur Kalkanı (Split-Deck Island UI)",
-    tier: "PRO",
-    tierBadge: "👑 VAPUR PRO (ADA KALKANI)",
-    aiTrigger: "🏝️ Adalar Hattı veya Ada Geofence Algılandığında",
-    targetUser: "Büyükada, Heybeliada, Burgazada, Kınalıada Sakinleri ve Ziyaretçileri",
-    themePreset: "deep-navy"
+    name: "Kültür & Turist",
+    summary: "Tarihi vapur hissi ve sıcak pirinç tonları; çok dilli içerikle uyumlu.",
+    bestFor: "Turistler, vapur kültürü ve fotoğraf meraklıları",
+    tag: "Turist",
+    themePreset: "heritage-brass",
   },
-  {
-    id: 6,
-    shortName: "6. Boğaz Metro Şeması",
-    title: "Boğaz Hattı Dikey Durak Zinciri & 1-Aktarma Köprüsü",
-    tier: "FREE",
-    tierBadge: "ÜCRETSİZ (BOĞAZ & AKTARMA)",
-    aiTrigger: "🔀 Aktarmalı veya Çok Duraklı Boğaz Hattı Seçildiğinde",
-    targetUser: "Sarıyer, İstinye, Emirgan, Bebek, Çengelköy, Beykoz ve Aktarmalı Yolcular",
-    themePreset: "nordic-clean"
-  },
-  {
-    id: 7,
-    shortName: "7. Paşabahçe Kültür Atlası",
-    title: "Vapur Kültürü, Tarihi Gemi & Manzara Pusulası (Editorial Luxury)",
-    tier: "PRO",
-    tierBadge: "👑 VAPUR PRO / TURİST PASS",
-    aiTrigger: "🏛️ Kültür Turu, Hafta Sonu veya Yabancı Dil Seçildiğinde",
-    targetUser: "Vapur Keyfi Seven İstanbullular, Fotoğrafçılar ve Turistler",
-    themePreset: "heritage-brass"
-  },
-  {
-    id: 8,
-    shortName: "8. Tek Başparmak (Thumb UI)",
-    title: "Tek Başparmak Ergonomisi (Bottom-Heavy Reachability UI)",
-    tier: "FREE",
-    tierBadge: "ÜCRETSİZ (ERGONOMİ MODU)",
-    aiTrigger: "👍 Yürüyüş / İvmeölçer Hareketi Algılandığında",
-    targetUser: "Rıhtımda Elinde Çanta/Kahveyle Yürürken Tek Elle Kullananlar",
-    themePreset: "deep-navy"
-  },
-  {
-    id: 9,
-    shortName: "9. OLED Terminal & Radar",
-    title: "FIDS İskele Dijital Pano & OLED Siyah Fırtına Radarı (Bento Grid)",
-    tier: "B2B_PRO",
-    tierBadge: "👑 PRO & 📺 B2B TV KİOSK",
-    aiTrigger: "🌙 Saat 20:00 Sonrası Gece Modu veya Lodos Fırtına (>22kt)",
-    targetUser: "Gece Yolcuları, Lodos Takipçileri ve B2B Kafe/Otel/İskele Ekranları",
-    themePreset: "cyber-radar"
-  },
-  {
-    id: 10,
-    shortName: "10. Deniz + Metro Süper-App",
-    title: "Çoklu Mod Entegre Ulaşım Köprüsü (Vapur + Marmaray + Metro + Deniz Taksi)",
-    tier: "PRO",
-    tierBadge: "👑 VAPUR PRO (SÜPER-APP)",
-    aiTrigger: "🚇 Metro/Marmaray Aktarması veya Gece 00:30 Sonrası",
-    targetUser: "Deniz + Raylı Sistem Aktarması Yapanlar ve 7/24 Deniz Taksi Yolcuları",
-    themePreset: "golden-hour"
-  }
 ];
 
 interface DashboardSkinStoreState {
   activeSkinId: DashboardSkinId;
-  aiAutoContext: boolean;
-  planTier: "FREE" | "PRO";
   setSkinId: (id: DashboardSkinId) => void;
-  setAiAutoContext: (enabled: boolean) => void;
-  setPlanTier: (tier: "FREE" | "PRO") => void;
 }
+
+const isValidSkinId = (value: unknown): value is DashboardSkinId =>
+  DASHBOARD_SKINS.some((skin) => skin.id === value);
 
 export const useDashboardSkinStore = create<DashboardSkinStoreState>()(
   persist(
     (set) => ({
       activeSkinId: 1,
-      aiAutoContext: false,
-      planTier: "PRO",
       setSkinId: (id: DashboardSkinId) => {
         set({ activeSkinId: id });
-        const meta = DASHBOARD_SKINS.find((s) => s.id === id);
+        const meta = DASHBOARD_SKINS.find((skin) => skin.id === id);
         if (meta) {
           useThemeStore.getState().setTheme(meta.themePreset);
         }
       },
-      setAiAutoContext: (enabled: boolean) => set({ aiAutoContext: enabled }),
-      setPlanTier: (tier: "FREE" | "PRO") => set({ planTier: tier }),
     }),
     {
       name: "vapur-chameleon-skin-storage",
+      version: 2,
+      migrate: (persistedState: unknown) => {
+        const stored = persistedState as { activeSkinId?: unknown } | undefined;
+        return {
+          activeSkinId: isValidSkinId(stored?.activeSkinId) ? stored.activeSkinId : 1,
+        };
+      },
     }
   )
 );

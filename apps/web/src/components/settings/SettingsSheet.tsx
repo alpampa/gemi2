@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Settings, Check, Languages, Type, Compass, Sparkles, Store } from "lucide-react";
+import { X, Settings, Check, Languages, Type, Compass, Sparkles, Store, Palette } from "lucide-react";
 import { useLanguageStore, SUPPORTED_LANGUAGES, type AppLanguage } from "@/store/useLanguageStore";
 import { usePreferencesStore } from "@/store/usePreferencesStore";
+import { useDashboardSkinStore, DASHBOARD_SKINS } from "@/store/useDashboardSkinStore";
+import { THEME_PRESETS } from "@/store/useThemeStore";
 
 interface SettingsSheetProps {
   isOpen: boolean;
@@ -20,6 +22,7 @@ interface SettingsSheetProps {
 export function SettingsSheet({ isOpen, onClose }: SettingsSheetProps) {
   const { language, setLanguage, t } = useLanguageStore();
   const { fontScale, setFontScale, touristMode, setTouristMode } = usePreferencesStore();
+  const { activeSkinId, setSkinId } = useDashboardSkinStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -27,6 +30,9 @@ export function SettingsSheet({ isOpen, onClose }: SettingsSheetProps) {
   }, []);
 
   if (!isOpen || !mounted) return null;
+
+  const activeSkin =
+    DASHBOARD_SKINS.find((skin) => skin.id === activeSkinId) ?? DASHBOARD_SKINS[0];
 
   const handleSelectLanguage = (code: AppLanguage) => {
     setLanguage(code);
@@ -118,7 +124,73 @@ export function SettingsSheet({ isOpen, onClose }: SettingsSheetProps) {
               </div>
             </section>
 
-            {/* 3. TURİST MODU */}
+            {/* 3. GÖRÜNÜM MODU (5 İSTANBUL ODAKLI MOD) */}
+            <section>
+              <h4 className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                <Palette size={13} className="text-amber-500" />
+                <span>Görünüm Modu</span>
+              </h4>
+              <div className="space-y-2">
+                {DASHBOARD_SKINS.map((skin) => {
+                  const preset =
+                    THEME_PRESETS.find((p) => p.id === skin.themePreset) ?? THEME_PRESETS[0];
+                  const isActive = activeSkin.id === skin.id;
+                  return (
+                    <button
+                      key={skin.id}
+                      type="button"
+                      onClick={() => {
+                        setSkinId(skin.id);
+                        // Erişilebilir mod yalnızca renk değil, okunabilirlik de vaat eder:
+                        // seçildiğinde yazı boyutunu da büyütür (kullanıcı sonra değiştirebilir).
+                        if (skin.id === 2) setFontScale("large");
+                      }}
+                      aria-pressed={isActive}
+                      className={`w-full rounded-2xl border p-3 flex items-start gap-3 text-left transition-all cursor-pointer active:scale-[0.99] ${
+                        isActive
+                          ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30 shadow-xs"
+                          : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-amber-300"
+                      }`}
+                    >
+                      <span
+                        className="w-10 h-10 rounded-xl border border-black/10 dark:border-white/15 flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: preset.previewColors[0] }}
+                      >
+                        <span
+                          className="w-5 h-5 rounded-full border-2 border-white/80 shadow-xs"
+                          style={{ backgroundColor: preset.previewColors[2] }}
+                        />
+                      </span>
+
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-black">{skin.name}</span>
+                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                            {skin.tag}
+                          </span>
+                        </span>
+                        <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 leading-snug">
+                          {skin.summary}
+                        </span>
+                        <span className="block text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                          Kimin için: {skin.bestFor}
+                        </span>
+                      </span>
+
+                      {isActive && (
+                        <Check size={15} className="text-amber-600 dark:text-amber-400 shrink-0 mt-1" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 leading-snug">
+                Görünüm modu yalnızca renk, kontrast ve okunabilirliği değiştirir; sefer ve duyuru
+                verisi aynı kalır. Az gören kullanıcılar için yazı boyutunu da “Büyük” yapın.
+              </p>
+            </section>
+
+            {/* 4. TURİST MODU */}
             <section>
               <button
                 type="button"
