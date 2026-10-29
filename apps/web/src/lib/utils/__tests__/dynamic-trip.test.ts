@@ -1,7 +1,7 @@
 /**
  * resolveDynamicTrip — canlı sefer durum çözümleme testleri.
  *
- * Kritik senaryolar: geri sayım pencereleri, kalkış sonrası 30 sn grace,
+ * Kritik senaryolar: geri sayım pencereleri, kalkış anında seferin listeden kalkması,
  * gece yarısı geçişi (23:50'de 00:15 kalkış), ara durak gün kaydırması,
  * varış fallback'i ve tüm bacaklar geçince COMPLETED/expired durumuna geçiş.
  */
@@ -96,8 +96,8 @@ describe("resolveDynamicTrip — canlı geri sayım penceresi (≤ 5 dk)", () =>
   });
 });
 
-describe("resolveDynamicTrip — kalkış anı ve grace penceresi", () => {
-  it("kalkıştan sonraki 30 sn içinde IN_TRANSIT + HAREKET ETTİ", () => {
+describe("resolveDynamicTrip — kalkış anı", () => {
+  it("kalkış saati geçince tek duraklı seferi hemen listeden kaldırır", () => {
     const res = resolveDynamicTrip(
       "Kınalıada",
       "Bostancı",
@@ -105,17 +105,17 @@ describe("resolveDynamicTrip — kalkış anı ve grace penceresi", () => {
       TARGET_ISO,
       undefined,
       "23:00",
-      at("2026-10-01T22:40:10+03:00") // kalkıştan 10 sn sonra
+      at("2026-10-01T22:40:01+03:00") // kalkıştan 1 sn sonra
     );
-    expect(res.isDeparted).toBe(true);
-    expect(res.status).toBe("IN_TRANSIT");
+    expect(res.isDeparted).toBe(false);
+    expect(res.status).toBe("COMPLETED");
     expect(res.countdown).toBeNull();
     expect(res.minutesUntilDeparture).toBeNull();
-    expect(res.isExpired).toBe(false); // grace içinde
+    expect(res.isExpired).toBe(true);
   });
 
-  it("ara durak kalkışı geçince aktif bacak ilerler", () => {
-    // Kalkış 22:40, Burgazada 22:55; şimdi 22:56 → aktif bacak Burgazada
+  it("ara duraktaki sonraki sefer saatine kadar yolculuk bilgisini korur", () => {
+    // İlk kalkış 22:40'ı geçti; Burgazada'daki sonraki kalkış 22:55'e henüz var.
     const res = resolveDynamicTrip(
       "Kınalıada",
       "Bostancı",
@@ -123,10 +123,11 @@ describe("resolveDynamicTrip — kalkış anı ve grace penceresi", () => {
       TARGET_ISO,
       [{ name: "Burgazada", time: "22:55" }],
       "23:10",
-      at("2026-10-01T22:55:20+03:00") // ara durak kalkışından 20 sn sonra (grace içinde)
+      at("2026-10-01T22:54:59+03:00") // ara duraktaki kalkıştan 1 sn önce
     );
     expect(res.currentOrigin).toBe("Burgazada");
     expect(res.activeLegIndex).toBe(1);
+    expect(res.isExpired).toBe(false);
     // İlk durak tamamlandı, kalanlar bekliyor
     expect(res.waypoints[0].state).toBe("COMPLETED");
     expect(res.waypoints[1].state).toBe("CURRENT");
@@ -206,7 +207,7 @@ describe("resolveDynamicTrip — varış fallback", () => {
 });
 
 describe("resolveDynamicTrip — tüm bacaklar geçti", () => {
-  it("son kalkış bacağından 30 sn sonra COMPLETED + isExpired", () => {
+  it("son kalkış bacağı geçince COMPLETED + isExpired", () => {
     // Kalkış 22:00, Burgazada 22:30, varış 23:00 → son kalkış bacağı 22:30
     const res = resolveDynamicTrip(
       "Kadıköy",

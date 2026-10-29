@@ -18,7 +18,7 @@ interface OnboardVoyageModalProps {
 export function OnboardVoyageModal({
   isOpen,
   onClose,
-  vesselName = "ŞH-PAŞABAHÇE",
+  vesselName = "Gemi bilgisi belirtilmemiş",
   origin = "Kadıköy",
   destination = "Karaköy",
   departureTime = "18:15",

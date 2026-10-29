@@ -2,7 +2,6 @@ import type { TripStatus, ScheduleCardDto } from "@/lib/types/schedule";
 import { getIstanbulParts, compareHhmm, nightRolloverDayOffset } from "@/lib/utils/istanbul-time";
 import { normalizeTurkishText } from "@/lib/utils/search-normalizer";
 import {
-  DEPARTED_GRACE_MS,
   LIVE_COUNTDOWN_WINDOW_MS,
   BOARDING_THRESHOLD_MS,
   ESTIMATED_TRAVEL_MIN_PER_HOP,
@@ -53,11 +52,11 @@ export interface DynamicTripResolution {
   currentDepartureTime: string;
   currentDepartureTime12: string;
   currentTargetIso: string;
-  isDeparted: boolean;         // Active for 30s right after leg departure
+  isDeparted: boolean;         // Kept for UI compatibility; passed departures are removed immediately
   countdown: string | null;    // Active during last 5 minutes (0 to 5 mins)
   minutesUntilDeparture: number | null; // Whole minutes until departure (ceil); null after departure
   status: TripStatus;
-  isExpired: boolean;          // True if 30s passed after last departure leg (should be removed from screen)
+  isExpired: boolean;          // True once the last departure time has passed
   waypoints: DynamicWaypointView[];
   activeChain: DynamicWaypointView[];
   activeLegIndex: number;
@@ -228,7 +227,7 @@ export function resolveDynamicTrip(
   }
 
   // 2. Find active leg
-  // Each departure leg i is active until DEPARTED_GRACE_MS after its departure time
+  // Show each departure only until its scheduled departure time.
   for (let i = 0; i < numLegs; i++) {
     const leg = allWaypoints[i];
 
@@ -239,21 +238,16 @@ export function resolveDynamicTrip(
 
     const diff = leg.targetTimeMs - accurateNow;
 
-    // Check if we are before departure or within the grace window after departure
-    if (diff > -DEPARTED_GRACE_MS) {
+    // Once the scheduled time passes, this departure is no longer shown.
+    if (diff > 0) {
       if (leg.name.trim() === destination.trim()) {
         continue;
       }
       // THIS LEG IS CURRENTLY ACTIVE!
-      let isDeparted = false;
       let countdown: string | null = null;
       let status: TripStatus = "ON_TIME";
 
-      if (diff <= 0) {
-        // Between departure and +30 seconds: Flash "HAREKET ETTİ"
-        isDeparted = true;
-        status = "IN_TRANSIT";
-      } else if (diff <= LIVE_COUNTDOWN_WINDOW_MS) {
+      if (diff <= LIVE_COUNTDOWN_WINDOW_MS) {
         // Live countdown window before departure: Show Live Countdown MM:SS
         const m = Math.floor(diff / 60000);
         const s = Math.floor((diff % 60000) / 1000);
@@ -307,7 +301,7 @@ export function resolveDynamicTrip(
         currentDepartureTime: leg.time,
         currentDepartureTime12: dep12,
         currentTargetIso: leg.targetTimeIso,
-        isDeparted,
+        isDeparted: false,
         countdown,
         minutesUntilDeparture,
         status,
@@ -321,7 +315,7 @@ export function resolveDynamicTrip(
     }
   }
 
-  // If all departure legs have passed by more than 30 seconds:
+  // If every departure leg has passed, remove the trip immediately.
   // The trip is expired and will be automatically removed from the screen!
   const finalWaypointsView: DynamicWaypointView[] = allWaypoints.map((wp, cIdx, arr) => ({
     name: wp.name,

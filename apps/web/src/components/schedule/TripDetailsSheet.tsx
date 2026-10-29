@@ -44,6 +44,7 @@ import { SLOW_TICK_INTERVAL_MS } from "@/lib/constants";
 import { useAlarmStore } from "@/store/useAlarmStore";
 import { useFavoritesStore } from "@/store/useFavoritesStore";
 import { useActiveVoyageStore } from "@/store/useActiveVoyageStore";
+import { getReportedVesselName } from "@/lib/utils/vessel-info";
 import { useLanguageStore } from "@/store/useLanguageStore";
 import { requestNotificationPermission } from "@/lib/utils/sound";
 import { useTransitClock } from "@/hooks/useTransitClock";
@@ -54,7 +55,6 @@ import { transitAnnouncer } from "@/lib/services/tts-announcer";
 import { MissedFerryAssistantModal } from "@/components/planner/MissedFerryAssistantModal";
 import { VesselHeritageModal } from "@/components/vessel/VesselHeritageModal";
 import { PierCulturalAtlasModal } from "@/components/piers/PierCulturalAtlasModal";
-import { getDefaultVesselForTrip } from "@/lib/data/vessel-heritage";
 import { SharedSeaTaxiModal } from "@/components/taxishare/SharedSeaTaxiModal";
 
 interface TripDetailsSheetProps {
@@ -97,7 +97,6 @@ export function TripDetailsSheet({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isVesselHeritageOpen, setIsVesselHeritageOpen] = useState(false);
   const [isPierAtlasOpen, setIsPierAtlasOpen] = useState(false);
-  const [customVesselName, setCustomVesselName] = useState<string>("");
 
   // Escape tuşu ile kapatma (klavye erişilebilirliği)
   useEffect(() => {
@@ -120,6 +119,8 @@ export function TripDetailsSheet({
   }, [schedule?.destination]);
 
   if (!schedule) return null;
+
+  const actualVesselName = getReportedVesselName(schedule.vessel);
 
   const routeKey = `${schedule.origin} → ${schedule.destination}`;
   const isFav = isFavorite(routeKey);
@@ -219,6 +220,13 @@ export function TripDetailsSheet({
                 <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold mt-0.5 truncate">
                   {schedule.routeTitle || `${schedule.origin} - ${schedule.destination} Seferi`}
                 </p>
+                <p className="mt-1 inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                  <Ship size={12} className="shrink-0 text-blue-500" aria-hidden="true" />
+                  <span>Sefer gemisi:</span>
+                  <span className={actualVesselName ? "text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-400"}>
+                    {actualVesselName || "İşletme tarafından belirtilmemiş"}
+                  </span>
+                </p>
               </div>
 
               {/* Action Buttons: Star, Bell, Pin, Close */}
@@ -270,7 +278,8 @@ export function TripDetailsSheet({
                       operator: schedule.operator,
                       departureTime: dynState?.currentDepartureTime || schedule.departureTime,
                       arrivalTime: schedule.arrivalTime || "",
-                      price: schedule.price
+                      price: schedule.price,
+                      vesselName: actualVesselName,
                     });
                   }}
                   title="Canlı Takip Çubuğuna Sabitle"
@@ -469,11 +478,11 @@ export function TripDetailsSheet({
                   >
                     <span className="flex items-center gap-1.5 truncate">
                       <Ship size={14} className="text-blue-500 shrink-0" />
-                      <span className="truncate">🚢 Vapur Kültürü & Seyir Rehberi</span>
+                      <span className="truncate">🚢 Vapur Kültürü & Filo Rehberi</span>
                     </span>
-                    <span className="text-[10px] bg-blue-200 dark:bg-blue-900/60 px-1.5 py-0.2 rounded font-mono">
-                      {customVesselName || getDefaultVesselForTrip(schedule.origin, schedule.destination, schedule.operator).name}
-                    </span>
+                    {actualVesselName && (
+                      <span className="text-[10px] bg-blue-200 dark:bg-blue-900/60 px-1.5 py-0.2 rounded font-mono">{actualVesselName}</span>
+                    )}
                   </button>
 
                   <button
@@ -807,8 +816,7 @@ export function TripDetailsSheet({
       <VesselHeritageModal
         isOpen={isVesselHeritageOpen}
         onClose={() => setIsVesselHeritageOpen(false)}
-        initialVesselName={customVesselName || getDefaultVesselForTrip(schedule.origin, schedule.destination, schedule.operator).name}
-        onSelectVessel={(vName) => setCustomVesselName(vName)}
+        initialVesselName={actualVesselName || undefined}
       />
 
       <PierCulturalAtlasModal

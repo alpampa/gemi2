@@ -9,6 +9,7 @@ import { useAlarmStore } from "@/store/useAlarmStore";
 import { useActiveVoyageStore } from "@/store/useActiveVoyageStore";
 import { requestNotificationPermission } from "@/lib/utils/sound";
 import { getOfficialRouteFare } from "@/lib/data/official-fares";
+import { getReportedVesselName } from "@/lib/utils/vessel-info";
 
 interface IslandHopPickerModalProps {
   isOpen: boolean;
@@ -80,8 +81,7 @@ export function IslandHopPickerModal({
       origin: fromStation.name,
       destination: toStation.name,
       operator: schedule.operator,
-      vesselName: schedule.vessel || "Şehir Hatları Vapuru",
-      mmsi: "271002496",
+      vesselName: getReportedVesselName(schedule.vessel) || "Bu sefer için gemi adı belirtilmemiş",
       departureTime: fromStation.time,
       arrivalTime: toStation.time,
       price: fare

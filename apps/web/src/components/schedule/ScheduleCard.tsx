@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Ship, Moon, Ban, Siren, Timer, AlertTriangle, Calendar } from "lucide-react";
-import { getDefaultVesselForTrip } from "@/lib/data/vessel-heritage";
 import { VesselHeritageModal } from "@/components/vessel/VesselHeritageModal";
 import { MarineAisRadarModal } from "@/components/map/MarineAisRadarModal";
 import { OperatorLogo } from "@/components/ui/OperatorLogo";
@@ -15,6 +14,7 @@ import { requestNotificationPermission } from "@/lib/utils/sound";
 import { predictTripOccupancy } from "@/lib/utils/occupancy";
 import { getPierTransit } from "@/lib/data/pier-transit-connections";
 import { useActiveVoyageStore } from "@/store/useActiveVoyageStore";
+import { getReportedVesselName } from "@/lib/utils/vessel-info";
 import { triggerHaptic } from "@/lib/utils/haptics";
 import { TransitRouteSchematic } from "@/components/schedule/TransitRouteSchematic";
 import { ScheduleCardActions } from "@/components/schedule/card/ScheduleCardActions";
@@ -211,6 +211,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
     progress: props.progress,
     stops: props.stops,
     arrivalTime: props.arrivalTime,
+    vessel: props.vessel,
   };
 
   const handleToggleFavorite = () => {
@@ -256,12 +257,11 @@ export function ScheduleCard(props: ScheduleCardProps) {
       operator: props.operator,
       departureTime: dynState.currentDepartureTime,
       arrivalTime: props.arrivalTime || "",
-      price: props.price
+      price: props.price,
+      vesselName: getReportedVesselName(props.vessel),
     });
     if (props.onClick) props.onClick();
   };
-
-  const heroVessel = getDefaultVesselForTrip(props.origin, props.destination, props.operator);
 
   // KOMPAKT LİSTE GÖRÜNÜMÜ (Yüksek Yoğunluklu İsviçre Tipografisi - Swiss Transit Density)
   if (props.isCompact) {
@@ -278,7 +278,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
               handleCardClick();
             }
           }}
-          className={`rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-2 transition-all cursor-pointer border group shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+          className={`rounded-xl px-2.5 py-1.5 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 transition-all cursor-pointer border group shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
             isCancelled
               ? "border-rose-500/70 bg-rose-50/50 dark:bg-rose-950/20 text-slate-800 dark:text-slate-200"
               : dynState.isDeparted
@@ -293,7 +293,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
           }`}
         >
           {/* Sol: Saat + Kalan Süre */}
-          <div className="flex items-center gap-1.5 shrink-0 min-w-18">
+          <div className="flex flex-wrap items-center gap-1.5 shrink-0 min-w-18 w-full sm:w-auto">
             <span
               className={`font-mono font-black text-sm sm:text-base tabular-nums leading-none ${
                 isCancelled
@@ -353,13 +353,13 @@ export function ScheduleCard(props: ScheduleCardProps) {
           </div>
 
           {/* Orta: Güzergah + Operatör + Durak & Gece Rozetleri */}
-          <div className="flex items-center gap-1.5 min-w-0 flex-1 text-xs">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 min-w-0 w-full sm:flex-1 text-xs">
             <OperatorLogo operator={props.operator} size="sm" showName={false} />
-            <span title={dynState.currentOrigin} className={`font-bold truncate min-w-0 ${isCancelled ? "line-through text-slate-400" : ""}`}>
+            <span title={dynState.currentOrigin} className={`font-bold whitespace-normal break-words max-w-[42%] sm:max-w-none ${isCancelled ? "line-through text-slate-400" : ""}`}>
               {dynState.currentOrigin}
             </span>
             <span className="text-blue-500 dark:text-blue-400 font-black text-[10px] shrink-0">→</span>
-            <span title={dynState.destination} className={`font-bold truncate min-w-0 ${isCancelled ? "line-through text-slate-400" : "text-blue-700 dark:text-blue-300"}`}>
+            <span title={dynState.destination} className={`font-bold whitespace-normal break-words max-w-[42%] sm:max-w-none ${isCancelled ? "line-through text-slate-400" : "text-blue-700 dark:text-blue-300"}`}>
               {routeDestinationDisplay}
             </span>
 
@@ -427,14 +427,16 @@ export function ScheduleCard(props: ScheduleCardProps) {
           </div>
 
           {/* Sağ: Eylemler */}
-          <ScheduleCardActions
-            variant="compact"
-            isFav={isFav}
-            hasAlarm={hasAlarm}
-            onToggleFavorite={handleToggleFavorite}
-            onToggleAlarm={handleToggleAlarm}
-            onShareTrip={handleShareTrip}
-          />
+          <div className="self-end sm:self-auto">
+            <ScheduleCardActions
+              variant="compact"
+              isFav={isFav}
+              hasAlarm={hasAlarm}
+              onToggleFavorite={handleToggleFavorite}
+              onToggleAlarm={handleToggleAlarm}
+              onShareTrip={handleShareTrip}
+            />
+          </div>
         </div>
       </>
     );
@@ -724,7 +726,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
         <VesselHeritageModal
           isOpen={isHeroHeritageOpen}
           onClose={() => setIsHeroHeritageOpen(false)}
-          initialVesselName={heroVessel.name}
+          initialVesselName={getReportedVesselName(props.vessel)}
         />
       )}
 

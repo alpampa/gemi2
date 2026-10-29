@@ -3,9 +3,6 @@
  * Magic number yerine anlamlı isimler; davranış değişikliği buradan yönetilir.
  */
 
-/** Kalkıştan sonra seferin "kalktı" olarak gösterildiği süre (ms) */
-export const DEPARTED_GRACE_MS = 30_000;
-
 /** Canlı MM:SS geri sayım çipinin gösterildiği son pencere (ms) */
 export const LIVE_COUNTDOWN_WINDOW_MS = 5 * 60_000;
 
