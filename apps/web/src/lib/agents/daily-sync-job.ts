@@ -1,7 +1,8 @@
 /**
  * GÜNLÜK SENKRON AJANI — ORKESTRASYON
  *
- * 23:00 İstanbul senkronunda çalışır (cron route) ve şunları yapar:
+ * 23:00 İstanbul senkronunda çalışır (GitHub Actions: nightly-tariff-sync,
+ * cron 0 20 * * * UTC) ve şunları yapar:
  *   1. Tüm operatör kaynaklarına erişim denetimi (HEAD)
  *   2. Dentur tarifesini CANLI çeker ve önceki snaphsotla karşılaştırır
  *      (tarife değişikliği algılama + hash diff)

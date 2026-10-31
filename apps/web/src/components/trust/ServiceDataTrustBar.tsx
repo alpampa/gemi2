@@ -4,7 +4,10 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ShieldAlert, ShieldCheck, ExternalLink, X, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
 import { resolveServiceDayInfo, tariffBadgeLabel } from "@/lib/utils/service-day-info";
-import { resolveDataFreshness } from "@/lib/utils/data-freshness";
+import {
+  resolveAnnouncementFreshness,
+  resolveDataFreshness,
+} from "@/lib/utils/data-freshness";
 import { useLanguageStore } from "@/store/useLanguageStore";
 import { useAnnouncementStore } from "@/store/useAnnouncementStore";
 import { OPERATOR_REGISTRY } from "@/lib/data/operator-registry";
@@ -39,6 +42,7 @@ export function ServiceDataTrustBar({
   const [mounted, setMounted] = useState(false);
 
   const liveScanAt = useAnnouncementStore((s) => s.liveScanAt);
+  const snapshotGeneratedAt = useAnnouncementStore((s) => s.snapshotGeneratedAt);
   const loadedAt = useAnnouncementStore((s) => s.loadedAt);
   const coverage = useAnnouncementStore((s) => s.coverage);
   const loading = useAnnouncementStore((s) => s.loading);
@@ -64,9 +68,13 @@ export function ServiceDataTrustBar({
   // aksi halde sunucu snapshot tarihine geri dön (asla sahte/göreceli tarih üretme).
   const hasLiveVerifiedSource = coverage.some((c) => c.status === "SCANNED" && !c.usedFallback);
   const effectiveGeneratedAt = hasLiveVerifiedSource
-    ? (liveScanAt || loadedAt || freshness.generatedAt)
-    : (freshness.generatedAt || liveScanAt || loadedAt);
+    ? (liveScanAt || snapshotGeneratedAt || freshness.generatedAt)
+    : (snapshotGeneratedAt || freshness.generatedAt || liveScanAt);
   const effectiveNowMs = loadedAt ? Math.max(serverMs, Date.parse(loadedAt)) : serverMs;
+
+  // DUYURU tazeliği dakika sınıfıdır; tarife (gün) tazeliğinden ayrı eşiklerle ölçülür.
+  const announcementFresh = resolveAnnouncementFreshness(effectiveGeneratedAt, effectiveNowMs);
+  const needsOperatorCheck = announcementFresh.isStale;
 
   const fresh = resolveDataFreshness(effectiveGeneratedAt, effectiveNowMs);
   const liveTimeStr =
@@ -119,13 +127,17 @@ export function ServiceDataTrustBar({
           aria-expanded={isModalOpen}
           title="Resmi duyuru ve tarife kaynaklarının doğrulama durumunu incelemek için tıklayın"
           className={`flex items-center gap-1 min-w-0 overflow-hidden px-1.5 py-0.5 rounded-lg border transition-colors cursor-pointer ${
-            fresh.isStale
+            needsOperatorCheck
+              ? "text-rose-700 dark:text-rose-400 border-rose-300/70 dark:border-rose-700/50 bg-rose-50/70 dark:bg-rose-950/30 hover:bg-rose-100/70"
+              : fresh.isStale
               ? "text-amber-700 dark:text-amber-400 border-amber-300/60 dark:border-amber-700/50 bg-amber-50/60 dark:bg-amber-950/30 hover:bg-amber-100/70"
               : "text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-slate-100 dark:hover:bg-slate-800/70"
           }`}
         >
           {loading ? (
             <RefreshCw size={11} className="shrink-0 text-blue-500 animate-spin" aria-hidden="true" />
+          ) : needsOperatorCheck ? (
+            <ShieldAlert size={11} className="shrink-0 text-rose-500" aria-hidden="true" />
           ) : fresh.isStale ? (
             <ShieldAlert size={11} className="shrink-0 text-amber-500" aria-hidden="true" />
           ) : (
@@ -149,6 +161,14 @@ export function ServiceDataTrustBar({
             )}
           </span>
         </button>
+        {needsOperatorCheck && !loading && (
+          <span
+            role="status"
+            className="hidden md:inline text-[10px] font-black text-rose-600 dark:text-rose-400 truncate shrink-0"
+          >
+            ⚠ Duyurular {announcementFresh.ageLabel} doğrulandı; iptal bilgisi eksik olabilir
+          </span>
+        )}
       </div>
 
       {isModalOpen &&
@@ -188,6 +208,15 @@ export function ServiceDataTrustBar({
               </div>
 
               <div className="p-4 sm:p-5 space-y-3 max-h-[75vh] overflow-y-auto">
+                {needsOperatorCheck && (
+                  <div
+                    role="alert"
+                    className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-xs font-bold text-rose-700 dark:text-rose-300"
+                  >
+                    Duyurular {announcementFresh.ageLabel} doğrulandı; iptal bilgisi eksik olabilir.
+                    Resmî duyuru sayfalarını kontrol edin.
+                  </div>
+                )}
                 <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs space-y-1">
                   <div className="flex items-center justify-between font-bold">
                     <span className="text-slate-500 dark:text-slate-400">Aktif Tarife Günü:</span>
@@ -195,10 +224,16 @@ export function ServiceDataTrustBar({
                   </div>
                   <div className="flex items-center justify-between font-bold">
                     <span className="text-slate-500 dark:text-slate-400">Son Duyuru Kontrolü:</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-mono">
+                    <span
+                      className={`font-mono ${
+                        announcementFresh.isStale || fresh.isStale
+                          ? "text-rose-600 dark:text-rose-400"
+                          : "text-emerald-600 dark:text-emerald-400"
+                      }`}
+                    >
                       {hasLiveVerifiedSource && liveTimeStr
                         ? `Bugün ${liveTimeStr} (Canlı Tarama)`
-                        : `${fresh.verifiedOnLabel ?? "Bilinmiyor"} (${fresh.ageLabel})`}
+                        : `${announcementFresh.verifiedLabel ? `${announcementFresh.verifiedLabel} - ` : ""}${fresh.verifiedOnLabel ?? "Bilinmiyor"} (${fresh.ageLabel})`}
                     </span>
                   </div>
                 </div>
@@ -208,6 +243,7 @@ export function ServiceDataTrustBar({
                     const cov = coverage.find((c) => c.operator === op.name);
                     const isLiveOk = cov?.status === "SCANNED" && !cov?.usedFallback;
                     const isFallback = cov?.usedFallback;
+                    const checkedLabel = cov?.checkedAt ? TIME_FORMATTER.format(new Date(cov.checkedAt)) : null;
 
                     return (
                       <div
@@ -235,6 +271,11 @@ export function ServiceDataTrustBar({
                           </div>
                           <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
                             {cov?.note || op.statusNote}
+                          </p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">
+                            {checkedLabel
+                              ? `Son kontrol: bugün ${checkedLabel}`
+                              : "Son kontrol: bilinmiyor"}
                           </p>
                         </div>
 

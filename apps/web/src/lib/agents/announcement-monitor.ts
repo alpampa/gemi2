@@ -1,9 +1,12 @@
 /**
  * İPTAL İZLEME AJANI — DAKİKALIK ÇEKİRDEK
  *
- * Her turda (cron: her dakika) tüm firmaların resmî kaynaklarını tarar,
- * önceki turla FARKI çıkarır, değişiklik geçmişini ve firma sağlığını
- * kalıcı depoya yazar.
+ * Her turda tüm firmaların resmî kaynaklarını tarar, önceki turla FARKI
+ * çıkarır, değişiklik geçmişini ve firma sağlığını kalıcı depoya yazar.
+ *
+ * ZAMANLAMA: Otomatik dakikalık zamanlama tanımlı değildir; /api/cron/monitor
+ * uç noktası çağrıldığında (cron/el ile) bir tur çalışır. Planlı tetikler için
+ * tabloya bakınız: docs/DATA-SYNC.md.
  *
  * GÜVENİLİRLİK İLKELERİ:
  *  - Tetiklenme sayısı ≠ başarılı kontrol sayısı → ikisi ayrı ölçülür.

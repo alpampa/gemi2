@@ -1,8 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   resolveDataFreshness,
+  resolveAnnouncementFreshness,
   FRESH_MAX_AGE_DAYS,
   AGING_MAX_AGE_DAYS,
+  ANNOUNCEMENT_FRESH_MAX_MIN,
+  ANNOUNCEMENT_STALE_MIN,
 } from "@/lib/utils/data-freshness";
 
 const DAY = 86_400_000;
@@ -81,5 +84,54 @@ describe("resolveDataFreshness", () => {
     // Uygulamadaki announcements.json damgası (2026-10-04) — regresyon koruması
     const f = resolveDataFreshness("2026-10-04T19:41:03.265Z", NOW);
     expect(f.isStale).toBe(true);
+  });
+});
+
+describe("resolveAnnouncementFreshness — dakika sınıfı duyuru tazeliği", () => {
+  it("100 dk önceki duyuruyu AGING sayar (kırmızı bant yok)", () => {
+    const minutes = ANNOUNCEMENT_FRESH_MAX_MIN + 10; // 100 dk
+    const f = resolveAnnouncementFreshness(new Date(NOW - minutes * 60_000).toISOString(), NOW);
+    expect(f.level).toBe("AGING");
+    expect(f.isStale).toBe(false);
+    expect(f.ageMinutes).toBe(minutes);
+  });
+
+  it("7 saat önceki duyuruyu STALE sayar (kırmızı bant)", () => {
+    const f = resolveAnnouncementFreshness(new Date(NOW - 7 * 3600_000).toISOString(), NOW);
+    expect(f.level).toBe("STALE");
+    expect(f.isStale).toBe(true);
+    expect(f.ageLabel).toBe("7 saat önce");
+  });
+
+  it("90 dk sınırını taze sayar", () => {
+    const f = resolveAnnouncementFreshness(
+      new Date(NOW - ANNOUNCEMENT_FRESH_MAX_MIN * 60_000).toISOString(),
+      NOW,
+    );
+    expect(f.level).toBe("FRESH");
+    expect(f.isStale).toBe(false);
+  });
+
+  it("6 saat sınırını aşmayanı AGING sayar", () => {
+    const f = resolveAnnouncementFreshness(
+      new Date(NOW - (ANNOUNCEMENT_STALE_MIN - 1) * 60_000).toISOString(),
+      NOW,
+    );
+    expect(f.level).toBe("AGING");
+    expect(f.isStale).toBe(false);
+  });
+
+  it("doğrulama yoksa UNKNOWN ve uyarı verir", () => {
+    for (const v of [undefined, null, "", "gecersiz"]) {
+      const f = resolveAnnouncementFreshness(v, NOW);
+      expect(f.level).toBe("UNKNOWN");
+      expect(f.isStale).toBe(true);
+      expect(f.ageMinutes).toBeNull();
+    }
+  });
+
+  it("dakika cinsinden etiket üretir", () => {
+    const f = resolveAnnouncementFreshness(new Date(NOW - 12 * 60_000).toISOString(), NOW);
+    expect(f.ageLabel).toBe("12 dk önce");
   });
 });

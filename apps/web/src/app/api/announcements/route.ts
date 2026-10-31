@@ -46,7 +46,7 @@ export async function GET() {
       useLive.set(s.operator, s.announcements);
     }
 
-    const coverage: (OperatorScanReport & { usedFallback?: boolean })[] = [];
+    const coverage: (OperatorScanReport & { usedFallback?: boolean; checkedAt?: string })[] = [];
     const rawAnnouncements: OperatorAnnouncement[] = [];
 
     for (const entry of OPERATOR_SCAN_COVERAGE) {
@@ -65,6 +65,7 @@ export async function GET() {
           status: "SCANNED",
           url: archived.sourceUrl,
           announcementCount: archived.announcements.length,
+          checkedAt: health.lastCheckedAt || archived.fetchedAt,
           note: `Dakikalık izleme arşivi (son doğrulama: ${archived.fetchedAt}).`,
         });
         rawAnnouncements.push(...archived.announcements);
@@ -72,7 +73,10 @@ export async function GET() {
       }
 
       if (liveReport?.status === "SCANNED" && liveAnnouncements) {
-        coverage.push(liveReport);
+        coverage.push({
+          ...liveReport,
+          checkedAt: live ? new Date(live.at).toISOString() : undefined,
+        });
         rawAnnouncements.push(...liveAnnouncements);
         continue;
       }

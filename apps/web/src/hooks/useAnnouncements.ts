@@ -28,7 +28,13 @@ export function useAnnouncements(refreshMs = 60 * 1000) {
           sourceHealth: Array.isArray(json.sourceHealth) ? json.sourceHealth : [],
           recentChanges: Array.isArray(json.recentChanges) ? json.recentChanges : [],
           coverage: Array.isArray(json.meta?.coverage) ? json.meta.coverage : [],
-          liveScanAt: json.meta?.liveScanAt ?? json.generatedAt ?? new Date().toISOString(),
+          // TAZELEME KURALI: yanıtın `generatedAt` alanı sunucuda isteğin
+          // kendisi için üretilir; "en son canlı tarama" olduğu sanılmamalı.
+          // Doğrulama zamanı yalnızca gerçek tarama damgası (liveScanAt) veya
+          // saklanan snapshot damgası (storedSnapshotGeneratedAt) olabilir.
+          liveScanAt: json.meta?.liveScanAt ?? null,
+          snapshotGeneratedAt:
+            json.meta?.storedSnapshotGeneratedAt ?? json.meta?.generatedAt ?? null,
         });
         setError(null);
       } catch (e: unknown) {
