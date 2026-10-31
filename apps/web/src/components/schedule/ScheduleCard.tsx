@@ -11,7 +11,6 @@ import { useAlarmStore } from "@/store/useAlarmStore";
 import { useFavoritesStore } from "@/store/useFavoritesStore";
 import { useLanguageStore } from "@/store/useLanguageStore";
 import { requestNotificationPermission } from "@/lib/utils/sound";
-import { predictTripOccupancy } from "@/lib/utils/occupancy";
 import { getPierTransit } from "@/lib/data/pier-transit-connections";
 import { useActiveVoyageStore } from "@/store/useActiveVoyageStore";
 import { getReportedVesselName } from "@/lib/utils/vessel-info";
@@ -70,8 +69,6 @@ export function ScheduleCard(props: ScheduleCardProps) {
   const hasAlarm = isAlarmSet(props.id);
   const routeKey = `${props.origin} → ${props.destination}`;
   const isFav = isFavorite(routeKey);
-
-  const occupancy = predictTripOccupancy(props.origin, props.destination, props.departureTime);
 
   const accurateNow = props.nowMs || Date.now();
   const isOtherDayPreview = Boolean(props.dayPreviewLabel);
@@ -399,31 +396,6 @@ export function ScheduleCard(props: ScheduleCardProps) {
                 <span className="text-[8px] opacity-75 font-mono">{primaryTransit.walkMinutes}dk</span>
               </span>
             )}
-
-            {/* İskele / Sefer Yoğunluk Rozeti */}
-            {!isCancelled && !dynState.isDeparted && (
-              <span
-                className={`hidden md:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border shrink-0 ${
-                  occupancy.level === "RUSH" || occupancy.level === "HIGH"
-                    ? "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60"
-                    : occupancy.level === "MEDIUM"
-                    ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60"
-                    : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60"
-                }`}
-                title={`İskele & Sefer Yoğunluk Tahmini: %${occupancy.percentage} (${occupancy.label})`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                    occupancy.level === "RUSH" || occupancy.level === "HIGH"
-                      ? "bg-rose-500 animate-pulse"
-                      : occupancy.level === "MEDIUM"
-                      ? "bg-amber-500"
-                      : "bg-emerald-500"
-                  }`}
-                />
-                <span>{occupancy.label}</span>
-              </span>
-            )}
           </div>
 
           {/* Sağ: Eylemler */}
@@ -614,29 +586,6 @@ export function ScheduleCard(props: ScheduleCardProps) {
                 <Moon size={11} aria-hidden="true" />
               </span>
             )}
-
-            <span className="text-slate-300 dark:text-slate-600 font-bold hidden xs:inline">•</span>
-            <span
-              className={`items-center gap-1 text-[9.5px] font-bold px-1.5 py-0.5 rounded border hidden xs:inline-flex shrink-0 ${
-                occupancy.level === "RUSH" || occupancy.level === "HIGH"
-                  ? "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60"
-                  : occupancy.level === "MEDIUM"
-                  ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60"
-                  : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60"
-              }`}
-              title={`İskele ve Sefer Yoğunluk Tahmini: %${occupancy.percentage} (${occupancy.label})`}
-            >
-              <span
-                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                  occupancy.level === "RUSH" || occupancy.level === "HIGH"
-                    ? "bg-rose-500 animate-pulse"
-                    : occupancy.level === "MEDIUM"
-                    ? "bg-amber-500"
-                    : "bg-emerald-500"
-                }`}
-              />
-              <span>{occupancy.label}</span>
-            </span>
           </div>
         </div>
 

@@ -17,6 +17,14 @@ test("Ana sayfa: sefer listesi, güven şeridi ve alt menü görünür", async (
   ).toBeVisible();
 });
 
+test("Ana sayfa: kaynaksız doluluk tahmini gösterilmez", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.getByRole("button", { name: /seferi, detay için açın/ }).first()).toBeVisible();
+  await expect(page.getByText(/tahmini doluluk/i)).toHaveCount(0);
+  await expect(page.getByText(/~\s*%\d+/)).toHaveCount(0);
+});
+
 test("Pano sekmesi: iskele kalkış panosu açılır", async ({ page }) => {
   await page.goto("/");
 

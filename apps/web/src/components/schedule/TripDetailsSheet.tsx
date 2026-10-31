@@ -32,7 +32,6 @@ import {
 import { OperatorLogo } from "@/components/ui/OperatorLogo";
 import { TripStatusBadge } from "./ScheduleCard";
 import type { ScheduleCardDto } from "@/lib/types/schedule";
-import { getTripAmenities } from "@/lib/utils/occupancy";
 import { calculateDeckRecommendation } from "@/lib/utils/deck-guide";
 import { getPierTransit } from "@/lib/data/pier-transit-connections";
 import { getPierGroundTransit } from "@/lib/data/pier-taxi-transit";
@@ -126,7 +125,6 @@ export function TripDetailsSheet({
   const isFav = isFavorite(routeKey);
   const hasAlarm = isAlarmSet(schedule.id);
 
-  const amenities = getTripAmenities(schedule.operator);
   const originTransit = getPierTransit(schedule.origin);
   const destTransit = getPierTransit(schedule.destination);
   const groundTransit = getPierGroundTransit(schedule.origin);
@@ -443,31 +441,17 @@ export function TripDetailsSheet({
                 </div>
 
                 {/* VAPUR İÇİ OLANAKLAR VE GÜVERTE TAVSİYESİ */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800">
-                    <span className="text-[10px] font-black uppercase text-slate-400 block mb-1.5">Vapur İçi İkram & Hizmetler</span>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {amenities.map((item) => (
-                        <span key={item.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-300">
-                          <span>{item.icon}</span>
-                          <span>{item.label}</span>
-                        </span>
-                      ))}
-                    </div>
+                {deckAdvice && (
+                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 flex flex-col justify-center text-xs">
+                    <span className="text-[10px] font-black uppercase text-amber-500 mb-1 flex items-center gap-1">
+                      <Compass size={11} aria-hidden="true" />
+                      <span>Güverte & Manzara Tavsiyesi</span>
+                    </span>
+                    <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">
+                      <strong>{deckAdvice.recommendedSideLabel}:</strong> {deckAdvice.summary}
+                    </p>
                   </div>
-
-                  {deckAdvice && (
-                    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 flex flex-col justify-center">
-                      <span className="text-[10px] font-black uppercase text-amber-500 mb-1 flex items-center gap-1">
-                        <Compass size={11} />
-                        <span>Güverte & Manzara Tavsiyesi</span>
-                      </span>
-                      <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">
-                        <strong>{deckAdvice.recommendedSideLabel}:</strong> {deckAdvice.summary}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                )}
 
                 {/* KÜLTÜREL VAPUR KİMLİĞİ VE İSKELE ATLASI BUTONLARI */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
