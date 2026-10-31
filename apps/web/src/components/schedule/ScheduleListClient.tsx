@@ -1298,10 +1298,14 @@ export function ScheduleListClient({
                       delayText={schedule.delayText}
                       vessel={schedule.vessel}
                       platform={schedule.platform}
+                      platformSource={schedule.platformSource}
                       price={schedule.price}
+                      priceSource={schedule.priceSource}
                       progress={schedule.progress}
                       stops={schedule.stops}
                       arrivalTime={schedule.arrivalTime}
+                      derivedArrivalTime={schedule.derivedArrivalTime}
+                      arrivalSource={schedule.arrivalSource}
                       isContinuous={schedule.isContinuous}
                       continuousUntil={schedule.continuousUntil}
                       isCompact={isCompactDensity}

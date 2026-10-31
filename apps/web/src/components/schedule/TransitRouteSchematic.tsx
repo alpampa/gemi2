@@ -25,8 +25,9 @@ interface TransitRouteSchematicProps {
 /**
  * Massimo Vignelli & TfL Transit Standardı: Metro/Tramvay Şeması Tarzı Güzergâh Grafiği.
  * Uzun ada ve boğaz hatlarında durak sırasını şematik bir çizgi üzerinde gösterir.
- * `underway` verilirse ada vapuru ikonu zamana göre ilerler: seyir mavi, iskeleye
- * yaklaşırken (≤ 3 dk) amber yanıp söner, varışta yeşile döner (metro mantığı).
+ * `underway` verilirse ada vapuru ikonu ZAMANA GÖRE TAHMİNLE ilerler: seyir mavi,
+ * iskeleye yaklaşırken (≤ 3 dk) amber yanıp söner, varışta yeşile döner. Bu bir
+ * GPS/AIS konumu değildir; ikon "Tahmini seyir ilerlemesi (GPS değil)" etiketi taşır.
  *
  * KULLANICI KURALI (mobil): Şeritteki durak adları HER ZAMAN TAM yazılır —
  * kısaltma yok. Vapur bir duraktan hareket ettiğinde o durak şeridin SOL
@@ -219,6 +220,9 @@ export function TransitRouteSchematic({
                       />
                       <div
                         ref={shipRef}
+                        role="img"
+                        aria-label="Tahmini seyir ilerlemesi (GPS değil)"
+                        title="Tahmini seyir ilerlemesi (GPS değil)"
                         className="absolute bottom-0 z-10 -translate-x-1/2 translate-y-[2px] transition-[left] duration-1000 ease-linear"
                         style={{ left: `${live.ratio * 100}%` }}
                       >

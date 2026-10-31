@@ -182,10 +182,14 @@ export function FavoritesAlarmsView({ schedules, serverTimeIso, onNavigateToSche
                   delayText={schedule.delayText}
                   vessel={schedule.vessel}
                   platform={schedule.platform}
+                  platformSource={schedule.platformSource}
                   price={schedule.price}
+                  priceSource={schedule.priceSource}
                   progress={schedule.progress}
                   stops={schedule.stops}
                   arrivalTime={schedule.arrivalTime}
+                  derivedArrivalTime={schedule.derivedArrivalTime}
+                  arrivalSource={schedule.arrivalSource}
                   onClick={() => setSelectedSchedule(schedule)}
                 />
               ))

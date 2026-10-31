@@ -28,12 +28,19 @@ export interface ScheduleCardDto {
   targetTimeIso?: string;
   delayText?: string;
   vessel?: string;
+  /** Kaynakta doğrulanmış platform; bilinmiyorsa boş string. */
   platform: string;
+  platformSource?: "official" | "unknown";
   price: string;
+  priceSource?: "official-operator" | "official-fare-table" | "unknown";
   progress: number;
   category?: 'ADALAR' | 'BOGAZ';
   stops?: { name: string; time: string }[];
+  /** Yalnızca resmî tarifede yazan varış saati. */
   arrivalTime?: string;
+  /** Seyir süresi tahmininden üretilen varış; arayüzde "~" ve "tahmini" ile gösterilir. */
+  derivedArrivalTime?: string;
+  arrivalSource?: "official" | "derived" | "unknown";
 
   /** Sürekli sefer penceresi ise start saati (HH:mm) */
   isContinuous?: boolean;

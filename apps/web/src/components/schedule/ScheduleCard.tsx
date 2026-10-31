@@ -38,10 +38,14 @@ export interface ScheduleCardProps {
   delayText?: string;
   vessel?: string;
   platform: string;
+  platformSource?: "official" | "unknown";
   price: string;
+  priceSource?: "official-operator" | "official-fare-table" | "unknown";
   progress: number;
   stops?: { name: string; time: string }[];
   arrivalTime?: string;
+  derivedArrivalTime?: string;
+  arrivalSource?: "official" | "derived" | "unknown";
   isContinuous?: boolean;
   continuousUntil?: string;
   onClick?: () => void;
@@ -83,7 +87,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
     props.departureTime,
     props.targetTimeIso || new Date().toISOString(),
     props.stops,
-    props.arrivalTime,
+    props.arrivalTime ?? props.derivedArrivalTime,
     accurateNow,
     props.serverTimeIso
   );
@@ -204,10 +208,14 @@ export function ScheduleCard(props: ScheduleCardProps) {
     targetTimeIso: props.targetTimeIso,
     delayText: props.delayText,
     platform: props.platform,
+    platformSource: props.platformSource,
     price: props.price,
+    priceSource: props.priceSource,
     progress: props.progress,
     stops: props.stops,
     arrivalTime: props.arrivalTime,
+    derivedArrivalTime: props.derivedArrivalTime,
+    arrivalSource: props.arrivalSource,
     vessel: props.vessel,
   };
 

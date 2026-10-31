@@ -192,10 +192,14 @@ export function PierDepartureBoard({
 
                   {/* Slot Footer: Platform & Price */}
                   <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-800 text-slate-400">
-                    <span className="flex items-center gap-1 font-semibold text-slate-300 truncate">
-                      <MapPin size={11} className="text-amber-400 shrink-0" />
-                      <span>{schedule.platform || "Ana Rıhtım"}</span>
-                    </span>
+                    {schedule.platform && schedule.platformSource !== "unknown" ? (
+                      <span className="flex items-center gap-1 font-semibold text-slate-300 truncate">
+                        <MapPin size={11} className="text-amber-400 shrink-0" aria-hidden="true" />
+                        <span>{schedule.platform}</span>
+                      </span>
+                    ) : (
+                      <span className="text-slate-500">Platform bilgisi yok</span>
+                    )}
                     <span className="font-mono font-bold text-emerald-400 shrink-0">
                       {schedule.price}
                     </span>

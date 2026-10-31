@@ -1,5 +1,5 @@
 import { RawOfficialTrip } from "@/lib/data/official-schedules";
-import { getOfficialRouteFare, resolveRealisticPlatform } from "@/lib/data/official-fares";
+import { getOfficialRouteFare } from "@/lib/data/official-fares";
 import { getSeaTaxiRoute } from "@/lib/data/sea-taxi";
 import { MarineWeatherStatus } from "@/lib/services/marine-weather";
 
@@ -13,50 +13,10 @@ export interface SelfHealingAction {
   severity: "INFO" | "AUTO_HEALED" | "CRITICAL_RESOLVED";
 }
 
-// In-memory circular buffer for self-healing audit timeline
-const SELF_HEALING_LOGS: SelfHealingAction[] = [
-  {
-    id: "heal-init-01",
-    timestamp: new Date().toISOString(),
-    targetType: "TRIP_ARRIVAL_TIME",
-    description: "Geçmiş veritabanından kalma sh-ring-out-2 varış saati eksikliği tespit edildi ve 09:30 olarak otonom onarıldı.",
-    beforeValue: "-",
-    afterValue: "09:30",
-    severity: "CRITICAL_RESOLVED"
-  },
-  {
-    id: "heal-init-02",
-    timestamp: new Date().toISOString(),
-    targetType: "TRIP_ARRIVAL_TIME",
-    description: "sh-ring-ret-1 ve sh-ring-ret-3 seferlerinin varış saatleri deniz mili seyir süresiyle otomatik hesaplanıp onarıldı.",
-    beforeValue: "-",
-    afterValue: "08:55 / 12:10",
-    severity: "CRITICAL_RESOLVED"
-  },
-  {
-    id: "heal-init-03",
-    timestamp: new Date().toISOString(),
-    targetType: "PLATFORM_MAPPING",
-    description: "Kınalıada ve Burgazada rıhtımlarındaki gerçek dışı Peron 2/3 atamaları elenip 'Ana Rıhtım' olarak normalize edildi.",
-    beforeValue: "Peron 2/3",
-    afterValue: "Ana Rıhtım",
-    severity: "AUTO_HEALED"
-  },
-  {
-    id: "heal-init-04",
-    timestamp: new Date().toISOString(),
-    targetType: "FARE_SYNC",
-    description: "UKOME 2026 resmi tebliği kontrol edildi: Şehir içi hatlar 50,15–76,90 ₺, Adalar 151,23 / Adakart 90,70 ₺, Deniz Taksi 500₺ + 750₺/NM senkronize edildi.",
-    severity: "INFO"
-  },
-  {
-    id: "heal-init-05",
-    timestamp: new Date().toISOString(),
-    targetType: "OPERATOR_CRAWLER",
-    description: "Şehir Hatları, Turyol, Mavi Marmara, Dentur Avrasya ve Prens Tur resmi web uç noktaları canlı tarandı ve doğrulandı.",
-    severity: "INFO"
-  }
-];
+// In-memory circular buffer for self-healing audit timeline.
+// Başlangıçta UYDURMA geçmiş kaydı yoktur; yalnızca bu süreçte gerçekten
+// işaretlenen kayıtlar birikir.
+const SELF_HEALING_LOGS: SelfHealingAction[] = [];
 
 export function logSelfHealingAction(action: Omit<SelfHealingAction, "id" | "timestamp">) {
   const newLog: SelfHealingAction = {
@@ -106,29 +66,45 @@ export function selfHealTripRecord(rawTrip: RawOfficialTrip): RawOfficialTrip {
   const healed: RawOfficialTrip = { ...rawTrip };
   const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-  // 1. Varış saati eksik veya bozuksa (örn: "-") anında otonom hesapla
-  if (!healed.arrivalTime || !timeRegex.test(healed.arrivalTime)) {
-    const computedArr = computeRealisticArrivalTime(healed.origin, healed.destination, healed.departureTime);
+  // 1. Varış saati resmî kaynakta yoksa varışı EZMEYİZ. Tahmini süre ayrı
+  // alanda tutulur ve arrivalSource="derived" ile işaretlenir; arayüz bunu
+  // "~HH:mm (tahmini)" olarak gösterir. Resmî varış varsa olduğu gibi korunur.
+  if (healed.arrivalTime && timeRegex.test(healed.arrivalTime)) {
+    healed.arrivalSource = "official";
+  } else {
+    const missingBefore = healed.arrivalTime || "YOK";
+    healed.arrivalTime = undefined;
+    healed.derivedArrivalTime = computeRealisticArrivalTime(
+      healed.origin,
+      healed.destination,
+      healed.departureTime,
+    );
+    healed.arrivalSource = "derived";
     logSelfHealingAction({
       targetType: "TRIP_ARRIVAL_TIME",
-      description: `Sefer #${healed.id} (${healed.origin} -> ${healed.destination}) varış saati eksikti. Deniz mili seyir süresiyle ${computedArr} olarak anında hesaplanıp onarıldı.`,
-      beforeValue: healed.arrivalTime || "YOK",
-      afterValue: computedArr,
-      severity: "AUTO_HEALED"
+      description: `Sefer #${healed.id} (${healed.origin} -> ${healed.destination}) için resmî varış saati yok; yalnızca tahmini varış işaretlendi (resmî kabul edilmez).`,
+      beforeValue: missingBefore,
+      afterValue: `~${healed.derivedArrivalTime} (tahmini)`,
+      severity: "INFO"
     });
-    healed.arrivalTime = computedArr;
   }
 
-  // 2. Platform adı küçük adada gerçek dışıysa (örn: Kınalıada Peron 2) anında "Ana Rıhtım" yap
-  const realisticPlatform = resolveRealisticPlatform(healed.origin, healed.destination, healed.operator);
-  if (healed.platform !== realisticPlatform && (healed.origin.includes("Ada") || healed.destination.includes("Ada"))) {
-    healed.platform = realisticPlatform;
+  // 2. Platform: kaynakta yoksa UYDURMA İSİM ÜRETİLMEZ; boş bırakılır.
+  if (!healed.platform || healed.platform.trim() === "") {
+    healed.platform = "";
+    healed.platformSource = "unknown";
+  } else {
+    healed.platformSource = "official";
   }
 
-  // 3. Fiyat bilgisi boşsa anında resmi UKOME tarifesini bağla
+  // 3. Fiyat bilgisi boşsa resmî UKOME tarife tablosundan doldurulur ve
+  // kaynağı "official-fare-table" olarak işaretlenir.
   if (!healed.price || healed.price.trim() === "") {
     const fare = getOfficialRouteFare(healed.origin, healed.destination);
     healed.price = fare.fullFare;
+    healed.priceSource = "official-fare-table";
+  } else {
+    healed.priceSource = "official-operator";
   }
 
   // 4. Ara duraklarda kalkış veya varış iskelesiyle aynı isimde olan mükerrerlikleri otonom temizle

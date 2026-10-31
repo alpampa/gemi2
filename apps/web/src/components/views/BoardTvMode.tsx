@@ -257,9 +257,11 @@ export function BoardTvMode({
                   <span className="text-base sm:text-lg font-black text-white truncate block">
                     {dyn.currentOrigin}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400 truncate block">
-                    {trip.platform || "Yolcu Rıhtımı"}
-                  </span>
+                  {trip.platform ? (
+                    <span className="text-[10px] font-bold text-slate-400 truncate block">
+                      {trip.platform}
+                    </span>
+                  ) : null}
                 </div>
                 <div className="min-w-0">
                   <span className="text-base sm:text-lg font-bold text-slate-200 truncate block">

@@ -4,6 +4,7 @@ import { getMaviMarmaraSchedules } from "./mavi-marmara-schedules";
 import { getDenturSchedules } from "./dentur-schedules";
 import { getPrensTurSchedules } from "./prens-tur-schedules";
 import { getTuryolSchedules } from "./turyol-schedules";
+import { BOSTANCI_SEHIRHATLARI_SCHEDULES } from "./bostanci-sehirhatlari-schedules";
 
 export interface RawStop {
   name: string;
@@ -27,8 +28,18 @@ export interface RawOfficialTrip {
 
   departureTime: string;
   arrivalTime?: string;
+  /**
+   * Varış saatinin kaynağı. Resmî tarifede yoksa `arrivalTime` BOŞ kalır;
+   * tahmini süre yalnızca `derivedArrivalTime` alanında taşınır.
+   */
+  arrivalSource?: "official" | "derived" | "unknown";
+  /** Seyir süresi tahmininden üretilen varış (asla resmî varış yerine geçmez) */
+  derivedArrivalTime?: string;
+  /** Platform adı yalnızca kaynakta varsa doldurulur; yoksa boş bırakılır. */
   platform: string;
+  platformSource?: "official" | "unknown";
   price: string;
+  priceSource?: "official-operator" | "official-fare-table" | "unknown";
   stops?: RawStop[];
   isWeekendOnly?: boolean;
   isWeekdayOnly?: boolean;
@@ -42,6 +53,8 @@ export interface RawOfficialTrip {
   continuousUntil?: string;
   /** Hat tanımlayıcı (örn. Beşiktaş-Kadıköy) */
   lineName?: string;
+  sourceUrl?: string;
+  verifiedAt?: string;
 }
 
 /**
@@ -53,7 +66,9 @@ export interface RawOfficialTrip {
  * - Prens Tur     : prenstur.net resmi 2026-2027 kış tarifesi afişinden çıkarılmış doğrulanmış veri.
  * - Turyol        : turyol.com iç arama motorundan canlı çekilmiş doğrulanmış veri.
  */
-const baseTrips = rawSchedules as unknown as RawOfficialTrip[];
+const baseTrips = (rawSchedules as unknown as RawOfficialTrip[]).filter(
+  (trip) => !["sh-2026-1205", "sh-2026-1234", "sh-2026-1259"].includes(trip.id),
+);
 const supplementaryTrips = generateSupplementarySchedules();
 const maviMarmaraTrips = getMaviMarmaraSchedules();
 const denturTrips = getDenturSchedules();
@@ -62,6 +77,7 @@ const turyolTrips = getTuryolSchedules();
 
 export const OFFICIAL_SCHEDULES_DATA: RawOfficialTrip[] = [
   ...baseTrips,
+  ...BOSTANCI_SEHIRHATLARI_SCHEDULES,
   ...supplementaryTrips,
   ...maviMarmaraTrips,
   ...denturTrips,

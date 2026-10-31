@@ -83,7 +83,7 @@ export function TripDetailsSheet({
       schedule.departureTime,
       schedule.targetTimeIso || new Date(nowMs).toISOString(),
       schedule.stops,
-      schedule.arrivalTime,
+      schedule.arrivalTime ?? schedule.derivedArrivalTime,
       nowMs,
       serverTimeIso
     );
@@ -386,7 +386,11 @@ export function TripDetailsSheet({
                       {dynState?.currentDepartureTime || schedule.departureTime}
                     </div>
                     <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5 truncate">
-                      {schedule.arrivalTime ? `Varış ~${schedule.arrivalTime}` : "Planlı Sefer"}
+                      {schedule.arrivalSource === "official" && schedule.arrivalTime
+                        ? `Varış ${schedule.arrivalTime}`
+                        : schedule.derivedArrivalTime
+                        ? `Varış ~${schedule.derivedArrivalTime} (tahmini)`
+                        : "Varış bilgisi yok"}
                     </div>
                   </div>
 
@@ -398,9 +402,15 @@ export function TripDetailsSheet({
                     <div className="text-xs sm:text-base font-black text-slate-900 dark:text-white truncate">
                       {dynState?.currentOrigin || schedule.origin}
                     </div>
-                    <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold truncate mt-0.5">
-                      {schedule.platform || "Yolcu Rıhtımı"}
-                    </div>
+                    {schedule.platform && schedule.platformSource !== "unknown" ? (
+                      <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold truncate mt-0.5">
+                        {schedule.platform}
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
+                        Platform bilgisi yok
+                      </div>
+                    )}
                   </div>
 
                   <div className="bg-slate-50 dark:bg-slate-900/90 p-2.5 sm:p-3 rounded-2xl border border-slate-200 dark:border-slate-800">

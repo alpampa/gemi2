@@ -1,6 +1,6 @@
 import { OFFICIAL_SCHEDULES_DATA, RawOfficialTrip } from '../data/official-schedules';
 import type { ScheduleCardDto, SchedulesResponse, TripStatus } from '@/lib/types/schedule';
-import { getOfficialRouteFare, resolveRealisticPlatform } from '@/lib/data/official-fares';
+import { getOfficialRouteFare } from '@/lib/data/official-fares';
 import { selfHealTripRecord } from '@/lib/agents/self-healing-engine';
 import { checkTurkishHoliday } from '@/lib/utils/holiday-calendar';
 import { istanbulIsoFor, compareHhmm, nightRolloverDayOffset } from '@/lib/utils/istanbul-time';
@@ -104,8 +104,8 @@ export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
   // 1. Sanitize: veri kaynağındaki bozuk kayıtları temizle
   //   - departureTime "HH:mm" formatında değilse kayıt atlanır
   //   - origin/destination placeholder metin taşıyorsa atlanır (örn: "Sadece Hafta İçi...")
-  //   - varış < kalkış ve kalkış 17:00'den önceyse veri hatasıdır: varış temizlenir,
-  //     selfHealTripRecord gerçekçi seyir süresine göre yeniden hesaplar.
+  //   - varış < kalkış ve kalkış 17:00'den önceyse veri hatasıdır: resmî varış
+  //     temizlenir; selfHealTripRecord yalnızca "tahmini" alanı işaretler.
   //     17:00 sonrası kalkışta bu gece yarısını aşan gerçek seferdir, korunur.
   const sanitizedTrips: RawOfficialTrip[] = OFFICIAL_SCHEDULES_DATA
     .filter(trip => /^\d{2}:\d{2}$/.test(trip.departureTime))
@@ -146,6 +146,10 @@ export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
     const resolvedPrice = trip.operator === "Şehir Hatları"
       ? officialFare.fullFare
       : (operatorPrice ?? officialFare.fullFare);
+    const priceSource: "official-operator" | "official-fare-table" =
+      trip.operator !== "Şehir Hatları" && operatorPrice
+        ? "official-operator"
+        : "official-fare-table";
 
     // Gece seferi (00:00-04:59 kalkış) akşam saatlerinde (20:00+) görüntülenirken
     // kalkış yarına taşınır: 23:50'de 00:15 seferi "GİTTİ" değil "yaklaşan" olur.
@@ -195,12 +199,16 @@ export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
       status,
       delayText,
       targetTimeIso: targetIso,
-      platform: resolveRealisticPlatform(trip.origin, trip.destination, trip.operator),
+      platform: trip.platform ?? "",
+      platformSource: trip.platformSource ?? (trip.platform ? "official" : "unknown"),
       price: resolvedPrice,
+      priceSource,
       progress,
       category: trip.category || (trip.destination.includes('ada') || trip.origin.includes('ada') || trip.destination === 'Büyükada' || trip.origin === 'Büyükada' ? 'ADALAR' : 'BOGAZ'),
       stops: trip.stops && trip.stops.length > 0 ? trip.stops : undefined,
       arrivalTime: trip.arrivalTime,
+      derivedArrivalTime: trip.derivedArrivalTime,
+      arrivalSource: trip.arrivalSource ?? (trip.arrivalTime ? "official" : "unknown"),
       isContinuous: trip.isContinuous || undefined,
       continuousUntil: trip.continuousUntil,
       lineName: trip.lineName,
