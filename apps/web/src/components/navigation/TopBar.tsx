@@ -66,7 +66,7 @@ export function TopBar() {
                 aria-label="Önbelleği temizle ve son sürümü yükle"
                 className="relative h-6 bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-[9px] font-black px-2 rounded border border-emerald-500/30 shrink-0 cursor-pointer transition-all active:scale-95 flex items-center gap-0.5 after:absolute after:content-[''] after:-inset-y-2.5 after:inset-x-0"
               >
-                <span>CANLI</span>
+                <span>GÜNCEL</span>
                 <span className="text-[8px]">⚡</span>
               </button>
             </h1>

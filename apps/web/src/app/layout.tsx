@@ -15,8 +15,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Vapur Seferleri — İstanbul Canlı Deniz Ulaşımı",
-  description: "İstanbul Şehir Hatları, Mavi Marmara ve Prens Tur canlı vapur kalkış panosu, durak takibi ve deniz hava durumu asistanı.",
+  title: "Vapur Seferleri — İstanbul Deniz Ulaşımı",
+  description: "İstanbul Şehir Hatları, Mavi Marmara ve Prens Tur güncel vapur kalkış panosu, iptal duyuruları ve deniz hava durumu.",
   manifest: "/manifest.json",
 };
 

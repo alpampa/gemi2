@@ -25,7 +25,7 @@ export default function Error({
         </div>
         <h2 className="text-xl font-black mb-2 text-white">Tarife Yenileniyor</h2>
         <p className="text-slate-400 mb-4 text-xs leading-relaxed">
-          Canlı vapur sefer tarifesi ve radar verileri senkronize edilirken anlık bir gecikme oluştu. Sayfayı yenileyerek resmi tarifeye bağlanabilirsiniz.
+          Güncel vapur sefer tarifesi yüklenirken bir gecikme oluştu. Sayfayı yenileyerek resmî tarifeye bağlanabilirsiniz.
         </p>
         {error?.message && (
           <div className="mb-4 p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] text-amber-300 font-mono text-left max-w-full overflow-x-auto">

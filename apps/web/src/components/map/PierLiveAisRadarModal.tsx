@@ -154,11 +154,11 @@ export function PierLiveAisRadarModal({
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-sm sm:text-base font-black text-white tracking-tight truncate">
-                    {pierName} İSKELESİ ÇEVRESİ 500M CANLI RADAR
+                    {pierName} İSKELESİ ÇEVRESİ 500M HARİCİ RADAR
                   </h3>
                   <span className="px-2 py-0.2 rounded-full text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1">
                     <Radio size={10} className="animate-pulse text-emerald-400" />
-                    <span>CANLI AIS TELSİZ ALICISI</span>
+                    <span>HARİCİ AIS BAĞLANTISI</span>
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400 font-medium truncate mt-0.5">
@@ -210,7 +210,7 @@ export function PierLiveAisRadarModal({
                 className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-black text-xs shadow-xl flex items-center gap-2 transition-all cursor-pointer border border-cyan-400/40"
               >
                 <Radio size={14} className="animate-pulse" />
-                <span>Bu Sektördeki Tüm Canlı Gemileri MarineTraffic Üzerinde Gör</span>
+                <span>Bu Sektördeki Gemileri MarineTraffic Üzerinde Gör</span>
                 <ExternalLink size={13} />
               </a>
             </div>

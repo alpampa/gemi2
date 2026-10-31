@@ -174,13 +174,13 @@ export function BoardTvMode({
                 {partnerName ? partnerName.toUpperCase() : "İSTANBUL DENİZ ULAŞIMI"}
               </span>
               <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                CANLI PANO
+                GÜNCEL PANO
               </span>
             </div>
             <h1 className="text-base sm:text-lg font-black text-white truncate">
               {selectedPier !== "ALL"
-                ? `${selectedPier} İskelesi Canlı Kalkış Panosu`
-                : "Tüm İskeleler Canlı Sefer Panosu"}
+                ? `${selectedPier} İskelesi Güncel Kalkış Panosu`
+                : "Tüm İskeleler Güncel Sefer Panosu"}
             </h1>
           </div>
         </div>
@@ -315,7 +315,7 @@ export function BoardTvMode({
           {partnerName ? (
             <span className="flex items-center gap-1.5 text-slate-300 font-bold">
               <Building2 size={13} className="text-amber-400" />
-              <span>{partnerName} Misafirleri İçin Özel Canlı İskele Panosu</span>
+              <span>{partnerName} Misafirleri İçin Özel İskele Panosu</span>
             </span>
           ) : (
             <span>İBB Şehir Hatları, İDO, Mavi Marmara, Dentur, Prens Tur ve Turyol Resmi Seferleri</span>
