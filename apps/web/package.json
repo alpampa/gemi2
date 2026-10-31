@@ -9,11 +9,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-      "lint": "eslint",
-      "typecheck": "tsc --noEmit",
-      "test": "vitest run",
-      "test:e2e": "playwright test",
-      "audit:mobile": "node scripts/mobile-audit.mjs",
+    "lint": "eslint src e2e scripts next.config.ts vitest.config.ts playwright.config.ts eslint.config.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "icons": "node scripts/generate-icons.mjs",
+    "validate:data": "node scripts/validate-data.mjs",
+    "audit:mobile": "node scripts/mobile-audit.mjs",
     "audit:daemon": "node scripts/audit-daemon.mjs"
   },
   "dependencies": {
@@ -34,6 +36,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",
     "@types/mapbox-gl": "^3.4.1",
@@ -42,6 +45,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "^16.4.0",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.3"

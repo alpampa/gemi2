@@ -1,17 +1,34 @@
 {
+  "id": "/",
   "name": "Vapur Seferleri — İstanbul Deniz Ulaşımı",
   "short_name": "Vapur",
   "description": "İstanbul Şehir Hatları, Mavi Marmara ve Prens Tur güncel vapur kalkış panosu, iptal duyuruları ve deniz hava durumu.",
+  "lang": "tr",
+  "dir": "ltr",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#070b14",
   "theme_color": "#0a0f1d",
-  "orientation": "portrait-primary",
+  "categories": ["travel", "navigation"],
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "shortcuts": [
@@ -20,48 +37,28 @@
       "short_name": "İskeleler",
       "description": "İstanbul genelindeki vapur iskeleleri rehberi ve kameraları",
       "url": "/?view=piers",
-      "icons": [
-        {
-          "src": "/favicon.ico",
-          "sizes": "64x64"
-        }
-      ]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Deniz Meteorolojisi & Radar",
       "short_name": "Hava & Radar",
       "description": "Boğaz ve Marmara dalga, akıntı ve fırtına erken uyarı merkezi",
       "url": "/?view=weather",
-      "icons": [
-        {
-          "src": "/favicon.ico",
-          "sizes": "64x64"
-        }
-      ]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Adalar Vapurları",
       "short_name": "Adalar",
       "description": "Büyükada, Heybeliada, Kınalıada ve Burgazada seferleri",
-      "url": "/?category=ADALAR",
-      "icons": [
-        {
-          "src": "/favicon.ico",
-          "sizes": "64x64"
-        }
-      ]
+      "url": "/?cat=ADALAR",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Boğaz Hatları",
       "short_name": "Boğaz",
       "description": "Kadıköy, Üsküdar, Beşiktaş, Karaköy ve Boğaz turları",
-      "url": "/?category=BOGAZ",
-      "icons": [
-        {
-          "src": "/favicon.ico",
-          "sizes": "64x64"
-        }
-      ]
+      "url": "/?cat=BOGAZ",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

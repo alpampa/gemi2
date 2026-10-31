@@ -17,6 +17,17 @@ test("Ana sayfa: sefer listesi, güven şeridi ve alt menü görünür", async (
   ).toBeVisible();
 });
 
+test("Erişilebilirlik: viewport yakınlaştırmayı engellemez", async ({ page }) => {
+  await page.goto("/");
+
+  const viewports = page.locator('meta[name="viewport"]');
+  await expect(viewports).toHaveCount(1);
+  const content = (await viewports.getAttribute("content")) ?? "";
+  expect(content).not.toContain("user-scalable");
+  expect(content).not.toContain("maximum-scale");
+  expect(content).toContain("width=device-width");
+});
+
 test("Ana sayfa: kaynaksız doluluk tahmini gösterilmez", async ({ page }) => {
   await page.goto("/");
 

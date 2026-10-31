@@ -158,8 +158,19 @@ body {
   justify-content: center;
 }
 
-button, a, input, select {
+button, a, input, select, textarea {
   touch-action: manipulation;
+}
+
+/*
+ * iOS ZOOM-ON-FOCUS DÜZELTMESİ (WCAG 1.4.4 uyumlu):
+ * Safari, 16px'ten küçük yazı tipine sahip bir alana odaklanınca sayfayı
+ * kendiliğinden yakınlaştırır. maximum-scale ile zoomu KİLİTLEMEK yerine
+ * form alanlarını 16px'e çıkarırız; böylece kullanıcı yine istediği kadar
+ * yakınlaştırabilir. Bileşen sınıfları Tailwind ile ezilemez (important).
+ */
+input, select, textarea {
+  font-size: 16px;
 }
 
 /* Glassmorphism utility */

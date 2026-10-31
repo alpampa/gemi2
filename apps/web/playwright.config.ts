@@ -16,6 +16,14 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      name: "pixel-7",
+      use: { ...devices["Pixel 7"] },
+    },
+    {
+      name: "iphone-13",
+      use: { ...devices["iPhone 13"] },
+    },
   ],
   webServer: {
     command: "npm run start",
