@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { ShieldAlert, ShieldCheck, ExternalLink, X, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
 import { resolveServiceDayInfo, tariffBadgeLabel } from "@/lib/utils/service-day-info";
 import {
@@ -51,14 +52,8 @@ export function ServiceDataTrustBar({
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!isModalOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsModalOpen(false);
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isModalOpen]);
+  const closeModal = useCallback(() => setIsModalOpen(false), []);
+  const modalRef = useModalA11y(isModalOpen, closeModal);
 
   const parsedMs = Date.parse(serverTimeIso);
   const serverMs = Number.isNaN(parsedMs) ? Date.now() : parsedMs;
@@ -179,6 +174,7 @@ export function ServiceDataTrustBar({
             onClick={() => setIsModalOpen(false)}
           >
             <div
+              ref={modalRef}
               role="dialog"
               aria-modal="true"
               aria-label="Resmi Duyuru ve Tarife Kaynak Doğrulama Durumu"

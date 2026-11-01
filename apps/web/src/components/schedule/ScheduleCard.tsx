@@ -178,6 +178,18 @@ export function ScheduleCard(props: ScheduleCardProps) {
 
   // KULLANICI KURALI: Son 60 Saniye Dairesel Kalan Saniye Geri Sayım Göstergesi
   const isLastMinute = !isOtherDayPreview && !isCancelled && !dynState.isDeparted && remainingSec > 0 && remainingSec <= 60;
+
+  // ERİŞİLEBİLİRLİK: Saniyelik geri sayım ekran okuyucuya ASLA canlı okunmaz.
+  // Yalnızca kritik eşiklerde (5 dk / 2 dk) tek seferlik polite duyuru yapılır.
+  const minsLeft = dynState.minutesUntilDeparture;
+  const liveThresholdAnnouncement =
+    isOtherDayPreview || isCancelled || dynState.isDeparted || minsLeft == null
+      ? null
+      : minsLeft <= 2
+      ? "Kalkışa 2 dakika veya daha az kaldı"
+      : minsLeft <= 5
+      ? "Kalkışa 5 dakika kaldı"
+      : null;
   const ringRatio = isLastMinute ? Math.max(0, Math.min(1, remainingSec / 60)) : 1;
   const ringCircumference = 94.2; // 2 * PI * 15
   const ringOffset = ringCircumference * (1 - ringRatio);
@@ -276,7 +288,21 @@ export function ScheduleCard(props: ScheduleCardProps) {
           onClick={handleCardClick}
           role="button"
           tabIndex={0}
-          aria-label={`${dynState.currentOrigin}'den ${routeDestinationDisplay}'na ${dynState.currentDepartureTime} seferi, detay için açın`}
+          aria-label={[
+        `${dynState.currentOrigin}'dan ${routeDestinationDisplay}'a`,
+        dynState.currentDepartureTime,
+        isCancelled
+          ? "sefer iptal edildi"
+          : dynState.isDeparted
+          ? "sefer hareket etti"
+          : minsLeft != null
+          ? formatRemainingShort(minsLeft)
+          : "zamanında",
+        props.operator,
+        "detay için açın",
+      ]
+        .filter(Boolean)
+        .join(", ")}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
@@ -427,7 +453,21 @@ export function ScheduleCard(props: ScheduleCardProps) {
       onClick={handleCardClick}
       role="button"
       tabIndex={0}
-      aria-label={`${dynState.currentOrigin}'den ${routeDestinationDisplay}'na ${dynState.currentDepartureTime} seferi, detay için açın`}
+      aria-label={[
+        `${dynState.currentOrigin}'dan ${routeDestinationDisplay}'a`,
+        dynState.currentDepartureTime,
+        isCancelled
+          ? "sefer iptal edildi"
+          : dynState.isDeparted
+          ? "sefer hareket etti"
+          : minsLeft != null
+          ? formatRemainingShort(minsLeft)
+          : "zamanında",
+        props.operator,
+        "detay için açın",
+      ]
+        .filter(Boolean)
+        .join(", ")}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -449,6 +489,11 @@ export function ScheduleCard(props: ScheduleCardProps) {
           : "border-slate-200 dark:border-slate-700/60 hover:border-blue-400 dark:hover:border-blue-500/40 bg-white dark:bg-[#141d2e]")
       }`}
     >
+      {/* ERİŞİLEBİLİRLİK: yalnızca eşiklerde (5 dk / 2 dk) duyurulur */}
+      <span className="sr-only" aria-live="polite" aria-atomic="true">
+        {liveThresholdAnnouncement ?? ""}
+      </span>
+
       {/* ARGON + APPLE HIG KAHRAMAN SEFER VITRINI (İLK AKTİF SEFER) */}
       {/* 1. ANA SATIR: Kalkış Zamanı, Rota, Operatör ve Eylemler */}
       <div className="flex items-center justify-between gap-2.5 w-full">
@@ -481,7 +526,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-                <span className="text-[10px] font-mono font-black tabular-nums text-rose-600 dark:text-rose-400 animate-pulse font-extrabold">
+                <span aria-live="off" className="text-[10px] font-mono font-black tabular-nums text-rose-600 dark:text-rose-400 animate-pulse font-extrabold">
                   {remainingSec}s
                 </span>
                 <span className="text-[8px] font-bold text-slate-400">KALDI</span>
@@ -532,7 +577,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
                   <Siren size={10} aria-hidden="true" /> SON ÇAĞRI
                 </span>
               ) : dynState.countdown ? (
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-black bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 animate-pulse whitespace-nowrap inline-flex items-center gap-0.5">
+                <span aria-live="off" className="px-1.5 py-0.5 rounded text-[10px] font-mono font-black bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 animate-pulse whitespace-nowrap inline-flex items-center gap-0.5">
                   <Timer size={10} aria-hidden="true" /> {dynState.countdown}
                 </span>
               ) : dynState.minutesUntilDeparture != null && dynState.status === "ON_TIME" ? (

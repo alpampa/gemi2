@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Ship,
@@ -43,6 +43,7 @@ import { SLOW_TICK_INTERVAL_MS } from "@/lib/constants";
 import { useAlarmStore } from "@/store/useAlarmStore";
 import { useFavoritesStore } from "@/store/useFavoritesStore";
 import { useActiveVoyageStore } from "@/store/useActiveVoyageStore";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { getReportedVesselName } from "@/lib/utils/vessel-info";
 import { useLanguageStore } from "@/store/useLanguageStore";
 import { requestNotificationPermission } from "@/lib/utils/sound";
@@ -97,15 +98,8 @@ export function TripDetailsSheet({
   const [isVesselHeritageOpen, setIsVesselHeritageOpen] = useState(false);
   const [isPierAtlasOpen, setIsPierAtlasOpen] = useState(false);
 
-  // Escape tuşu ile kapatma (klavye erişilebilirliği)
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  // Esc / odak tuzağı / Android geri tuşu — tek ortak hook.
+  const modalRef = useModalA11y(isOpen && schedule !== null, onClose);
 
   const islandGuide = useMemo(() => {
     if (!schedule) return null;
@@ -177,6 +171,7 @@ export function TripDetailsSheet({
 
           {/* Clean Ergonomic Bottom Sheet */}
           <motion.div
+            ref={modalRef}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -184,7 +179,7 @@ export function TripDetailsSheet({
             role="dialog"
             aria-modal="true"
             aria-label={`Sefer detayı: ${schedule.origin}'den ${schedule.destination}'na ${schedule.departureTime}`}
-            className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white dark:bg-[#0c1322] border-t border-slate-200 dark:border-slate-800 rounded-t-[28px] z-50 p-4 sm:p-6 text-slate-900 dark:text-white shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto"
+            className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white dark:bg-[#0c1322] border-t border-slate-200 dark:border-slate-800 rounded-t-[28px] z-50 p-4 sm:p-6 text-slate-900 dark:text-white shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto overscroll-contain"
             style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}
           >
             {/* Grab Handle */}

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, AlertTriangle } from "lucide-react";
 import { OperatorLogo } from "@/components/ui/OperatorLogo";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { extractIstanbulDisiRoutes } from "@/lib/utils/announcement-body";
 import { buildCancellationBulletin } from "@/lib/utils/announcement-bulletin";
 import type { OperatorAnnouncement } from "@/lib/types/announcement";
@@ -33,14 +33,7 @@ export function AnnouncementDetailSheet({
   isOpen,
   onClose,
 }: AnnouncementDetailSheetProps) {
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [isOpen, onClose]);
+  const modalRef = useModalA11y(isOpen && announcement !== null, onClose);
 
   const istanbulDisi = announcement ? extractIstanbulDisiRoutes(announcement.body) : [];
   const isCancellation =
@@ -60,6 +53,7 @@ export function AnnouncementDetailSheet({
             aria-hidden
           />
           <motion.div
+            ref={modalRef}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
