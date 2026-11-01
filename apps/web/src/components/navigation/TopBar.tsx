@@ -82,7 +82,7 @@ export function TopBar() {
           onClick={toggleLanguage}
           title={`Aktif dil: ${SUPPORTED_LANGUAGES.find((item) => item.code === language)?.nativeName ?? language}. Dili değiştirmek için dokunun.`}
           aria-label={`Aktif dil ${SUPPORTED_LANGUAGES.find((item) => item.code === language)?.nativeName ?? language}. Dili değiştir`}
-          className="w-10 h-10 rounded-xl text-xs font-black transition-all border flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-2xs cursor-pointer active:scale-95"
+          className="w-11 h-11 rounded-xl text-xs font-black transition-all border flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-2xs cursor-pointer active:scale-95"
         >
           <span className="text-xl leading-none" aria-hidden="true">{SUPPORTED_LANGUAGES.find(l => l.code === language)?.flag || "🌐"}</span>
         </button>

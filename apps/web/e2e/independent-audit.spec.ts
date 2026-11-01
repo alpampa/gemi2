@@ -130,7 +130,7 @@ for (const vp of VIEWPORTS) {
             const ah = parseFloat(after.height);
             if (!isNaN(ah) && ah > hitH) hitH = ah;
           }
-          if (hitH < 40) {
+          if (hitH < 44) {
             const label = (el.getAttribute("aria-label") || el.textContent || "").trim().slice(0, 40);
             if (label) bad.push({ label, w: Math.round(r.width), h: Math.round(hitH) });
           }
