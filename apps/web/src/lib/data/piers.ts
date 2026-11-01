@@ -47,6 +47,98 @@ export const ISTANBUL_PIERS: Record<string, PierLocation> = {
   "Sedef Adası": { name: "Sedef Adası", lat: 40.8500, lng: 29.1417, region: "Adalar" }
 };
 
+/**
+ * Kanonik iskele adı çözümlemesi.
+ *
+ * Sorun: Dentur gibi kaynaklar büyük harfli adlar getiriyordu (`HEYBELİADA`,
+ * `KABATAŞ`, `SİRKECİ`); filtrede `Heybeliada`/`HEYBELİADA` çift giriş oluşuyordu.
+ *
+ * Kural: Bir ad, kanonik listeyle (istemese de diyakritik/büyük-küçük harf
+ * farkıyla) eşleşirse KANONİK ada çevrilir. Eşleşme yoksa ad DEĞİŞTİRİLMEZ;
+ * tahminle eşleme yapılmaz (uydurma yasak). Çağıran taraf gerekirse
+ * `isKnownPier` ile kontrol eder.
+ */
+const STRIP_MAP: Record<string, string> = {
+  ı: "i", İ: "i", ş: "s", Ş: "s", ğ: "g", Ğ: "g", ç: "c", Ç: "c",
+  ö: "o", Ö: "o", ü: "u", Ü: "u", â: "a", Â: "a", î: "i", Î: "i", û: "u", Û: "u",
+};
+
+function pierKey(raw: string): string {
+  return raw
+    .trim()
+    .toLocaleLowerCase("tr")
+    .replace(/['’\s.]/g, "")
+    .split("")
+    .map((ch) => STRIP_MAP[ch] ?? ch)
+    .join("");
+}
+
+const PIER_ALIAS_INDEX: Map<string, string> = (() => {
+  const index = new Map<string, string>();
+  for (const canonical of Object.keys(ISTANBUL_PIERS)) {
+    index.set(pierKey(canonical), canonical);
+  }
+  // Bilinen kaynak yazımları (resmî/alternatif): yalnızca doğrulanmış eşlemeler.
+  const extraAliases: Record<string, string> = {
+    sirkeci: "Eminönü",
+    "eminonu": "Eminönü",
+    "besiktas": "Beşiktaş",
+    "uskudar": "Üsküdar",
+    "kadikoy": "Kadıköy",
+    "karakoy": "Karaköy",
+    "buyukada": "Büyükada",
+    "heybeliada": "Heybeliada",
+    "heybeli": "Heybeliada",
+    "burgazada": "Burgazada",
+    "burgaz": "Burgazada",
+    "kinaliada": "Kınalıada",
+    "kinali": "Kınalıada",
+    "bostanci": "Bostancı",
+    "kabatas": "Kabataş",
+    "yenikapi": "Yenikapı",
+    "bakirkoy": "Bakırköy",
+    "sariyer": "Sarıyer",
+    "ortakoy": "Ortaköy",
+    "bebek": "Bebek",
+    "emirgan": "Emirgan",
+    "istinye": "İstinye",
+    "buyukdere": "Büyükdere",
+    "kuzguncuk": "Kuzguncuk",
+    "cengelkoy": "Çengelköy",
+    "kandilli": "Kandilli",
+    "anadoluhisari": "Anadoluhisarı",
+    "kanlica": "Kanlıca",
+    "cubuklu": "Çubuklu",
+    "pasabahce": "Paşabahçe",
+    "beykoz": "Beykoz",
+    "moda": "Moda",
+    "maltepe": "Maltepe",
+    "kartal": "Kartal",
+    "sedefadasi": "Sedef Adası",
+  };
+  for (const [alias, canonical] of Object.entries(extraAliases)) {
+    if (!index.has(alias)) index.set(alias, canonical);
+  }
+  return index;
+})();
+
+/** Ham iskele adını kanonik ada çevirir; bilinmiyorsa adı AYNEN döndürür. */
+export function normalizePierName(raw: string | undefined | null): string {
+  if (!raw) return "";
+  const trimmed = raw.trim();
+  const direct = ISTANBUL_PIERS[trimmed];
+  if (direct) return direct.name;
+  const found = PIER_ALIAS_INDEX.get(pierKey(trimmed));
+  return found ?? trimmed;
+}
+
+/** Ad, kanonik iskele listesinde biliniyor mu? (tahmin değil, yalnızca eşleşme) */
+export function isKnownPier(raw: string | undefined | null): boolean {
+  if (!raw) return false;
+  const trimmed = raw.trim();
+  return Boolean(ISTANBUL_PIERS[trimmed]) || PIER_ALIAS_INDEX.has(pierKey(trimmed));
+}
+
 export interface PierCoordinates {
   lat: number;
   lng: number;

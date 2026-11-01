@@ -4,6 +4,7 @@ import { getOfficialRouteFare } from '@/lib/data/official-fares';
 import { selfHealTripRecord } from '@/lib/agents/self-healing-engine';
 import { checkTurkishHoliday } from '@/lib/utils/holiday-calendar';
 import { istanbulIsoFor, compareHhmm, nightRolloverDayOffset } from '@/lib/utils/istanbul-time';
+import { normalizePierName } from '@/lib/data/piers';
 
 /**
  * Returns current Istanbul time components (UTC+3)
@@ -117,9 +118,16 @@ export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
     )
     .map(trip => {
       // Ara durak temizliği: stops içinde kalkış veya varış iskelesiyle aynı isimde olanlar temizlenir
-      const cleanedStops = trip.stops?.filter(
-        st => st.name.trim() !== trip.origin.trim() && st.name.trim() !== trip.destination.trim()
-      );
+      // İSKELE ADI NORMALİZASYONU (tek ingest noktası): kaynaklar büyük harfli
+      // ad getirse bile (HEYBELİADA / KABATAŞ / SİRKECİ) filtrede tek kanonik
+      // ada çevrilir. Bilinmeyen ad AYNEN korunur; tahminle eşleme yapılmaz.
+      const canonOrigin = normalizePierName(trip.origin);
+      const canonDestination = normalizePierName(trip.destination);
+      const cleanedStops = trip.stops
+        ?.map((st) => ({ ...st, name: normalizePierName(st.name) }))
+        .filter(
+          st => st.name.trim() !== canonOrigin.trim() && st.name.trim() !== canonDestination.trim()
+        );
       const depHour = parseInt(trip.departureTime.slice(0, 2), 10);
       const hasBadArrival =
         !!trip.arrivalTime &&
@@ -128,6 +136,8 @@ export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
         depHour < 17;
       return {
         ...(hasBadArrival ? { ...trip, arrivalTime: undefined } : trip),
+        origin: canonOrigin,
+        destination: canonDestination,
         stops: cleanedStops && cleanedStops.length > 0 ? cleanedStops : undefined
       };
     });
