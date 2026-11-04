@@ -3,6 +3,8 @@
 import { useState, useMemo } from "react";
 import { Ship, Clock, MapPin, Navigation, ChevronRight, Bell, BellRing, Sparkles } from "lucide-react";
 import type { ScheduleCardDto } from "@/lib/types/schedule";
+import { useTransitClock } from "@/hooks/useTransitClock";
+import { SLOW_TICK_INTERVAL_MS } from "@/lib/constants";
 import { resolveDynamicTrip } from "@/lib/utils/dynamic-trip";
 import { useAlarmStore } from "@/store/useAlarmStore";
 import { useLanguageStore } from "@/store/useLanguageStore";
@@ -38,9 +40,12 @@ export function PierDepartureBoard({
   const { isAlarmSet, toggleAlarm } = useAlarmStore();
   const { t } = useLanguageStore();
 
+  // Paylaşılan transit saati: render sırasında impure Date.now() çağrılmaz.
+  const { nowMs } = useTransitClock(SLOW_TICK_INTERVAL_MS, { serverTimeIso });
+
   // Find next 3 departures from activePier
   const nextDepartures = useMemo(() => {
-    const now = Date.now();
+    const now = nowMs;
     const matches: { schedule: ScheduleCardDto; dyn: ReturnType<typeof resolveDynamicTrip> }[] = [];
 
     for (const trip of schedules) {
@@ -48,7 +53,7 @@ export function PierDepartureBoard({
         trip.origin,
         trip.destination,
         trip.departureTime,
-        trip.targetTimeIso || new Date().toISOString(),
+        trip.targetTimeIso || new Date(nowMs).toISOString(),
         trip.stops,
         undefined,
         now,
@@ -70,7 +75,7 @@ export function PierDepartureBoard({
     matches.sort((a, b) => a.dyn.currentDepartureTime.localeCompare(b.dyn.currentDepartureTime));
 
     return matches.slice(0, 3);
-  }, [schedules, activePier, serverTimeIso]);
+  }, [schedules, activePier, serverTimeIso, nowMs]);
 
   return (
     <div className="px-3 pt-2">

@@ -29,7 +29,11 @@ export function useModalA11y(
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const pushedRef = useRef(false);
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  // Ref yazımı render sırasında yapılamaz (React Compiler kuralı);
+  // her commit sonunda tazelenir, bayat closure kalmaz.
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     if (!isOpen) return;

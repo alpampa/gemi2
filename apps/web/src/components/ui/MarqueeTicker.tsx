@@ -52,9 +52,12 @@ export function MarqueeTicker({
   const trackRef = useRef<HTMLDivElement>(null);
   const [flowing, setFlowing] = useState(false);
   const [durationSec, setDurationSec] = useState(60);
-  // Tur sonu geri çağrısı her render'da tazelenir (bayat closure yok)
+  // Tur sonu geri çağrısı her commit sonunda tazelenir (bayat closure yok);
+  // ref yazımı render sırasında yapılamaz (React Compiler kuralı).
   const onCycleEndRef = useRef<(() => void) | undefined>(onCycleEnd);
-  onCycleEndRef.current = onCycleEnd;
+  useEffect(() => {
+    onCycleEndRef.current = onCycleEnd;
+  });
   // cycleKey verilmişse ölçüm yalnızca içerik değişince yeniden yapılır
   const effectiveKey = cycleKey ?? children;
 

@@ -34,7 +34,8 @@ export interface ScheduleCardProps {
   status: TripStatus;
   targetTimeIso?: string;
   serverTimeIso?: string;
-  nowMs?: number;
+  /** Paylaşılan transit saati damgası (useTransitClock) — render'da impure Date.now() çağrılmamalı */
+  nowMs: number;
   delayText?: string;
   vessel?: string;
   platform: string;
@@ -74,7 +75,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
   const routeKey = `${props.origin} → ${props.destination}`;
   const isFav = isFavorite(routeKey);
 
-  const accurateNow = props.nowMs || Date.now();
+  const accurateNow = props.nowMs;
   const isOtherDayPreview = Boolean(props.dayPreviewLabel);
 
   // Kullanıcının özel olarak seçtiği kalkış iskelesi (ör. Bostancı -> Büyükada filtresinde Bostancı)

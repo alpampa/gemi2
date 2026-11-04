@@ -1,8 +1,11 @@
 "use client";
 
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { useModalA11y } from "@/hooks/useModalA11y";
+import { useHydrated } from "@/hooks/useHydrated";
+import { useTransitClock } from "@/hooks/useTransitClock";
+import { SLOW_TICK_INTERVAL_MS } from "@/lib/constants";
 import { ShieldAlert, ShieldCheck, ExternalLink, X, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
 import { resolveServiceDayInfo, tariffBadgeLabel } from "@/lib/utils/service-day-info";
 import {
@@ -40,7 +43,7 @@ export function ServiceDataTrustBar({
 }: ServiceDataTrustBarProps) {
   const { t } = useLanguageStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
 
   const liveScanAt = useAnnouncementStore((s) => s.liveScanAt);
   const snapshotGeneratedAt = useAnnouncementStore((s) => s.snapshotGeneratedAt);
@@ -48,15 +51,13 @@ export function ServiceDataTrustBar({
   const coverage = useAnnouncementStore((s) => s.coverage);
   const loading = useAnnouncementStore((s) => s.loading);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const closeModal = useCallback(() => setIsModalOpen(false), []);
   const modalRef = useModalA11y(isModalOpen, closeModal);
 
-  const parsedMs = Date.parse(serverTimeIso);
-  const serverMs = Number.isNaN(parsedMs) ? Date.now() : parsedMs;
+  // Paylaşılan transit saati: render sırasında impure Date.now() çağrılmaz;
+  // sunucu damgası bilinmiyorsa saat damgası ile tazelik hesaplanır.
+  const { nowMs } = useTransitClock(SLOW_TICK_INTERVAL_MS, { serverTimeIso });
+  const serverMs = nowMs;
   const day = resolveServiceDayInfo(serverMs);
 
   // Canlı tarama verisi ulaştıysa ve en az bir resmi kaynak canlı doğrulandıysa canlı zaman damgasını kullan;
