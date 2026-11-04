@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Radar, ExternalLink, ShieldCheck, Compass, Anchor, MapPin, Radio, Waves, Info } from "lucide-react";
 import { ISTANBUL_PIERS } from "@/lib/data/piers";
 import { addSeamarkLayerWithFallback } from "@/lib/utils/seamark-layer";
+import type * as L from "leaflet";
 
 interface PierLiveAisRadarModalProps {
   isOpen: boolean;
@@ -20,7 +21,7 @@ export function PierLiveAisRadarModal({
   pierName = "Kadıköy"
 }: PierLiveAisRadarModalProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
   const mounted = useHydrated();
   const [activeZone, setActiveZone] = useState<"500M" | "250M">("500M");
   const [seamarkUnavailable, setSeamarkUnavailable] = useState(false);

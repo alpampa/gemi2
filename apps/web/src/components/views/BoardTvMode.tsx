@@ -49,14 +49,12 @@ export function BoardTvMode({
 
   // Screen Wake Lock API: Ekranın kapanmasını önle
   useEffect(() => {
-    let wakeLock: any = null;
+    let wakeLock: WakeLockSentinel | null = null;
 
     async function requestWakeLock() {
       try {
-        if ("wakeLock" in navigator && (navigator as any).wakeLock) {
-          wakeLock = await (navigator as any).wakeLock.request("screen");
-        }
-      } catch (err) {
+        wakeLock = await navigator.wakeLock.request("screen");
+      } catch {
         // WakeLock desteklenmiyor veya izin reddedildi; sessizce devam et
       }
     }

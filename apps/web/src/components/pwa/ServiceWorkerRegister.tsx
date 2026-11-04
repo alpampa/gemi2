@@ -4,6 +4,13 @@ import { useEffect, useState, useCallback } from "react";
 import { OfflineMarineGuideBanner } from "./OfflineMarineGuideBanner";
 import { RotateCcw, Sparkles } from "lucide-react";
 
+declare global {
+  interface Window {
+    /** Acil durum önbellek sıfırlama (Cache Guardian) — konsoldan elle çağrılabilir. */
+    purgeVapurCacheAndReload?: () => void;
+  }
+}
+
 /**
  * VAPUR SIFIR-ÖNBELLEK & ANLIK SÜRÜM YÖNETİCİSİ (CACHE GUARDIAN)
  * 
@@ -84,7 +91,7 @@ export function ServiceWorkerRegister() {
     if (typeof window === "undefined") return;
 
     // Global erişim için window nesnesine ata
-    (window as any).purgeVapurCacheAndReload = purgeAllCachesAndReload;
+    window.purgeVapurCacheAndReload = purgeAllCachesAndReload;
 
     // 1. ChunkLoadError Yakalayıcı (Eski chunk 404 verdiğinde otomatik temizle ve yenile)
     const handleGlobalError = (event: ErrorEvent) => {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { runDailyVerificationAudit, runNightlyTariffSync } from "@/lib/agents/daily-sync-job";
 import { OFFICIAL_SCHEDULES_DATA } from "@/lib/data/official-schedules";
 import { verifyCronAuth } from "@/lib/utils/cron-auth";
+import { getErrorMessage } from "@/lib/utils/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +31,9 @@ export async function GET(request: NextRequest) {
       syncResult,
       auditLogs,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { status: "ERROR", message: error?.message || "Sync execution failed" },
+      { status: "ERROR", message: getErrorMessage(error, "Sync execution failed") },
       { status: 500 }
     );
   }

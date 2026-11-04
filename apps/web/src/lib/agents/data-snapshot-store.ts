@@ -21,7 +21,9 @@ export interface AnnouncementsSnapshotFile {
   }[];
 }
 
-const announcementsRaw = require("./data-snapshots/announcements.json") as AnnouncementsSnapshotFile;
+import announcementsSnapshot from "./data-snapshots/announcements.json";
+
+const announcementsRaw = announcementsSnapshot as AnnouncementsSnapshotFile;
 
 export function getStoredAnnouncements(): OperatorAnnouncement[] {
   const out: OperatorAnnouncement[] = [];

@@ -21,7 +21,9 @@ interface DenturScheduleFile {
 
 // Next.js JSON import'u tip güvenli değildir; bilinçli cast.
  
-const denturRaw = require("./dentur-schedules.json") as DenturScheduleFile;
+import denturSnapshot from "./dentur-schedules.json";
+
+const denturRaw = denturSnapshot as DenturScheduleFile;
 
 const DAY_TYPE_RUNS: Record<
   DenturDayType,

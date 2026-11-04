@@ -199,7 +199,7 @@ export function LateNightTransitModal({ isOpen, onClose }: LateNightTransitModal
                       {METROBUS_NIGHT_INFO.service}
                     </h5>
                     <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold">
-                      İstanbul\'un 24 saat kesintisiz kıtalararası omurgası
+                      İstanbul&apos;un 24 saat kesintisiz kıtalararası omurgası
                     </p>
                   </div>
                 </div>

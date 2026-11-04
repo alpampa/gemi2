@@ -403,8 +403,8 @@ export const useLanguageStore = create<LanguageState>()(
       },
       t: (key) => {
         const lang = get().language;
-        const dict = DICTIONARY[lang] || DICTIONARY["tr"];
-        return (dict as any)[key] || DICTIONARY["tr"][key] || (key as string);
+        const dict: Record<string, string> = DICTIONARY[lang] || DICTIONARY["tr"];
+        return dict[key] || DICTIONARY["tr"][key] || String(key);
       }
     }),
     {

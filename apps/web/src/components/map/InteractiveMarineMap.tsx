@@ -6,6 +6,7 @@ import { Radar, Satellite, Waves } from "lucide-react";
 import { MarineAisRadarModal } from "./MarineAisRadarModal";
 import "leaflet/dist/leaflet.css";
 import { ISTANBUL_PIERS } from "@/lib/data/piers";
+import type * as L from "leaflet";
 import type { ScheduleCardDto } from "@/lib/types/schedule";
 
 interface InteractiveMarineMapProps {
@@ -50,12 +51,12 @@ export function InteractiveMarineMap({
   interactive = true
 }: InteractiveMarineMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const routeLayerRef = useRef<any>(null);
-  const markersLayerRef = useRef<any>(null);
-  const satelliteTileRef = useRef<any>(null);
-  const satelliteLabelsRef = useRef<any>(null);
-  const nauticalTileRef = useRef<any>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const routeLayerRef = useRef<L.LayerGroup | null>(null);
+  const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const satelliteTileRef = useRef<L.TileLayer | null>(null);
+  const satelliteLabelsRef = useRef<L.TileLayer | null>(null);
+  const nauticalTileRef = useRef<L.TileLayer | null>(null);
 
   const mounted = useHydrated();
   const [mapReady, setMapReady] = useState(false);
@@ -161,10 +162,12 @@ export function InteractiveMarineMap({
     import("leaflet").then((leafletModule) => {
       const L = leafletModule.default || leafletModule;
       const map = mapInstanceRef.current;
-      if (!map) return;
+      const routeLayer = routeLayerRef.current;
+      const markersLayer = markersLayerRef.current;
+      if (!map || !routeLayer || !markersLayer) return;
 
-      routeLayerRef.current.clearLayers();
-      markersLayerRef.current.clearLayers();
+      routeLayer.clearLayers();
+      markersLayer.clearLayers();
 
       const originPier = resolveCleanPier(selectedOrigin);
       const destPier = resolveCleanPier(selectedDestination);
@@ -215,7 +218,7 @@ export function InteractiveMarineMap({
             }
           }
         });
-        markersLayerRef.current.addLayer(marker);
+        markersLayer.addLayer(marker);
       });
 
       if (originPier && destPier && originPier.name !== destPier.name) {
@@ -246,8 +249,8 @@ export function InteractiveMarineMap({
             lineCap: "round"
           }
         );
-        routeLayerRef.current.addLayer(glowLine);
-        routeLayerRef.current.addLayer(coreLine);
+        routeLayer.addLayer(glowLine);
+        routeLayer.addLayer(coreLine);
 
         const bounds = L.latLngBounds([
           [originPier.lat, originPier.lng],

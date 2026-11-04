@@ -23,6 +23,7 @@ import {
 import { scrapeAllAnnouncements } from "@/lib/agents/announcements-agent";
 import { computeFingerprint, compareSnapshots, buildSnapshotState } from "@/lib/agents/scraper-agent";
 import type { OperatorScraperConfig } from "./daily-sync-job-types";
+import { getErrorMessage } from "@/lib/utils/errors";
 
 export type { OperatorScraperConfig, ScraperAgentLog } from "./daily-sync-job-types";
 
@@ -74,14 +75,14 @@ export async function runDailyVerificationAudit(): Promise<import("./daily-sync-
             : `Erişim OK (HTTP 2xx). Ancak bu operatörün tarife verisi uygulamada saklanmıyor (${crawler.operatorName} veri durumu: kaynak yayınlanmıyor/görsel).`
           : `Erişim sağlanamadı (ağ hatası). Önbellekteki son veri korundu.`,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       logs.push({
         operator: crawler.operatorName,
         url: crawler.timetableEndpoint,
         lastChecked: nowStr,
         recordsVerified: 0,
         isCompliant: false,
-        message: `Erişim hatası: ${err?.message ?? err}`,
+        message: `Erişim hatası: ${getErrorMessage(err, "bilinmeyen hata")}`,
       });
     }
   }
@@ -123,12 +124,12 @@ export async function runNightlyTariffSync(): Promise<{
       checkedAt: report.checkedAt,
     });
     if (report.changed) await writeFingerprint("Dentur Avrasya", buildSnapshotState(fingerprint));
-  } catch (err: any) {
+  } catch (err: unknown) {
     reports.push({
       operator: "Dentur Avrasya",
       kind: "TARIFE",
       changed: false,
-      detail: `Dentur tarife taraması başarısız: ${err?.message ?? err}`,
+      detail: `Dentur tarife taraması başarısız: ${getErrorMessage(err, "bilinmeyen hata")}`,
       checkedAt: executedAt,
     });
   }
@@ -153,12 +154,12 @@ export async function runNightlyTariffSync(): Promise<{
       checkedAt: report.checkedAt,
     });
     if (report.changed) await writeFingerprint("ANNOUNCEMENTS", buildSnapshotState(fingerprint));
-  } catch (err: any) {
+  } catch (err: unknown) {
     reports.push({
       operator: "TÜM (Duyurular)",
       kind: "DUYURU",
       changed: false,
-      detail: `Duyuru taraması başarısız: ${err?.message ?? err}`,
+      detail: `Duyuru taraması başarısız: ${getErrorMessage(err, "bilinmeyen hata")}`,
       checkedAt: executedAt,
     });
   }
