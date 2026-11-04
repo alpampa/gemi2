@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useHydrated } from "@/hooks/useHydrated";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertOctagon, Train, Ship, Compass, ArrowRight, CheckCircle, Clock, Zap, MapPin, Anchor } from "lucide-react";
@@ -22,12 +23,9 @@ export function MissedFerryAssistantModal({
   destination,
   missedDepartureTime
 }: MissedFerryAssistantModalProps) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [isSeaTaxiOpen, setIsSeaTaxiOpen] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!isOpen || !mounted) return null;
 

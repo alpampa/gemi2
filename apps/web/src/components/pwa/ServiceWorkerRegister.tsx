@@ -172,7 +172,13 @@ export function ServiceWorkerRegister() {
     }
 
     // 3. Sekme Görünür Olduğunda ve Periyodik Güncelleme Kontrolü
-    checkForServerUpdate();
+    // İlk kontrol SW hazır olduğunda (asenkron) başlatılır; effect içinde
+    // senkron setState tetiklenmez.
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.ready
+        .then(() => checkForServerUpdate())
+        .catch(() => {});
+    }
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {

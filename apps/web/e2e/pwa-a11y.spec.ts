@@ -45,6 +45,11 @@ test("Apple touch icon mevcut ve PNG", async ({ request }) => {
 
 for (const path of ["/", "/profile"]) {
   test(`axe: ${path} serious/critical ihlal yok`, async ({ page }) => {
+    // Ana sayfa ~17.6k DOM düğümü içeriyor; axe taraması CPU'ya duyarlı ve
+    // paralel koşuda 30 sn varsayılanı aşabiliyor. Bu test yalnızca "serious/
+    // critical ihlal yok" ölçütünü doğrular; süre eşiği burada bir sözleşme
+    // değildir, bu yüzden yalnızca bu test için üst sınır yükseltilir.
+    test.setTimeout(90_000);
     await page.goto(path);
     await page.waitForTimeout(1500);
     const results = await new AxeBuilder({ page })

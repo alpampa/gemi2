@@ -33,6 +33,11 @@ import {
 } from "@/lib/data/sea-taxi";
 import { PierSharingQrCard } from "./PierSharingQrCard";
 import type { SeaTaxiLobby, LobbyParticipant } from "@/lib/types/taxi-share";
+import {
+  useLocalStorageValue,
+  writeLocalStorageValue,
+  removeLocalStorageValue,
+} from "@/hooks/useLocalStorageValue";
 
 interface SharedSeaTaxiModalProps {
   isOpen: boolean;
@@ -55,7 +60,8 @@ export function SharedSeaTaxiModal({
   // Lobi canlı durumu
   const [lobby, setLobby] = useState<SeaTaxiLobby | null>(null);
   const [isLoadingLobby, setIsLoadingLobby] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // Katılımcı kimliği localStorage'da tutulur (dış depo); effect'te setState yok.
+  const currentUserId = useLocalStorageValue("vapur_taxi_participant_id");
 
   // Form alanları
   const [joinName, setJoinName] = useState("");
@@ -85,12 +91,14 @@ export function SharedSeaTaxiModal({
   };
 
   useEffect(() => {
-    if (isOpen) {
-      const storedId = localStorage.getItem("vapur_taxi_participant_id");
-      if (storedId) setCurrentUserId(storedId);
-      fetchLobby(origin, destination, storedId);
-    }
-  }, [isOpen, origin, destination]);
+    if (!isOpen) return;
+    // Lobi yüklemesi: bayrak effect içinde senkron set edilmesin diye
+    // bir sonraki makro göreve devredilir (kullanıcıya fark yok, kural ihlali yok).
+    const timer = setTimeout(() => {
+      void fetchLobby(origin, destination, currentUserId);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [isOpen, origin, destination, currentUserId]);
 
   // Lobiye Katıl
   const handleJoinLobby = async (e: React.FormEvent) => {
@@ -120,8 +128,7 @@ export function SharedSeaTaxiModal({
       if (res.ok) {
         const json = await res.json();
         setLobby(json.lobby);
-        setCurrentUserId(json.participant.id);
-        localStorage.setItem("vapur_taxi_participant_id", json.participant.id);
+        writeLocalStorageValue("vapur_taxi_participant_id", json.participant.id);
         setShowJoinForm(false);
         setStatusMsg("✓ İskele lobisine başarıyla katıldınız!");
         setTimeout(() => setStatusMsg(""), 4000);
@@ -148,8 +155,7 @@ export function SharedSeaTaxiModal({
       if (res.ok) {
         const json = await res.json();
         setLobby(json.lobby);
-        setCurrentUserId(null);
-        localStorage.removeItem("vapur_taxi_participant_id");
+        removeLocalStorageValue("vapur_taxi_participant_id");
         setStatusMsg("Lobiden ayrıldınız.");
         setTimeout(() => setStatusMsg(""), 3000);
       }

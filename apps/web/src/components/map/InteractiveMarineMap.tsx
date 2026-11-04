@@ -1,5 +1,6 @@
 "use client";
 
+import { useHydrated } from "@/hooks/useHydrated";
 import { useEffect, useRef, useState } from "react";
 import { Radar, Satellite, Waves } from "lucide-react";
 import { MarineAisRadarModal } from "./MarineAisRadarModal";
@@ -56,14 +57,11 @@ export function InteractiveMarineMap({
   const satelliteLabelsRef = useRef<any>(null);
   const nauticalTileRef = useRef<any>(null);
 
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [mapReady, setMapReady] = useState(false);
   const [isRadarOpen, setIsRadarOpen] = useState(false);
   const [mapMode, setMapMode] = useState<"SATELLITE" | "NAUTICAL">("SATELLITE");
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // 1. Initialize Leaflet Map
   useEffect(() => {

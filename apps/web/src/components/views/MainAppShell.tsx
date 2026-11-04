@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { ScheduleListClient } from "@/components/schedule/ScheduleListClient";
 import { DepartureBoardView } from "@/components/views/DepartureBoardView";
 import { PiersDirectoryView } from "@/components/views/PiersDirectoryView";
@@ -37,15 +37,8 @@ export function MainAppShell({
     [schedules]
   );
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const view = params.get("view");
-      if (view === "piers" || view === "weather" || view === "favorites" || view === "schedules" || view === "board") {
-        setActiveTab(view);
-      }
-    }
-  }, []);
+  // `?view=` sunucuda (page.tsx resolveInitialView) çözülüp initialView olarak
+  // gelir; istemcide yeniden okuyup setState etmek gereksiz ve yarışa açıktı.
 
   const handleSelectPierForSchedules = (pierName: string) => {
     setForcedPierFilter(pierName);

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { Monitor } from "lucide-react";
 import { PierDepartureBoard } from "@/components/schedule/PierDepartureBoard";
 import { TripDetailsSheet } from "@/components/schedule/TripDetailsSheet";
@@ -19,19 +20,16 @@ interface DepartureBoardViewProps {
  * `?tv=1` ile tam ekran B2B TV Kiosk modu açılır (reklamsız işletme ekranı).
  */
 export function DepartureBoardView({ schedules, serverTimeIso }: DepartureBoardViewProps) {
-  const [selectedPier, setSelectedPier] = useState<string>("ALL");
+  const searchParams = useUrlSearchParams();
+  const [pierOverride, setPierOverride] = useState<string | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<ScheduleCardDto | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isTvMode, setIsTvMode] = useState(false);
+  const [tvModeDismissed, setTvModeDismissed] = useState(false);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("tv") === "1") {
-      setIsTvMode(true);
-      const pierParam = params.get("pier");
-      if (pierParam) setSelectedPier(pierParam);
-    }
-  }, []);
+  // `?tv=1&pier=...` doğrudan render sırasında okunur (effect ile geç güncelleme yok).
+  const isTvMode = searchParams.get("tv") === "1" && !tvModeDismissed;
+  const urlPier = searchParams.get("pier");
+  const selectedPier = pierOverride ?? urlPier ?? "ALL";
 
   if (isTvMode) {
     return (
@@ -39,7 +37,7 @@ export function DepartureBoardView({ schedules, serverTimeIso }: DepartureBoardV
         schedules={schedules}
         serverTimeIso={serverTimeIso}
         defaultPier={selectedPier !== "ALL" ? selectedPier : undefined}
-        onExit={() => setIsTvMode(false)}
+        onExit={() => setTvModeDismissed(true)}
       />
     );
   }
@@ -50,7 +48,7 @@ export function DepartureBoardView({ schedules, serverTimeIso }: DepartureBoardV
         schedules={schedules}
         serverTimeIso={serverTimeIso}
         selectedOrigin={selectedPier}
-        onSelectOrigin={setSelectedPier}
+        onSelectOrigin={setPierOverride}
         onSelectTrip={(trip) => {
           setSelectedTrip(trip);
           setIsSheetOpen(true);
@@ -62,7 +60,7 @@ export function DepartureBoardView({ schedules, serverTimeIso }: DepartureBoardV
         </p>
         <button
           type="button"
-          onClick={() => setIsTvMode(true)}
+          onClick={() => setTvModeDismissed(false)}
           className="shrink-0 min-h-[36px] px-3 rounded-xl border border-amber-400/50 bg-amber-400/10 text-amber-700 dark:text-amber-300 text-[11px] font-black flex items-center gap-1.5 hover:bg-amber-400/20 transition-colors cursor-pointer"
         >
           <Monitor size={14} aria-hidden="true" />

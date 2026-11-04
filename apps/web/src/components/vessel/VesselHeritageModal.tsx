@@ -1,5 +1,6 @@
 "use client";
 
+import { useHydrated } from "@/hooks/useHydrated";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Anchor, Check, Ship, X } from "lucide-react";
@@ -62,18 +63,19 @@ export function VesselHeritageModal({
   initialVesselName,
   onSelectVessel,
 }: VesselHeritageModalProps) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [selectedName, setSelectedName] = useState(initialVesselName ?? ISTANBUL_FERRY_FLEET[0].name);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
+  // Modal her açıldığında veya gemi adı prop'u değiştiğinde seçimi eşitle:
+  // effect yerine React'in resmi "render sırasında durum ayarlama" deseni.
+  const [prevSyncKey, setPrevSyncKey] = useState(`${isOpen}|${initialVesselName ?? ""}`);
+  const syncKey = `${isOpen}|${initialVesselName ?? ""}`;
+  if (syncKey !== prevSyncKey) {
+    setPrevSyncKey(syncKey);
     if (isOpen && initialVesselName) {
       setSelectedName(findVessel(initialVesselName).name);
     }
-  }, [isOpen, initialVesselName]);
+  }
 
   useEffect(() => {
     if (!isOpen) return;

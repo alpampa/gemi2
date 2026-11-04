@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { X, Maximize, Minimize, QrCode, Building2, Anchor } from "lucide-react";
 import { useTransitClock } from "@/hooks/useTransitClock";
+import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { resolveDynamicTrip } from "@/lib/utils/dynamic-trip";
 import type { ScheduleCardDto } from "@/lib/types/schedule";
 import { useLanguageStore } from "@/store/useLanguageStore";
@@ -36,20 +37,15 @@ export function BoardTvMode({
   const { nowMs } = useTransitClock(1000, { serverTimeIso, keepTickingWhenHidden: true });
   const { t } = useLanguageStore();
 
-  const [selectedPier, setSelectedPier] = useState<string>("ALL");
-  const [partnerName, setPartnerName] = useState<string>(propPartnerName || "");
+  const searchParams = useUrlSearchParams();
+  const [pierOverride, setPierOverride] = useState<string | null>(null);
+  const [partnerOverride, setPartnerOverride] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // URL parametrelerini oku (?pier=...&partner=...)
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const pierParam = params.get("pier") || defaultPier;
-      const partnerParam = params.get("partner") || propPartnerName;
-      if (pierParam) setSelectedPier(pierParam);
-      if (partnerParam) setPartnerName(partnerParam);
-    }
-  }, [defaultPier, propPartnerName]);
+  // URL parametreleri (?pier=...&partner=...) render sırasında okunur;
+  // kullanıcı seçimi varsa o önceliklidir.
+  const selectedPier = pierOverride ?? searchParams.get("pier") ?? defaultPier ?? "ALL";
+  const partnerName = partnerOverride ?? searchParams.get("partner") ?? propPartnerName ?? "";
 
   // Screen Wake Lock API: Ekranın kapanmasını önle
   useEffect(() => {
@@ -191,7 +187,7 @@ export function BoardTvMode({
           <div className="relative">
             <select
               value={selectedPier}
-              onChange={(e) => setSelectedPier(e.target.value)}
+              onChange={(e) => setPierOverride(e.target.value)}
               aria-label="Pano iskelesi seçin"
               className="min-h-[40px] pl-3 pr-7 py-1 bg-slate-900 border border-slate-700 rounded-xl text-xs font-bold text-slate-200 appearance-none focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer"
             >

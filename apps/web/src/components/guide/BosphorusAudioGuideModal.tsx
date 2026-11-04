@@ -1,5 +1,6 @@
 "use client";
 
+import { useHydrated } from "@/hooks/useHydrated";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Headphones, Volume2, Play, Pause, MapPin, Globe } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -19,11 +20,8 @@ export function BosphorusAudioGuideModal({ isOpen, onClose }: BosphorusAudioGuid
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [narrationLang, setNarrationLang] = useState<"tr" | "en">(language === "en" ? "en" : "tr");
   const [speechRate, setSpeechRate] = useState<number>(0.95);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const synthRef = useRef<SpeechSynthesis | null>(null);
 

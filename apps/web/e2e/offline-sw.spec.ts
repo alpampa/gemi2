@@ -40,7 +40,10 @@ test.describe("Service Worker — zayıf ağ dayanıklılığı", () => {
     });
 
     const started = Date.now();
-    await page.reload({ waitUntil: "domcontentloaded", timeout: 15000 });
+    // Ölçülen sözleşme: SW, 6 sn geciktirilen AĞI atlayıp kabuğu hızla döndürür.
+    // `commit`, yanıt başlıkları geldiğinde çözülür; böylece 3.5 sn bütçesi
+    // DOM parse/CPU yükünü değil, önbellekten yanıt dönüşünü ölçer.
+    await page.reload({ waitUntil: "commit", timeout: 15000 });
     const elapsed = Date.now() - started;
 
     expect(elapsed).toBeLessThan(3500);

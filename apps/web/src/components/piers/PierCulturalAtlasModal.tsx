@@ -1,5 +1,6 @@
 "use client";
 
+import { useHydrated } from "@/hooks/useHydrated";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,17 +40,15 @@ export function PierCulturalAtlasModal({
 }: PierCulturalAtlasModalProps) {
   const [selectedPierName, setSelectedPierName] = useState<string>(initialPierName);
   const [activeTab, setActiveTab] = useState<"HERITAGE" | "DISTRICT" | "PERKS">("HERITAGE");
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (initialPierName) {
-      setSelectedPierName(initialPierName);
-    }
-  }, [initialPierName]);
+  // Prop değişince seçili iskele senkronu: effect yerine React'in resmi
+  // "render sırasında durum ayarlama" deseni (ekstra render turu yok).
+  const [prevInitialPierName, setPrevInitialPierName] = useState(initialPierName);
+  if (initialPierName !== prevInitialPierName) {
+    setPrevInitialPierName(initialPierName);
+    if (initialPierName) setSelectedPierName(initialPierName);
+  }
 
   useEffect(() => {
     if (!isOpen) return;

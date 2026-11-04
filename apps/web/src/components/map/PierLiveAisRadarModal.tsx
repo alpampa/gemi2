@@ -1,5 +1,6 @@
 "use client";
 
+import { useHydrated } from "@/hooks/useHydrated";
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,13 +21,10 @@ export function PierLiveAisRadarModal({
 }: PierLiveAisRadarModalProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [activeZone, setActiveZone] = useState<"500M" | "250M">("500M");
   const [seamarkUnavailable, setSeamarkUnavailable] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Resolve pier coordinates
   const getPierCoord = (name: string): [number, number] => {
