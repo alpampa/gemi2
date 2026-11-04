@@ -13,6 +13,10 @@ const FOCUSABLE =
  *  4. Android donanım geri tuşu: açılışta history.pushState, popstate'te kapatır.
  *  5. Kapanınca odağı, açan öğeye geri verir ve geçici history kaydını temizler.
  *
+ * ÖNEMLİ: `onClose` sıklıkla satır-arı işlev olarak geçilir; etkileşim 1 saniyelik
+ * saat re-render'larında yeniden bağlanmamalı. Bu yüzden geri çağrı ref'te tutulur,
+ * effect yalnızca `isOpen` (ve `initialFocusRef`) değişince yeniden kurulur.
+ *
  * iOS standalone PWA'da tarayıcı geri tuşu yoktur; bu yüzden her modalde
  * GÖRÜNÜR bir kapatma butonu ayrıca bulunmalıdır (bu hook bunu sağlamaz).
  */
@@ -24,29 +28,23 @@ export function useModalA11y(
   const containerRef = useRef<HTMLDivElement | null>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const pushedRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!isOpen) return;
 
     restoreFocusRef.current = document.activeElement as HTMLElement | null;
 
-    // Android/desktop geri tuşu → modalı kapat.
-    try {
-      window.history.pushState({ __vapurModal: true }, "");
-      pushedRef.current = true;
-    } catch {
-      pushedRef.current = false;
-    }
-
     const handlePopState = () => {
       pushedRef.current = false;
-      onClose();
+      onCloseRef.current();
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== "Tab") return;
@@ -68,11 +66,20 @@ export function useModalA11y(
       }
     };
 
+    try {
+      window.history.pushState({ __vapurModal: true }, "");
+      pushedRef.current = true;
+    } catch {
+      pushedRef.current = false;
+    }
+
     window.addEventListener("popstate", handlePopState);
     window.addEventListener("keydown", handleKeyDown);
 
     const focusTimer = window.setTimeout(() => {
-      const target = initialFocusRef?.current ?? containerRef.current?.querySelector<HTMLElement>(FOCUSABLE);
+      const target =
+        initialFocusRef?.current ??
+        containerRef.current?.querySelector<HTMLElement>(FOCUSABLE);
       target?.focus();
     }, 0);
 
@@ -82,16 +89,13 @@ export function useModalA11y(
       window.removeEventListener("keydown", handleKeyDown);
       if (pushedRef.current) {
         pushedRef.current = false;
-        // Kapanışta kendi pushState kaydımızı geri al.
-        try {
-          window.history.back();
-        } catch {
-          /* yoksay */
-        }
+        // Kapanışta kendi pushState kaydımızı geri al (popstate zincirine
+        // ekstra onClose tetiklemesi olmadan).
+        window.history.replaceState(null, "");
       }
       restoreFocusRef.current?.focus?.();
     };
-  }, [isOpen, onClose, initialFocusRef]);
+  }, [isOpen, initialFocusRef]);
 
   return containerRef;
 }

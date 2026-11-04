@@ -17,8 +17,10 @@ test.describe("Service Worker — zayıf ağ dayanıklılığı", () => {
     await context.setOffline(true);
     try {
       const res = await page.reload({ waitUntil: "domcontentloaded", timeout: 15000 });
-      expect(res?.status()).toBeLessThan(500);
-      await expect(page.locator("body")).toBeVisible();
+      // SW çevrimdışı yanıtı 503 dönebilir (yaşam kabuğu); sözleşme:
+      // sayfa boş kalmaz, çevrimdışı bilgilendirici kabuk görünür.
+      expect(res?.status()).toBeLessThan(600);
+      await expect(page.locator("body")).toContainText(/çevrimdışı|offline/i, { ignoreCase: true });
     } finally {
       await context.setOffline(false);
     }

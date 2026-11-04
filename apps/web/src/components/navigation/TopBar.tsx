@@ -42,7 +42,7 @@ export function TopBar() {
           <Clock size={13} className="text-blue-600 dark:text-blue-400 shrink-0" />
           <div className="flex flex-col items-start leading-none">
             {/* suppressHydrationWarning: SSR anındaki sunucu saati ile istemci hidrasyon saati saniye bazında farklıdır */}
-            <span suppressHydrationWarning className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <span suppressHydrationWarning className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               {dateStr}
             </span>
             <span suppressHydrationWarning className="font-mono font-black text-[13px] sm:text-base tracking-tight text-slate-900 dark:text-white tabular-nums mt-0.5">
@@ -63,7 +63,7 @@ export function TopBar() {
                 type="button"
                 onClick={purgeAllCachesAndReload}
                 title="Tıkla: Önbelleği temizle ve en son sürümü anında çek"
-                aria-label="Önbelleği temizle ve son sürümü yükle"
+                aria-label="GÜNCEL: Önbelleği temizle ve son sürümü yükle"
                 className="relative h-6 bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-[9px] font-black px-2 rounded border border-emerald-500/30 shrink-0 cursor-pointer transition-all active:scale-95 flex items-center gap-0.5 after:absolute after:content-[''] after:-inset-y-2.5 after:inset-x-0"
               >
                 <span>GÜNCEL</span>
@@ -157,7 +157,7 @@ export function TopBar() {
             type="button"
             onClick={() => setIsAudioGuideOpen(true)}
             title="Boğaz Sesli Rehberi"
-            aria-label="Sesli rehberi aç"
+            aria-label="Rehber: Boğaz sesli rehberi aç"
             className="h-9 px-2.5 rounded-lg text-xs font-black transition-all border flex items-center justify-center gap-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 border-indigo-200 dark:border-indigo-800/60 text-indigo-700 dark:text-indigo-300 shadow-2xs cursor-pointer active:scale-95"
           >
             <Headphones size={13} className="text-indigo-600 dark:text-indigo-400 shrink-0" />

@@ -135,7 +135,7 @@ export default function ProfilePage() {
               <Bell className="text-white/70 shrink-0" size={20} />
               <div className="min-w-0">
                 <span className="font-medium block">Notifications</span>
-                <span className="text-xs text-white/40 block mt-0.5">{notifStatusText}</span>
+                <span className="text-xs text-white/60 block mt-0.5">{notifStatusText}</span>
               </div>
             </div>
             <span
@@ -158,7 +158,7 @@ export default function ProfilePage() {
               <CreditCard className="text-white/40 shrink-0" size={20} />
               <div className="min-w-0">
                 <span className="font-medium block text-white/70">Payment Methods</span>
-                <span className="text-xs text-white/40 block mt-0.5">
+                <span className="text-xs text-white/60 block mt-0.5">
                   Kayıtlı ödeme yöntemi yok — uygulamada ödeme sistemi bulunmuyor.
                 </span>
               </div>
@@ -175,7 +175,7 @@ export default function ProfilePage() {
               <Trash2 className="text-red-400 shrink-0" size={20} />
               <div className="min-w-0">
                 <span className="font-medium text-red-400 block">Clear Local Data</span>
-                <span className="text-xs text-white/40 block mt-0.5">
+                <span className="text-xs text-white/60 block mt-0.5">
                   Favoriler, tercihler ve önbellek bu cihazdan silinir.
                 </span>
               </div>

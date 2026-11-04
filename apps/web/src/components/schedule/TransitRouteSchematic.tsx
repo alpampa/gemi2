@@ -132,7 +132,8 @@ export function TransitRouteSchematic({
 
   return (
     <div className="w-full mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/80 animate-fadeIn">
-      <div ref={scrollRef} className="overflow-x-auto hide-scrollbar py-1">
+      {/* WCAG 2.2: Yatay kaydırılabilir bölge klavyeyle erişilebilir olmalı */}
+      <div ref={scrollRef} tabIndex={0} aria-label="Durak ve saat zinciri" className="overflow-x-auto hide-scrollbar py-1">
         <div className="relative flex items-center min-w-max px-1">
           {fullChain.map((stop, index) => {
             const isFirst = index === 0;
@@ -173,7 +174,7 @@ export function TransitRouteSchematic({
                       title={isSoonPier ? `${stop.name} kalkışı yaklaşıyor` : undefined}
                       className={`text-[9px] sm:text-[9.5px] font-mono tabular-nums leading-none mb-2 ${
                         isSoonPier
-                          ? "font-black text-amber-600 dark:text-amber-400 animate-pulse"
+                          ? "font-black text-amber-600 dark:text-amber-400 animate-attention"
                           : "font-bold text-slate-500 dark:text-slate-400"
                       }`}
                     >
@@ -195,7 +196,7 @@ export function TransitRouteSchematic({
                   <span
                     className={`text-[10px] mt-1 font-bold whitespace-nowrap leading-none ${
                       isSoonPier
-                        ? "font-black text-amber-700 dark:text-amber-300 animate-pulse"
+                        ? "font-black text-amber-700 dark:text-amber-300 animate-attention"
                         : isFirst || isLast
                         ? "text-slate-900 dark:text-white font-extrabold"
                         : "text-slate-600 dark:text-slate-400 font-medium"

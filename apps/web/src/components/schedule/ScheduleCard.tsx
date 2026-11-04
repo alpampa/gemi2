@@ -280,36 +280,35 @@ export function ScheduleCard(props: ScheduleCardProps) {
     if (props.onClick) props.onClick();
   };
 
+  /**
+   * Sefer kartının tıklamalı kapsayıcıya gömülü buton taşıması (nested-interactive)
+   * yerine: kapasayıcı görsel/işaretçi düzeyinde kalır, klavye ve ERİŞİLEBİLİRLİK
+   * adı tek bir "detay aç" düğmesine geçer. Etkileşimli iç düğmeler (favori/home
+   * vb.) zIndex ile üzerinde kalabilir.
+   */
+  const detailAriaLabel = [
+    `${dynState.currentOrigin}'dan ${routeDestinationDisplay}'a`,
+    dynState.currentDepartureTime,
+    isCancelled
+      ? "sefer iptal edildi"
+      : dynState.isDeparted
+      ? "sefer hareket etti"
+      : minsLeft != null
+      ? formatRemainingShort(minsLeft)
+      : "zamanında",
+    props.operator,
+    "seferi, detay için açın",
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   // KOMPAKT LİSTE GÖRÜNÜMÜ (Yüksek Yoğunluklu İsviçre Tipografisi - Swiss Transit Density)
   if (props.isCompact) {
     return (
       <>
         <div
           onClick={handleCardClick}
-          role="button"
-          tabIndex={0}
-          aria-label={[
-        `${dynState.currentOrigin}'dan ${routeDestinationDisplay}'a`,
-        dynState.currentDepartureTime,
-        isCancelled
-          ? "sefer iptal edildi"
-          : dynState.isDeparted
-          ? "sefer hareket etti"
-          : minsLeft != null
-          ? formatRemainingShort(minsLeft)
-          : "zamanında",
-        props.operator,
-        "detay için açın",
-      ]
-        .filter(Boolean)
-        .join(", ")}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              handleCardClick();
-            }
-          }}
-          className={`rounded-xl px-2.5 py-1.5 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 transition-all cursor-pointer border group shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+          className={`relative rounded-xl px-2.5 py-1.5 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 transition-all cursor-pointer border group shadow-2xs focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 ${
             isCancelled
               ? "border-rose-500/70 bg-rose-50/50 dark:bg-rose-950/20 text-slate-800 dark:text-slate-200"
               : dynState.isDeparted
@@ -323,6 +322,13 @@ export function ScheduleCard(props: ScheduleCardProps) {
               : "border-slate-200 dark:border-slate-800/90 hover:border-blue-400 dark:hover:border-blue-500/50 bg-white dark:bg-[#111726] text-slate-900 dark:text-white"
           }`}
         >
+          {/* Klavye/ERİŞİLEBİLİRLİK: kartın tek erişilebilir "detay" düğmesi */}
+          <button
+            type="button"
+            onClick={handleCardClick}
+            aria-label={detailAriaLabel}
+            className="absolute inset-0 z-0 rounded-xl cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          />
           {/* Sol: Saat + Kalan Süre */}
           <div className="flex flex-wrap items-center gap-1.5 shrink-0 min-w-18 w-full sm:w-auto">
             <span
@@ -332,7 +338,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
                   : dynState.isDeparted
                   ? "text-slate-400 dark:text-slate-500"
                   : isLastMinute
-                  ? "text-rose-600 dark:text-rose-400 animate-pulse font-extrabold"
+                  ? "text-rose-600 dark:text-rose-400 animate-attention font-extrabold"
                   : isNightTrip
                   ? "text-indigo-600 dark:text-indigo-300 font-extrabold"
                   : "text-blue-600 dark:text-blue-400"
@@ -352,10 +358,10 @@ export function ScheduleCard(props: ScheduleCardProps) {
             ) : dynState.countdown && !isCancelled ? (
               <span className={`text-[9px] font-mono font-black px-1.5 py-0.5 rounded tabular-nums border ${
                 remainingSec > 0 && remainingSec <= 60
-                  ? "bg-rose-600 text-white border-rose-500 animate-pulse font-extrabold shadow-2xs"
+                  ? "bg-rose-600 text-white border-rose-500 animate-chip-flash font-extrabold shadow-2xs"
                   : remainingSec > 0 && remainingSec <= 180
                   ? "bg-amber-500 text-slate-950 border-amber-400 font-extrabold shadow-2xs"
-                  : "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-300/60 dark:border-amber-500/30"
+                  : "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-200 border-amber-300/60 dark:border-amber-500/30"
               }`}>
                 {remainingSec > 0 && remainingSec <= 60 ? remainingSec + "s" : dynState.countdown}
               </span>
@@ -384,7 +390,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
           </div>
 
           {/* Orta: Güzergah + Operatör + Durak & Gece Rozetleri */}
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 min-w-0 w-full sm:flex-1 text-xs">
+          <div className="relative z-10 flex flex-wrap sm:flex-nowrap items-center gap-1.5 min-w-0 w-full sm:flex-1 text-xs">
             <OperatorLogo operator={props.operator} size="sm" showName={false} />
             <span title={dynState.currentOrigin} className={`font-bold whitespace-normal break-words max-w-[42%] sm:max-w-none ${isCancelled ? "line-through text-slate-400" : ""}`}>
               {dynState.currentOrigin}
@@ -397,6 +403,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
             {isNightTrip && (
               <span
                 title="Gece seferi"
+                role="img"
                 aria-label="Gece seferi"
                 className="inline-flex items-center text-indigo-600 dark:text-indigo-300 shrink-0"
               >
@@ -433,7 +440,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
           </div>
 
           {/* Sağ: Eylemler */}
-          <div className="self-end sm:self-auto">
+          <div className="relative z-10 self-end sm:self-auto">
             <ScheduleCardActions
               variant="compact"
               isFav={isFav}
@@ -451,30 +458,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
   return (
     <div
       onClick={handleCardClick}
-      role="button"
-      tabIndex={0}
-      aria-label={[
-        `${dynState.currentOrigin}'dan ${routeDestinationDisplay}'a`,
-        dynState.currentDepartureTime,
-        isCancelled
-          ? "sefer iptal edildi"
-          : dynState.isDeparted
-          ? "sefer hareket etti"
-          : minsLeft != null
-          ? formatRemainingShort(minsLeft)
-          : "zamanında",
-        props.operator,
-        "detay için açın",
-      ]
-        .filter(Boolean)
-        .join(", ")}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          handleCardClick();
-        }
-      }}
-      className={`rounded-2xl px-3 py-2.5 flex flex-col gap-1.5 transition-all duration-150 cursor-pointer group border active:scale-[0.99] touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+      className={`relative rounded-2xl px-3 py-2.5 flex flex-col gap-1.5 transition-all duration-150 cursor-pointer group border active:scale-[0.99] touch-manipulation focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 ${
         props.isFeaturedHero
           ? "bg-[#0b1528] text-white border-slate-700/90 ring-1 ring-cyan-500/30 shadow-2xl"
           : "theme-card text-slate-900 dark:text-white shadow-xs dark:shadow-none " + (
@@ -489,6 +473,14 @@ export function ScheduleCard(props: ScheduleCardProps) {
           : "border-slate-200 dark:border-slate-700/60 hover:border-blue-400 dark:hover:border-blue-500/40 bg-white dark:bg-[#141d2e]")
       }`}
     >
+      {/* Klavye/ERİŞİLEBİLİRLİK: kartın tek erişilebilir "detay" düğmesi */}
+      <button
+        type="button"
+        onClick={handleCardClick}
+        aria-label={detailAriaLabel}
+        className="absolute inset-0 z-0 rounded-2xl cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+      />
+
       {/* ERİŞİLEBİLİRLİK: yalnızca eşiklerde (5 dk / 2 dk) duyurulur */}
       <span className="sr-only" aria-live="polite" aria-atomic="true">
         {liveThresholdAnnouncement ?? ""}
@@ -526,7 +518,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-                <span aria-live="off" className="text-[10px] font-mono font-black tabular-nums text-rose-600 dark:text-rose-400 animate-pulse font-extrabold">
+                <span aria-live="off" className="text-[10px] font-mono font-black tabular-nums text-rose-600 dark:text-rose-400 animate-attention font-extrabold">
                   {remainingSec}s
                 </span>
                 <span className="text-[8px] font-bold text-slate-400">KALDI</span>
@@ -564,7 +556,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
                   <span>{props.dayPreviewLabel}</span>
                 </span>
               ) : isCancelled ? (
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-600 text-white animate-pulse inline-flex items-center gap-0.5 shadow-xs">
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-600 text-white animate-chip-flash inline-flex items-center gap-0.5 shadow-xs">
                   <Ban size={10} aria-hidden="true" /> İPTAL
                 </span>
               ) : dynState.isDeparted ? (
@@ -573,11 +565,11 @@ export function ScheduleCard(props: ScheduleCardProps) {
                   <span>{t("departed")}</span>
                 </span>
               ) : isLastMinute ? (
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider inline-flex items-center gap-0.5 shadow-xs animate-pulse bg-rose-600 text-white">
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider inline-flex items-center gap-0.5 shadow-xs animate-chip-flash bg-rose-600 text-white">
                   <Siren size={10} aria-hidden="true" /> SON ÇAĞRI
                 </span>
               ) : dynState.countdown ? (
-                <span aria-live="off" className="px-1.5 py-0.5 rounded text-[10px] font-mono font-black bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 animate-pulse whitespace-nowrap inline-flex items-center gap-0.5">
+                <span aria-live="off" className="px-1.5 py-0.5 rounded text-[10px] font-mono font-black bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-200 border border-amber-300 dark:border-amber-500/40 animate-chip-flash whitespace-nowrap inline-flex items-center gap-0.5">
                   <Timer size={10} aria-hidden="true" /> {dynState.countdown}
                 </span>
               ) : dynState.minutesUntilDeparture != null && dynState.status === "ON_TIME" ? (
@@ -609,7 +601,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
             </span>
 
             {isCancelled && (
-              <span className="hidden sm:inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-rose-600 text-white text-[9px] font-black uppercase tracking-wider animate-pulse shrink-0">
+              <span className="hidden sm:inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-rose-600 text-white text-[9px] font-black uppercase tracking-wider animate-chip-flash shrink-0">
                 <AlertTriangle size={9} aria-hidden="true" /> İPTAL
               </span>
             )}
@@ -633,6 +625,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
             {isNightTrip && !isCancelled && (
               <span
                 title="Gece seferi"
+                role="img"
                 aria-label="Gece seferi"
                 className="inline-flex items-center text-indigo-600 dark:text-indigo-300 shrink-0"
               >
@@ -643,14 +636,16 @@ export function ScheduleCard(props: ScheduleCardProps) {
         </div>
 
         {/* 3. Sağ: Hızlı Eylemler (Paylaş, Favori, Alarm, Detay Oku) */}
-        <ScheduleCardActions
-          variant="full"
-          isFav={isFav}
-          hasAlarm={hasAlarm}
-          onToggleFavorite={handleToggleFavorite}
-          onToggleAlarm={handleToggleAlarm}
-          onShareTrip={handleShareTrip}
-        />
+        <div className="relative z-10">
+          <ScheduleCardActions
+            variant="full"
+            isFav={isFav}
+            hasAlarm={hasAlarm}
+            onToggleFavorite={handleToggleFavorite}
+            onToggleAlarm={handleToggleAlarm}
+            onShareTrip={handleShareTrip}
+          />
+        </div>
       </div>
 
       {/* YETİŞME MODU: son giriş penceresi — TAM GENİŞLİK şerit */}
