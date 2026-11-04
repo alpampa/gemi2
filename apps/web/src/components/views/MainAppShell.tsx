@@ -18,10 +18,18 @@ interface MainAppShellProps {
   marineWeather?: MarineWeatherStatus | null;
   /** Resmî kaynakların en son doğrulanma üst verisi (sunucudan gelir). */
   sourceFreshness: SourceFreshnessMeta;
+  /** ?view= ile sunucudan çözümlenen ilk sekme; hidrasyona kadar bekleme olmaz. */
+  initialView?: string;
 }
 
-export function MainAppShell({ schedules, serverTimeIso, marineWeather, sourceFreshness }: MainAppShellProps) {
-  const [activeTab, setActiveTab] = useState<string>("schedules");
+export function MainAppShell({
+  schedules,
+  serverTimeIso,
+  marineWeather,
+  sourceFreshness,
+  initialView = "schedules",
+}: MainAppShellProps) {
+  const [activeTab, setActiveTab] = useState<string>(initialView);
   const [forcedPierFilter, setForcedPierFilter] = useState<string | null>(null);
 
   const todaySchedules = useMemo(

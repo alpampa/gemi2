@@ -11,7 +11,8 @@ test("Ana sayfa: sefer listesi, güven şeridi ve alt menü görünür", async (
 
   await expect(page.getByRole("navigation", { name: "Ana gezinme" })).toBeVisible();
   await expect(page.getByText("Duyuru doğrulama")).toBeVisible();
-  await expect(page.getByText(/tarife/i).first()).toBeVisible();
+  // Gün rozeti (tarife günü) bugün şu biçimlerde görünür
+  await expect(page.getByText(/Hafta içi|Cumartesi|Pazar|Tatil/).first()).toBeVisible();
   await expect(
     page.getByRole("button", { name: /seferi, detay için açın/ }).first()
   ).toBeVisible();
@@ -37,9 +38,7 @@ test("Ana sayfa: kaynaksız doluluk tahmini gösterilmez", async ({ page }) => {
 });
 
 test("Pano sekmesi: iskele kalkış panosu açılır", async ({ page }) => {
-  await page.goto("/");
-
-  await page.getByRole("button", { name: "Pano" }).click();
+  await page.goto("/?view=board");
 
   await expect(page.getByText(/İSKELE KALKIŞ PANOSU/i)).toBeVisible();
   await expect(page.getByText(/İskelesi/).first()).toBeVisible();
@@ -90,13 +89,19 @@ test("Arama: doğal arama ile liste filtrelenir", async ({ page }) => {
   ).toBeVisible({ timeout: 8000 });
 });
 
-test("Tema kalıcılığı: Güneş Modu seçilir ve yenilemede korunur", async ({ page }) => {
+test("Tema kalıcılığı: Gün Işığı modu seçilir ve yenilemede korunur", async ({ page }) => {
   test.setTimeout(60000);
   await page.goto("/");
 
-  await page.getByRole("button", { name: "Tema seç" }).click();
-  await page.getByText("Güneş Modu & Ultra Kontrast").click();
+  // Görünüm seçimi bugün Ayarlar çekmecesinde (DASHBOARD_SKINS); "sun-contrast"
+  // önderroği "Gün Işığı & Erişilebilir" kartını seçerek uygulanır.
+  await page.getByRole("button", { name: "Ayarlar" }).click();
 
+  const sheet = page.getByText("Görünüm Modu", { exact: true });
+  await sheet.waitFor({ timeout: 10000 });
+
+  const skinCard = page.getByRole("button", { name: /Gün Işığı & Erişilebilir/ });
+  await skinCard.click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "sun-contrast");
 
   // Gece yükü altında reload bazen ERR_ABORTED verebilir (servis çalışanı devri);
