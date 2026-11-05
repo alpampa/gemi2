@@ -79,7 +79,10 @@ export default function AdminDashboard() {
   const [telemetryData, setTelemetryData] = useState<DailyAnalyticsSummary | null>(null);
   const [adsAdminData, setAdsAdminData] = useState<AdsAdminResponse | null>(null);
   const [diffSnapshots, setDiffSnapshots] = useState<DiffSnapshot[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  // Yükleme durumu yalnızca süren bir isteği yansıtır; başlangıçta hiçbir istek
+  // yoktur (kimlik doğrulama `isVerifying` ile izlenir). Böylece effect içinde
+  // senkron setIsLoading(false) çağrısına gerek kalmaz.
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [lastRefreshed, setLastRefreshed] = useState<string>("");
   const [triggerMsg, setTriggerMsg] = useState<string>("");
 
@@ -146,11 +149,15 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const savedKey = typeof window !== "undefined" ? sessionStorage.getItem("vapur_admin_key") : null;
-    if (savedKey) {
-      verifyAndLoad(savedKey);
-    } else {
-      setIsLoading(false);
-    }
+    // Kayıtlı anahtar varsa oturum kendiliğinden doğrulanır; yoksa yüklenecek
+    // bir şey de yoktur (kilit ekranı `isAuthenticated=false` ile gösterilir).
+    // Doğrulama ilk boyamadan sonra başlatılır: effect içinde senkron setState
+    // (isVerifying/pinError) tetiklenmez, kullanıcıya fark yoktur.
+    if (!savedKey) return;
+    const timer = window.setTimeout(() => {
+      void verifyAndLoad(savedKey);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const fetchData = async () => {
