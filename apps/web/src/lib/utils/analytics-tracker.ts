@@ -99,3 +99,13 @@ export function trackOnboardConfirmed(
 export function trackRadarClicked(line?: string, origin?: string) {
   trackTelemetryEvent("RADAR_CLICKED", { line, origin });
 }
+
+/** Rota kartını/arama sonucunu kullanıcı seçtiğinde anonim seçim sayısını tutar. */
+export function trackRouteSearch(origin: string, destination: string) {
+  if (!origin.trim() || !destination.trim()) return;
+  trackTelemetryEvent("ROUTE_SEARCH", {
+    line: `${origin.trim()} → ${destination.trim()}`,
+    origin: origin.trim(),
+    destination: destination.trim(),
+  });
+}
