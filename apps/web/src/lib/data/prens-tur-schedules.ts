@@ -19,6 +19,14 @@ import { RawOfficialTrip } from "./official-schedules";
 
 const PRICE_UNVERIFIED = "İstanbul Kart";
 
+/**
+ * Tarifenin çıkarıldığı resmî kış tarifesi afişi.
+ * NOT: Afişte tarifenin yayım/doğrulama tarihi yazmıyor; yalnızca ücret
+ * sorusunun 2026-10-18'de yanıtlandığı belgeli. Bu yüzden `verifiedAt`
+ * UYDURULMAZ; kayıt tazelik açısından "tarihi bilinmiyor" kalır.
+ */
+const PRENS_TUR_SOURCE_URL = "https://prenstur.net/2026-2027-kis-tarifesi.jpeg";
+
 interface PrensTurDeparture {
   dep: string;
   isWeekdayOnly?: boolean;
@@ -174,5 +182,8 @@ export function getPrensTurSchedules(): RawOfficialTrip[] {
     });
   });
 
-  return trips;
+  return trips.map((trip) => ({
+    ...trip,
+    sourceUrl: PRENS_TUR_SOURCE_URL,
+  }));
 }
