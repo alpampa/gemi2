@@ -26,6 +26,11 @@ ikincil bir veri hattıdır ve web tarafından **kullanılmaz**.
 **Canlı gemi takibi:** `apps/web` WebSocket ile `apps/api`'nin `/ws/tracking` namespace'ine
 bağlanır (`store/useTrackingStore.ts`). Üretimde JWT ile doğrulanır; demo modunda serbesttir.
 
+**Veri sorumlulukları:** Sefer ve ücretlerin tek kaynağı `apps/web/src/lib/data`'dır; API'deki
+ayrı scraper web tarifelerini beslemez. Nest API kimlik doğrulama ve WebSocket takibi sağlar.
+Yönetici telemetrisi Upstash/Vercel KV yapılandırılmışsa paylaşımlı ve atomik saklanır; KV yoksa
+yalnızca çalışan sunucu örneğinin belleğinde tutulur ve yönetim panelinde bu şekilde etiketlenir.
+
 ## Başlangıç (Geliştirici Modu)
 
 Demo modu sayesinde harici servis olmadan çalışır.
@@ -65,8 +70,12 @@ docker-compose up --build -d
 ```
 
 `JWT_ACCESS_SECRET` ve `JWT_REFRESH_SECRET` değerlerini ortam değişkeni olarak verin
-(`openssl rand -hex 32`). Aksi halde varsayılan geliştirme değerleri kullanılır ve
-**güvenli değildir**.
+(PowerShell'de iki ayrı değer üretmek için `[Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))`).
+Compose bu sırlar eksikse başlamaz; üretimde en az 32 karakterlik farklı rastgele sırlar kullanın.
+`ENABLE_DEMO_MODE` üretimde `false` olmalıdır; API bu ayarı üretim ortamında doğrular.
+Telemetriyi birden çok sunucu örneğinde kalıcı tutmak ve ortak hız sınırlaması için
+`KV_REST_API_URL`/`KV_REST_API_TOKEN` veya `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`
+değerlerini yapılandırın.
 
 ## Test & Kalite
 
