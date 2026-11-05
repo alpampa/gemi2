@@ -32,6 +32,21 @@ export const FRESH_MAX_AGE_DAYS = 2;
 /** 7 güne kadar "eskimekte"; üzeri "bayat" */
 export const AGING_MAX_AGE_DAYS = 7;
 
+/**
+ * Tarife kaydının YAYINDAN GİZLENME eşiği (gün).
+ *
+ * Uyarı eşiklerinden (2/7 gün) farklıdır: 7 günü geçen kayıt "bayat" olarak
+ * işaretlenir ama hâlâ gösterilir; 45 gün boyunca hiç doğrulanmamış kayıt ise
+ * artık güncel kabul edilmez ve sefer listesinden çıkarılır (AGENTS.md:
+ * "doğrulama süresi dolan sefer bilgisi gizlenmelidir").
+ *
+ * 45 gün gerekçesi: resmî tarifeler sezonluk (yaz/kış) dönemlerde sabit kalır;
+ * 45 gün, bir sezonluk dönemin büyük bölümünde hiçbir doğrulama yapılmadığı
+ * anlamına gelir ve gizleme için muhafazakâr bir alt sınırdır. Eşik tek
+ * kaynaktır; değiştirilirse docs/DATA-SYNC.md de güncellenmelidir.
+ */
+export const SCHEDULE_EXPIRY_DAYS = 45;
+
 // ---------- DUYURU TAZELİĞİ (dakika sınıfı; iptal duyuruları için) ----------
 
 /**
@@ -148,5 +163,35 @@ export function resolveDataFreshness(
     verifiedOnLabel: DATE_FORMATTER.format(parsed),
     ageLabel,
     isStale: level === "STALE",
+  };
+}
+
+export interface TripFreshness {
+  /** Kaydın kendi doğrulama damgası; yoksa null */
+  verifiedAt: string | null;
+  ageDays: number | null;
+  level: FreshnessLevel;
+  /** "5 Kasım 2026" — bilinmiyorsa null */
+  verifiedOnLabel: string | null;
+  /** SCHEDULE_EXPIRY_DAYS aşıldı mı? (yayından çıkarılmalı) */
+  isExpired: boolean;
+}
+
+/**
+ * Sefer/tarife kaydı için tazelik. Doğrulama tarihi yoksa seviye UNKNOWN'dır:
+ * kayıt "taze" sayılmaz ama uydurma bir tarih de üretilmez. Gizleme kararı
+ * yalnızca tarihi BİLİNEN ve eşiği aşan kayıtlar için verilir.
+ */
+export function resolveTripFreshness(
+  verifiedAt?: string | null,
+  nowMs: number = Date.now(),
+): TripFreshness {
+  const base = resolveDataFreshness(verifiedAt, nowMs);
+  return {
+    verifiedAt: base.ageDays == null ? null : (verifiedAt ?? null),
+    ageDays: base.ageDays,
+    level: base.level,
+    verifiedOnLabel: base.verifiedOnLabel,
+    isExpired: base.ageDays != null && base.ageDays > SCHEDULE_EXPIRY_DAYS,
   };
 }

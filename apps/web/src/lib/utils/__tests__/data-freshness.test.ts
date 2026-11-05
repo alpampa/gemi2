@@ -2,10 +2,12 @@ import { describe, it, expect } from "vitest";
 import {
   resolveDataFreshness,
   resolveAnnouncementFreshness,
+  resolveTripFreshness,
   FRESH_MAX_AGE_DAYS,
   AGING_MAX_AGE_DAYS,
   ANNOUNCEMENT_FRESH_MAX_MIN,
   ANNOUNCEMENT_STALE_MIN,
+  SCHEDULE_EXPIRY_DAYS,
 } from "@/lib/utils/data-freshness";
 
 const DAY = 86_400_000;
@@ -133,5 +135,39 @@ describe("resolveAnnouncementFreshness — dakika sınıfı duyuru tazeliği", (
   it("dakika cinsinden etiket üretir", () => {
     const f = resolveAnnouncementFreshness(new Date(NOW - 12 * 60_000).toISOString(), NOW);
     expect(f.ageLabel).toBe("12 dk önce");
+  });
+});
+
+describe("resolveTripFreshness — tarife gizleme kapısı", () => {
+  const iso = (daysAgo: number) => new Date(NOW - daysAgo * DAY).toISOString();
+
+  it("doğrulama tarihi yoksa UNKNOWN'dır ve GİZLENMEZ", () => {
+    for (const v of [undefined, null, "", "gecersiz"]) {
+      const f = resolveTripFreshness(v, NOW);
+      expect(f.level).toBe("UNKNOWN");
+      expect(f.verifiedAt).toBeNull();
+      expect(f.isExpired).toBe(false);
+    }
+  });
+
+  it("uyarı eşiğini geçen kayıt bayattır ama gizlenmez", () => {
+    const f = resolveTripFreshness(iso(AGING_MAX_AGE_DAYS + 1), NOW);
+    expect(f.level).toBe("STALE");
+    expect(f.isExpired).toBe(false);
+  });
+
+  it("gizleme eşiğini aşan kayıt expire sayılır", () => {
+    const f = resolveTripFreshness(iso(SCHEDULE_EXPIRY_DAYS + 1), NOW);
+    expect(f.level).toBe("STALE");
+    expect(f.isExpired).toBe(true);
+  });
+
+  it("eşiğin tam sınırındaki kayıt henüz gizlenmez", () => {
+    expect(resolveTripFreshness(iso(SCHEDULE_EXPIRY_DAYS), NOW).isExpired).toBe(false);
+  });
+
+  it("geçerli tarihi aynen taşır", () => {
+    const stamp = iso(1);
+    expect(resolveTripFreshness(stamp, NOW).verifiedAt).toBe(stamp);
   });
 });

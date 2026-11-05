@@ -19,6 +19,12 @@ import { OPERATOR_REGISTRY } from "@/lib/data/operator-registry";
 export interface SourceFreshnessMeta {
   generatedAt?: string;
   sourceCount: number;
+  /** Yayımlanan seferler arasındaki en eski tarife doğrulama damgası (ISO). */
+  tariffOldestVerifiedAt?: string;
+  /** Doğrulama süresi dolduğu için gizlenen sefer sayısı. */
+  tariffExpiredCount?: number;
+  /** Doğrulama tarihi bilinmeyen sefer sayısı. */
+  tariffUndatedCount?: number;
 }
 
 export type SelectedDayFilter = "TODAY" | "WEEKDAY" | "SATURDAY" | "SUNDAY";
@@ -73,6 +79,11 @@ export function ServiceDataTrustBar({
   const needsOperatorCheck = announcementFresh.isStale;
 
   const fresh = resolveDataFreshness(effectiveGeneratedAt, effectiveNowMs);
+  // Tarife (sefer) verisinin en eski doğrulama damgası; duyuru tazeliğinden AYRI.
+  const tariffFresh = resolveDataFreshness(
+    freshness.tariffOldestVerifiedAt,
+    effectiveNowMs,
+  );
   const liveTimeStr =
     hasLiveVerifiedSource && effectiveGeneratedAt
       ? TIME_FORMATTER.format(new Date(effectiveGeneratedAt))
@@ -233,6 +244,32 @@ export function ServiceDataTrustBar({
                         : `${announcementFresh.verifiedLabel ? `${announcementFresh.verifiedLabel} - ` : ""}${fresh.verifiedOnLabel ?? "Bilinmiyor"} (${fresh.ageLabel})`}
                     </span>
                   </div>
+                  <div className="flex items-center justify-between font-bold">
+                    <span className="text-slate-500 dark:text-slate-400">Tarife Son Doğrulaması (en eski):</span>
+                    <span
+                      className={`font-mono ${
+                        tariffFresh.isStale
+                          ? "text-amber-600 dark:text-amber-400"
+                          : "text-emerald-600 dark:text-emerald-400"
+                      }`}
+                    >
+                      {tariffFresh.verifiedOnLabel
+                        ? `${tariffFresh.verifiedOnLabel} (${tariffFresh.ageLabel})`
+                        : "Bilinmiyor"}
+                    </span>
+                  </div>
+                  {(freshness.tariffUndatedCount ?? 0) > 0 && (
+                    <p className="text-[10px] leading-snug text-slate-500 dark:text-slate-400 font-semibold pt-0.5">
+                      {freshness.tariffUndatedCount} sefer kaydında doğrulama tarihi yok; bu
+                      kayıtlar için tazelik iddia edilmiyor.
+                    </p>
+                  )}
+                  {(freshness.tariffExpiredCount ?? 0) > 0 && (
+                    <p className="text-[10px] leading-snug text-amber-700 dark:text-amber-300 font-bold pt-0.5">
+                      Doğrulama süresi dolduğu için {freshness.tariffExpiredCount} sefer
+                      yayımlanmıyor.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">

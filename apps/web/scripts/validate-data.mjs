@@ -38,7 +38,7 @@ function readJson(rel) {
   }
 }
 
-function checkTripLike(rec, where) {
+function checkTripLike(rec, where, fallbackProv) {
   if (!rec || typeof rec !== "object") {
     errors.push(`${where}: kayıt nesne değil`);
     return;
@@ -57,7 +57,10 @@ function checkTripLike(rec, where) {
   if (rec.arrivalSource === "official" && !rec.arrivalTime) {
     errors.push(`${where}: arrivalSource=official ama arrivalTime yok`);
   }
-  if (!rec.sourceUrl && !rec.verifiedAt && !rec.sourceVerifiedAt) {
+  // Dosya-seviyesi provens (örn. Dentur JSON `generatedAt` + `sourceBase`)
+  // kayıtlara aktarılıyorsa kayıt-seviyesi eksik sayılmaz.
+  const prov = rec.sourceUrl || rec.verifiedAt || rec.sourceVerifiedAt || fallbackProv;
+  if (!prov) {
     warnings.push(`${where}: kayıt-seviyesi sourceUrl/verifiedAt yok`);
   }
 }
@@ -67,8 +70,10 @@ const denturPath = path.join(DATA_DIR, "dentur-schedules.json");
 const dentur = readJson(denturPath);
 if (dentur) {
   if (!dentur.generatedAt) errors.push("dentur-schedules.json: snapshot generatedAt eksik (kaynak doğrulanamaz)");
+  // Dentur verisi dosya damgasını kayıtlara aktarır (dentur-schedules.ts).
+  const denturProv = dentur.generatedAt ? { verifiedAt: dentur.generatedAt } : null;
   const lines = dentur.lines ?? [];
-  lines.forEach((l, i) => checkTripLike({ id: `dentur-${i}`, ...l }, `dentur[${i}]`));
+  lines.forEach((l, i) => checkTripLike({ id: `dentur-${i}`, ...l }, `dentur[${i}]`, denturProv));
   console.log(`• dentur-schedules.json: ${lines.length} hat doğrulandı (generatedAt: ${dentur.generatedAt ?? "YOK"})`);
 }
 

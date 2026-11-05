@@ -70,6 +70,9 @@ export default async function Home({
             sourceFreshness={{
               generatedAt: announcementsMeta.generatedAt,
               sourceCount: announcementsMeta.sourceCount,
+              tariffOldestVerifiedAt: data?.dataQuality?.oldestVerifiedAt ?? undefined,
+              tariffExpiredCount: data?.dataQuality?.expiredCount,
+              tariffUndatedCount: data?.dataQuality?.undatedCount,
             }}
             initialView={initialView}
           />

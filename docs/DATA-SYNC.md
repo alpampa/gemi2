@@ -28,13 +28,37 @@ kaldırıldı; tek kaynak bu tablodur.
 
 ## Tazelik sınıfları (`apps/web/src/lib/utils/data-freshness.ts`)
 
-| Veri | Taze | Eskimekte | Bayat (uyarı) |
-| --- | --- | --- | --- |
-| Duyuru/iptal (dakika) | ≤ 90 dk (`ANNOUNCEMENT_FRESH_MAX_MIN`) | ≤ 360 dk (`ANNOUNCEMENT_STALE_MIN`) | > 360 dk → kırmızı bant |
-| Tarife (gün) | ≤ 2 gün | ≤ 7 gün | > 7 gün |
+| Veri | Taze | Eskimekte | Bayat (uyarı) | Yayından gizlenir |
+| --- | --- | --- | --- | --- |
+| Duyuru/iptal (dakika) | ≤ 90 dk (`ANNOUNCEMENT_FRESH_MAX_MIN`) | ≤ 360 dk (`ANNOUNCEMENT_STALE_MIN`) | > 360 dk → kırmızı bant | — |
+| Tarife (gün) | ≤ 2 gün | ≤ 7 gün | > 7 gün | > 45 gün (`SCHEDULE_EXPIRY_DAYS`) |
 
 Not: `ANNOUNCEMENT_*` eşikleri `data-freshness.ts` içinde tek kaynak
 tanımlıdır (ayrıca `constants.ts`'e kopyalanmamıştır; çift kaynak istenmez).
+
+### Tarife gizleme kapısı (sefer kayıtları)
+
+`timetable-engine.getLiveOrOfficialSchedules`, her sefer kaydının `verifiedAt`
+damgasını `resolveTripFreshness` ile değerlendirir:
+
+- `verifiedAt` **varsa** ve yaş `SCHEDULE_EXPIRY_DAYS` (45 gün) sınırını aşıyorsa
+  kayıt **yayımlanmaz**; sayı `dataQuality.expiredCount` olarak raporlanır.
+- `verifiedAt` **yoksa** kayıt gizlenmez; `freshnessLevel: "UNKNOWN"` olarak
+  işaretlenir ve arayüzde "doğrulama tarihi yok" denir. Tarih uydurulmaz.
+- Yayımlanan kayıtların en eski damgası arayüzdeki güven panelinde gösterilir.
+
+45 gün gerekçesi: resmî tarifeler sezonluk (yaz/kış) dönemlerde sabit kalır;
+45 gün, bir sezonluk dönemin büyük bölümünde hiç doğrulama yapılmadığı anlamına
+gelir. Eşik tek kaynaktır; değiştirilirse bu tablo da güncellenmelidir.
+
+### Bilinen provens eksiği (05.11.2026)
+
+Kayıt-seviyesi `verifiedAt` şu kaynaklarda **bilinçli olarak yoktur**, çünkü
+kaynak belgesinde doğrulama tarihi yayımlanmıyor: Şehir Hatları
+(`official-scraped-schedules.json`), Turyol (`turyol-scraped.json`), Prens Tur
+(JPEG afiş). Bu kayıtlar `UNKNOWN` olarak yayımlanır; tazelik iddia edilmez.
+Tarihli kaynaklar: Bostancı (05.11.2026), Mavi Marmara (04.10.2026 — kaynak
+sayfaların erişim tarihi), Dentur (JSON `generatedAt`).
 
 ## Değişiklik tespiti
 
@@ -48,6 +72,8 @@ tanımlıdır (ayrıca `constants.ts`'e kopyalanmamıştır; çift kaynak istenm
 2. Duyuru snapshot'ının `generatedAt` damgası güncel mi? Değilse duyuru
    arayüzde kırmızı bantla gösterilir; yayın durdurulur.
 3. Cron/Actions zamanları bu belgeyle uyuşmalı.
+4. Değişiklik kapsamındaki her tarife kaydının `verifiedAt` damgası bugünkü
+   doğrulamayla güncellenmeli; 45 günü aşan kayıt varsa yayıma çıkarılmaz.
 
 ## Bilinen boşluklar
 

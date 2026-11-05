@@ -5,6 +5,7 @@ import { selfHealTripRecord } from '@/lib/agents/self-healing-engine';
 import { checkTurkishHoliday } from '@/lib/utils/holiday-calendar';
 import { istanbulIsoFor, compareHhmm, nightRolloverDayOffset } from '@/lib/utils/istanbul-time';
 import { normalizePierName } from '@/lib/data/piers';
+import { resolveTripFreshness } from '@/lib/utils/data-freshness';
 
 /**
  * Returns current Istanbul time components (UTC+3)
@@ -142,8 +143,18 @@ export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
       };
     });
 
-  // 2. Map raw official trips to full ScheduleCardDto with day-type flags
-  const schedules: ScheduleCardDto[] = sanitizedTrips.map((rawTrip) => {
+  // 2. Harita: ham resmî seferleri gün tipi bayraklarıyla tam DTO'ya çevir.
+  // TAZELİK KAPISI (AGENTS.md): doğrulama süresi SCHEDULE_EXPIRY_DAYS'i aşan
+  // kayıt yayımlanmaz. Tarihi BİLİNMEYEN kayıt gizlenmez (kanıtsız silme
+  // yapılmaz); "UNKNOWN" olarak işaretlenir ve kullanıcıya tarihi yok denir.
+  const assessedTrips = sanitizedTrips.map((trip) => ({
+    trip,
+    freshness: resolveTripFreshness(trip.verifiedAt, nowMs),
+  }));
+  const publishedTrips = assessedTrips.filter((x) => !x.freshness.isExpired);
+  const expiredCount = assessedTrips.length - publishedTrips.length;
+
+  const schedules: ScheduleCardDto[] = publishedTrips.map(({ trip: rawTrip, freshness }) => {
     const dayFlags = checkTripRunsOnDay(rawTrip, ist);
     const trip = selfHealTripRecord(rawTrip);
     const [hh, mm] = trip.departureTime.split(':');
@@ -226,6 +237,8 @@ export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
       runsWeekday: dayFlags.runsWeekday,
       runsSaturday: dayFlags.runsSaturday,
       runsSunday: dayFlags.runsSunday,
+      verifiedAt: freshness.verifiedAt ?? undefined,
+      freshnessLevel: freshness.level,
     };
   });
 
@@ -235,9 +248,24 @@ export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
     (a.targetTimeIso ?? a.departureTime).localeCompare(b.targetTimeIso ?? b.departureTime)
   );
 
+  const dated = publishedTrips
+    .map((x) => x.freshness.verifiedAt)
+    .filter((v): v is string => Boolean(v))
+    .sort();
+  const oldestVerifiedAt = dated[0] ?? null;
+  const newestVerifiedAt = dated[dated.length - 1] ?? null;
+
   return {
     serverTimeIso: ist.serverTimeIso,
     serverDateFormatted: ist.serverDateFormatted,
-    schedules
+    schedules,
+    dataQuality: {
+      totalCount: assessedTrips.length,
+      publishedCount: schedules.length,
+      expiredCount,
+      undatedCount: publishedTrips.filter((x) => x.freshness.level === "UNKNOWN").length,
+      oldestVerifiedAt,
+      newestVerifiedAt,
+    },
   };
 }

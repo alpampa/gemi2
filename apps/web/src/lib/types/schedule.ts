@@ -54,10 +54,31 @@ export interface ScheduleCardDto {
   runsWeekday?: boolean;
   runsSaturday?: boolean;
   runsSunday?: boolean;
+
+  /** Kaydın resmî kaynaktan son doğrulanma zamanı (ISO). Bilinmiyorsa yok. */
+  verifiedAt?: string;
+  /** Tazelik seviyesi; UNKNOWN = doğrulama tarihi yok (taze iddia edilmez). */
+  freshnessLevel?: "FRESH" | "AGING" | "STALE" | "UNKNOWN";
+}
+
+/** Sefer listesinin veri kalitesi özeti (tazelik kapısı sonucu). */
+export interface ScheduleDataQuality {
+  /** Kapıya giren kayıt sayısı */
+  totalCount: number;
+  /** Yayımlanan kayıt sayısı */
+  publishedCount: number;
+  /** Doğrulama süresi dolduğu için gizlenen kayıt sayısı */
+  expiredCount: number;
+  /** Doğrulama tarihi bilinmeyen (gizlenmeyen) kayıt sayısı */
+  undatedCount: number;
+  /** Yayımlanan kayıtlar arasındaki en eski/en yeni doğrulama damgası */
+  oldestVerifiedAt: string | null;
+  newestVerifiedAt: string | null;
 }
 
 export interface SchedulesResponse {
   serverTimeIso: string;
   serverDateFormatted?: string;
   schedules: ScheduleCardDto[];
+  dataQuality?: ScheduleDataQuality;
 }
