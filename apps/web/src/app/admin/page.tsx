@@ -617,7 +617,9 @@ export default function AdminDashboard() {
                   <Activity size={18} className="text-cyan-400" />
                   <h3 className="text-base font-black text-white">Canlı Yolcu Hareket Günlüğü</h3>
                 </div>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className={`text-[10px] font-semibold ${telemetryData?.storage === "shared" ? "text-emerald-300" : "text-amber-300"}`}>
+                  {telemetryData?.storage === "shared" ? "Paylaşımlı kalıcı kayıt" : "Bu sunucu örneğinde tutuluyor"}
+                </span>
               </div>
 
               <div className="space-y-2.5 max-h-[300px] overflow-y-auto">
