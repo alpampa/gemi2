@@ -3,7 +3,10 @@ import { NextRequest } from "next/server";
 import { verifyCronAuth } from "@/lib/utils/cron-auth";
 import { verifyAdminAuth } from "@/lib/utils/admin-auth";
 
-function makeRequest(url: string, headers: Record<string, string> = {}): NextRequest {
+function makeRequest(
+  url: string,
+  headers: Record<string, string> = {},
+): NextRequest {
   return new NextRequest(new URL(url, "http://localhost"), { headers });
 }
 
@@ -15,12 +18,16 @@ afterEach(() => {
 
 describe("verifyCronAuth — yalnızca CRON_SECRET bearer", () => {
   it("sır tanımsızken yetkisiz erişim REDDEDİLİR", () => {
-    expect(verifyCronAuth(makeRequest("/api/cron/scan-announcements"))).toBe(false);
+    expect(verifyCronAuth(makeRequest("/api/cron/scan-announcements"))).toBe(
+      false,
+    );
   });
 
   it("REGRESYON: User-Agent 'vercel-cron' taklidi yetki VERMEZ", () => {
     // Eski kontrol: user-agent.includes("vercel-cron") → 401 atlanıyordu (bypass).
-    const spoof = makeRequest("/api/cron/sync-tariffs", { "user-agent": "vercel-cron" });
+    const spoof = makeRequest("/api/cron/sync-tariffs", {
+      "user-agent": "vercel-cron",
+    });
     expect(verifyCronAuth(spoof)).toBe(false);
     process.env.CRON_SECRET = "gercek-sir";
     expect(verifyCronAuth(spoof)).toBe(false); // sır olsa bile yalnız UA yetmez
@@ -28,13 +35,17 @@ describe("verifyCronAuth — yalnızca CRON_SECRET bearer", () => {
 
   it("doğru bearer jetonu kabul edilir", () => {
     process.env.CRON_SECRET = "gercek-sir";
-    const ok = makeRequest("/api/cron/scan-announcements", { authorization: "Bearer gercek-sir" });
+    const ok = makeRequest("/api/cron/scan-announcements", {
+      authorization: "Bearer gercek-sir",
+    });
     expect(verifyCronAuth(ok)).toBe(true);
   });
 
   it("yanlış bearer reddedilir", () => {
     process.env.CRON_SECRET = "gercek-sir";
-    const bad = makeRequest("/api/cron/scan-announcements", { authorization: "Bearer yanlis" });
+    const bad = makeRequest("/api/cron/scan-announcements", {
+      authorization: "Bearer yanlis",
+    });
     expect(verifyCronAuth(bad)).toBe(false);
   });
 });
@@ -51,6 +62,15 @@ describe("verifyAdminAuth — gömülü varsayılan anahtar YOK", () => {
     expect(verifyAdminAuth(req)).toBe(true);
   });
 
+  it("cron sırrı yönetici endpoint'lerine erişim vermez", () => {
+    process.env.ADMIN_SECRET = "admin-secret";
+    process.env.CRON_SECRET = "cron-secret";
+    const cronRequest = makeRequest("/api/audit", {
+      authorization: "Bearer cron-secret",
+    });
+    expect(verifyAdminAuth(cronRequest)).toBe(false);
+  });
+
   it("yanlış header reddedilir", () => {
     process.env.ADMIN_SECRET = "guvenli-anahtar";
     const req = makeRequest("/api/audit", { "x-admin-key": "yanlis" });
@@ -59,7 +79,9 @@ describe("verifyAdminAuth — gömülü varsayılan anahtar YOK", () => {
 
   it("cookie ile yetkilendirme çalışır (x-admin-key olmadan)", () => {
     process.env.ADMIN_SECRET = "guvenli-anahtar";
-    const req = makeRequest("/api/audit", { cookie: "vapur_admin_key=guvenli-anahtar" });
+    const req = makeRequest("/api/audit", {
+      cookie: "vapur_admin_key=guvenli-anahtar",
+    });
     expect(verifyAdminAuth(req)).toBe(true);
   });
 

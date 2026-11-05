@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 
 /**
- * Admin ve telemetri korumalı endpoint'ler için yetkilendirme denetleyicisi.
+ * Yönetici endpoint'leri için yetkilendirme denetleyicisi.
  *
  * GÜVENLİK: Sır YALNIZCA ortam değişkeninden gelir (ADMIN_SECRET / ADMIN_PIN).
  * - Gömülü varsayılan anahtar ("ZKIO-2026") KALDIRILDI; sır tanımlı değilse
@@ -19,6 +19,5 @@ export function verifyAdminAuth(request: NextRequest): boolean {
   const providedKey = headerKey || authHeader || cookieKey;
   if (!providedKey) return false;
 
-  const cronSecret = process.env.CRON_SECRET;
-  return providedKey === adminKey || (!!cronSecret && providedKey === cronSecret);
+  return providedKey === adminKey;
 }

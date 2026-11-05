@@ -16,9 +16,9 @@ services:
       - PORT=3001
       - DATABASE_URL=file:/app/data/vapur.db
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
-      - ENABLE_DEMO_MODE=${ENABLE_DEMO_MODE:-true}
-      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET:-change_me_access_secret}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-change_me_refresh_secret}
+      - ENABLE_DEMO_MODE=${ENABLE_DEMO_MODE:-false}
+      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET must be set to a strong random secret}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set to a strong random secret}
       - JWT_ACCESS_TTL=${JWT_ACCESS_TTL:-15m}
       - JWT_REFRESH_TTL=${JWT_REFRESH_TTL:-7d}
     volumes:

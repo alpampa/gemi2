@@ -44,4 +44,22 @@ export function loadEnv(): void {
       }
     }
   }
+
+  if (process.env.NODE_ENV === 'production') {
+    if (process.env.ENABLE_DEMO_MODE === 'true') {
+      throw new Error('ENABLE_DEMO_MODE üretimde true olamaz.');
+    }
+    for (const key of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET']) {
+      const value = process.env[key]?.trim();
+      if (
+        !value ||
+        value.length < 32 ||
+        /change[_ -]?me|dev_(access|refresh)_secret/i.test(value)
+      ) {
+        throw new Error(
+          `${key} üretimde en az 32 karakterlik güçlü bir sır olmalıdır.`,
+        );
+      }
+    }
+  }
 }

@@ -60,6 +60,25 @@ describe('AuthService', () => {
     expect(createArg.data.email).toBe('a@b.com');
   });
 
+  it('register: JWT sırları yoksa veritabanına dokunmadan reddeder', async () => {
+    const accessSecret = process.env.JWT_ACCESS_SECRET;
+    const refreshSecret = process.env.JWT_REFRESH_SECRET;
+    delete process.env.JWT_ACCESS_SECRET;
+    delete process.env.JWT_REFRESH_SECRET;
+
+    try {
+      await expect(
+        service.register({ email: 'new@example.com', password: 'password123' }),
+      ).rejects.toThrow('JWT_ACCESS_SECRET');
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    } finally {
+      if (accessSecret === undefined) delete process.env.JWT_ACCESS_SECRET;
+      else process.env.JWT_ACCESS_SECRET = accessSecret;
+      if (refreshSecret === undefined) delete process.env.JWT_REFRESH_SECRET;
+      else process.env.JWT_REFRESH_SECRET = refreshSecret;
+    }
+  });
+
   it('register: mevcut e-postada ConflictException fırlatır', async () => {
     (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'u1' });
     await expect(
