@@ -54,6 +54,8 @@ export interface RawOfficialTrip {
   /** Hat tanımlayıcı (örn. Beşiktaş-Kadıköy) */
   lineName?: string;
   sourceUrl?: string;
+  /** Ücret farklı bir resmî sayfadan doğrulandıysa o sayfanın adresi. */
+  fareSourceUrl?: string;
   verifiedAt?: string;
 }
 
