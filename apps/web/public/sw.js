@@ -74,15 +74,32 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+/**
+ * Önbellekten dönen kabuk yanıtına kaynak işareti ekler.
+ *
+ * NEDEN: "yavaş ağda kabuk döndü" sözleşmesi süre ölçümüyle doğrulanınca
+ * CPU/commit gürültüsü testi kararsız yapıyordu. İşaret, yanıtın ağdan mı
+ * yoksa SW önbelleğinden mi geldiğini kesin olarak ayırt eder.
+ */
+function withShellMarker(response) {
+  const headers = new Headers(response.headers);
+  headers.set('X-Vapur-Shell', 'cached');
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 /** Çevrimdışı kabuk: istenen belge, sonra kök, sonra minimal HTML. */
 async function navigationFallback(req) {
   const cached = await caches.match(req, { ignoreVary: true });
-  if (cached) return cached;
+  if (cached) return withShellMarker(cached);
 
   const rootFallback =
     (await caches.match('/', { ignoreVary: true })) ||
     (await caches.match(new URL('/', req.url).href, { ignoreVary: true }));
-  if (rootFallback) return rootFallback;
+  if (rootFallback) return withShellMarker(rootFallback);
 
   return new Response(
     '<!doctype html><html lang="tr"><head><meta charset="utf-8">' +
@@ -95,7 +112,11 @@ async function navigationFallback(req) {
       '<h1 style="font-size:18px;margin:12px 0 6px">Çevrimdışısınız</h1>' +
       '<p style="color:#94a3b8;font-size:13px;line-height:1.6">İnternet bağlantınız geri geldiğinde seferler ve harita yeniden yüklenecektir.</p>' +
       '</main></body></html>',
-    { status: 503, statusText: 'Service Unavailable', headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+    {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'X-Vapur-Shell': 'offline' },
+    }
   );
 }
 
