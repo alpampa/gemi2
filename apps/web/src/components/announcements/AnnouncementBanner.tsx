@@ -114,7 +114,7 @@ export function AnnouncementBanner({ announcements, className = "" }: Announceme
 
   return (
     <>
-      <div className={`px-3 pt-1.5 animate-fadeIn ${className}`} role="region" aria-label="Firma duyuruları">
+      <div className={`px-3 pt-1.5 animate-fadeIn ${className}`} role="region" aria-labelledby="announcement-banner-heading">
       <div
         className={`rounded-xl border px-2.5 py-1 sm:py-1.5 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 transition-all ${
           hasCancellation
@@ -135,6 +135,7 @@ export function AnnouncementBanner({ announcements, className = "" }: Announceme
               {hasCancellation ? <AlertTriangle size={13} aria-hidden /> : <Megaphone size={13} aria-hidden />}
             </span>
             <span
+              id="announcement-banner-heading"
               className={`text-[9.5px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${
                 hasCancellation
                   ? "bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300"
@@ -173,7 +174,6 @@ export function AnnouncementBanner({ announcements, className = "" }: Announceme
             <button
               type="button"
               onClick={() => setDetailItem(currentItem)}
-              aria-label="Duyuru detayını aç"
               className={`font-semibold text-xs sm:text-[11px] leading-tight hover:underline inline-flex items-center gap-1 min-h-11 cursor-pointer text-left ${
                 tone === "danger"
                   ? "text-rose-700 dark:text-rose-200 font-bold"
@@ -197,6 +197,10 @@ export function AnnouncementBanner({ announcements, className = "" }: Announceme
                 </>
               )}
               <Info size={10} className="shrink-0 opacity-60 ml-0.5" aria-hidden />
+              {/* ERİŞİLEBİLİRLİK: aria-label kaldırıldı (WCAG 2.5.3 — görünen metin
+                  erişilebilir adın parçası olmalı). Eylem ipucu görünmez metinle
+                  eklenir; ekran okuyucu duyuru metnini + "detayı aç"ı birlikte okur. */}
+              <span className="sr-only"> — duyuru detayını aç</span>
             </button>
           </MarqueeTicker>
         </div>

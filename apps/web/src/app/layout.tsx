@@ -5,6 +5,7 @@ import "./globals.css";
 import "leaflet/dist/leaflet.css";
 import { NotificationContainer } from "@/components/ui/NotificationToast";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { HydrationSignal } from "@/components/pwa/HydrationSignal";
 import { ReducedMotionProvider } from "@/components/providers/ReducedMotionProvider";
 import { DARK_THEME_IDS, DEFAULT_THEME_ID, THEME_STORAGE_KEY } from "@/lib/theme-ids";
 
@@ -88,6 +89,7 @@ export default function RootLayout({
           />
         ) : null}
         <ReducedMotionProvider>
+          <HydrationSignal />
           <ServiceWorkerRegister />
           {children}
           <NotificationContainer />

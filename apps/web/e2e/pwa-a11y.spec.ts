@@ -49,8 +49,8 @@ for (const path of ["/", "/profile"]) {
     // paralel koşuda 30 sn varsayılanı aşabiliyor. Bu test yalnızca "serious/
     // critical ihlal yok" ölçütünü doğrular; süre eşiği burada bir sözleşme
     // değildir, bu yüzden yalnızca bu test için üst sınır yükseltilir.
-    test.setTimeout(90_000);
-    await page.goto(path);
+    test.setTimeout(180_000);
+    await page.goto(path, { waitUntil: "domcontentloaded", timeout: 90_000 });
     await page.waitForTimeout(1500);
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])

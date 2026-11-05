@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { gotoReady, waitForHydration } from "./hydration";
 
 /**
  * BAĞIMSIZ DENETİM (salt okuma) — üretim kodu değiştirilmez.
@@ -148,11 +149,15 @@ for (const vp of VIEWPORTS) {
 }
 
 test("arama: doğal arama sonuç verir (desktop)", async ({ page }, testInfo) => {
-  test.setTimeout(60000);
+  test.setTimeout(120_000);
   const d = attachDiag(page);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await gotoReady(page);
   await page.waitForTimeout(2500);
+
+  // NEDEN "Tüm Gün": varsayılan liste yalnızca yaklaşan seferleri gösterir;
+  // gece servis boşluğunda arama sonucu boş kalıp testi saate bağımlı kılar.
+  await page.getByRole("button", { name: /Tüm Gün/ }).first().click();
 
   await page.getByRole("button", { name: "Ara", exact: true }).click();
   const search = page.getByPlaceholder(/İskele veya hat ara/i);
@@ -169,15 +174,17 @@ test("arama: doğal arama sonuç verir (desktop)", async ({ page }, testInfo) =>
 });
 
 test("iskele rehberi araması (mob-360)", async ({ page }, testInfo) => {
-  test.setTimeout(60000);
+  test.setTimeout(120_000);
   const d = attachDiag(page);
   await page.setViewportSize({ width: 360, height: 740 });
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(2500);
+  await gotoReady(page);
+  await page.waitForTimeout(1500);
 
   await page.getByRole("button", { name: "İskeleler" }).click();
   const input = page.getByPlaceholder(/İskele adı ara/i);
-  await expect(input).toBeVisible({ timeout: 10000 });
+  // 30 sn: paralel matriste (3 proje) sunucu SSR kuyruğu 10 sn'yi aşabiliyor;
+  // sekmeye geçişin tamamlanması beklenir.
+  await expect(input).toBeVisible({ timeout: 30_000 });
   await input.fill("Kadıköy");
   await page.waitForTimeout(800);
   const hasResult = await page.getByText(/Kadıköy/).first().isVisible().catch(() => false);
@@ -252,7 +259,7 @@ test("sefer sonuçları: kart açılır, detay + Aktarma sekmesi (desktop)", asy
   test.setTimeout(90000);
   const d = attachDiag(page);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await gotoReady(page);
   const cards = page.getByRole("button", { name: /seferi, detay için açın/ });
   await expect(cards.first()).toBeVisible({ timeout: 15000 });
   const count = await cards.count();
@@ -301,7 +308,13 @@ test("duyurular API'si ve banner durumu", async ({ page }, testInfo) => {
   }
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(2500);
-  const banner = await page.locator('[role="region"][aria-label="Firma duyuruları"]').isVisible().catch(() => false);
+  // Bölge artık `aria-labelledby` ile rozet metnini ("DUYURU"/"İPTAL") ad olarak
+  // kullanır; wcag 2.5.3 için aria-label kaldırıldı. Adı buradan doğrularız.
+  const banner = await page
+    .getByRole("region", { name: /DUYURU|İPTAL/i })
+    .first()
+    .isVisible()
+    .catch(() => false);
   await report("announcements", page, d, { apiStatus: status, ...meta, bannerVisible: banner }, testInfo);
   expect(status, "/api/announcements erişilebilir olmalı").toBe(200);
 });
@@ -332,7 +345,12 @@ test("hata dayanıklılığı: API kesilse de ana sayfa açılır", async ({ pag
 });
 
 for (const w of [320, 390]) {
-  test(`çevrimdışı davranışı (mob-${w})`, async ({ browser }, testInfo) => {
+  test(`çevrimdışı davranışı (mob-${w})`, async ({ browser, browserName }, testInfo) => {
+    // WebKit'te Playwright Service Worker API'sini desteklemiyor (bkz.
+    // offline-sw.spec.ts). "Kabuk çevrimdışı önbellekten döner" sözleşmesi
+    // orada ölçülemez; testi Chromium'a sınırlamak bir gevşetme değil,
+    // platformun sağlamadığı yeteneği ölçmeye çalışmamaktır.
+    test.skip(browserName !== "chromium", "Yalnızca Chromium SW destekler");
     test.setTimeout(120000);
     const ctx = await browser.newContext({ viewport: { width: w, height: 800 } });
     const page = await ctx.newPage();
@@ -341,13 +359,24 @@ for (const w of [320, 390]) {
     // SW'nin sayfayı kontrol etmesini bekle — MANUEL YENİLEME YOK.
     // Kabuk ısısı (warm-up) sayesinde çevrimdışı yenileme doğrudan çalışmalıdır.
     await page.waitForFunction(() => !!navigator.serviceWorker?.controller, null, { timeout: 20000 }).catch(() => {});
-    // Kabuk ısısının tamamlanmasını bekle: SW önbelleğinde "/" görünene kadar (deterministik).
+    // Kabuk ısısının tamamlanmasını bekle: SW önbelleğinde "/" görünene kadar.
+    // NOT: `page.waitForFunction(async () => ...)` Promise döndürdüğü için
+    // await edilmez (koşul anında sağlanmış sayılır). Bu yüzden gerçek koşul
+    // Node tarafında yoklanır.
     let shellCached = false;
-    for (let i = 0; i < 20 && !shellCached; i++) {
-      shellCached = await page
-        .evaluate(async () => ("caches" in window) && !!(await caches.match("/", { ignoreVary: true })))
-        .catch(() => false);
-      if (!shellCached) await page.waitForTimeout(500);
+    try {
+      await expect
+        .poll(
+          () =>
+            page.evaluate(
+              async () => "caches" in window && Boolean(await caches.match("/", { ignoreVary: true })),
+            ),
+          { timeout: 45_000, intervals: [250, 500, 1000] },
+        )
+        .toBe(true);
+      shellCached = true;
+    } catch {
+      shellCached = false;
     }
     await page.waitForTimeout(500);
     const onlineNav = await page.getByRole("navigation", { name: "Ana gezinme" }).isVisible().catch(() => false);
@@ -374,25 +403,36 @@ for (const w of [320, 390]) {
 }
 
 test("profil işlevleri: bildirim anahtarı, dürüst ödeme satırı, veri temizleme", async ({ page }, testInfo) => {
-  test.setTimeout(60000);
+  test.setTimeout(120_000);
   const d = attachDiag(page);
   await page.setViewportSize({ width: 390, height: 844 });
   const resp = await page.goto("/profile", { waitUntil: "domcontentloaded" });
+  await waitForHydration(page);
   await page.waitForTimeout(1500);
 
   // 1. Sahte kimlik gösterilmemeli (fabricated user data yok)
   const fakeIdentity = await page.getByText(/John Doe|john\.doe@example\.com|Verified/i).count();
 
-  // 2. Bildirim satırı GERÇEK bir anahtar (switch) olmalı ve tıklamaya yanıt vermeli
+  // 2. Bildirim satırı GERÇEK bir anahtar (switch) olmalı ve DÜRÜST davranmalı.
+  // İki meşru davranış vardır:
+  //  a) Tarayıcı destekliyor → dokunma durumu değiştirir (aç/kapa).
+  //  b) Tarayıcı desteklemiyor/engellenmiş → anahtar devre dışıdır ve nedenini
+  //     AÇIKÇA yazar (sessiz yutma yok). WebKit'te Notification API yoktur;
+  //     "tıklama durumu değiştirsin" iddiası platformu yok saymak olurdu.
   const notifSwitch = page.getByRole("switch", { name: /bildirim/i });
   const switchVisible = await notifSwitch.isVisible().catch(() => false);
   const beforeChecked = switchVisible ? await notifSwitch.getAttribute("aria-checked") : null;
-  const beforeStatus = await page.getByText(/Açık|Kapalı|engellenmiş|desteklemiyor/i).first().innerText().catch(() => "");
-  if (switchVisible) await notifSwitch.click({ timeout: 3000 }).catch(() => {});
+  // Durum metni ANAHTARIN kendi içeriğinden okunur: sayfadaki ilk "Açık/Kapalı"
+  // eşleşmesi başka bir bileşene ait olabilir (kırılgan seçici).
+  const beforeStatus = switchVisible ? await notifSwitch.innerText().catch(() => "") : "";
+  const switchDisabled = switchVisible ? await notifSwitch.isDisabled().catch(() => false) : true;
+  if (switchVisible && !switchDisabled) await notifSwitch.click({ timeout: 3000 }).catch(() => {});
   await page.waitForTimeout(800);
   const afterChecked = switchVisible ? await notifSwitch.getAttribute("aria-checked") : null;
-  const afterStatus = await page.getByText(/Açık|Kapalı|engellenmiş|desteklemiyor/i).first().innerText().catch(() => "");
-  const notifResponded = beforeChecked !== afterChecked || beforeStatus !== afterStatus;
+  const afterStatus = switchVisible ? await notifSwitch.innerText().catch(() => "") : "";
+  const notifResponded = switchDisabled
+    ? /desteklemiyor|engellenmiş|izin verilmedi/i.test(`${beforeStatus} ${afterStatus}`)
+    : beforeChecked !== afterChecked || beforeStatus !== afterStatus;
 
   // 3. Ödeme satırı dürüst bilgi olmalı ve TIKLANABİLİR (önceden ölü) olmamalı
   const honestPayment = await page.getByText(/Kayıtlı ödeme yöntemi yok/i).isVisible().catch(() => false);
@@ -419,7 +459,7 @@ test("profil işlevleri: bildirim anahtarı, dürüst ödeme satırı, veri temi
   expect(resp?.status(), "/profile durumu").toBeLessThan(400);
   expect(fakeIdentity, "sahte kimlik gösterilmemeli").toBe(0);
   expect(switchVisible, "bildirim anahtarı görünür olmalı").toBe(true);
-  expect(notifResponded, "bildirim anahtarı tıklamaya yanıt vermeli").toBe(true);
+  expect(notifResponded, "bildirim anahtarı durumu değiştirmeli ya da nedenini açıkça yazmalı").toBe(true);
   expect(honestPayment, "ödeme satırı dürüst bilgi göstermeli").toBe(true);
   expect(clearDialogMessage, "veri temizleme onay diyaloğu açmalı").toMatch(/yerel veriler/i);
 });

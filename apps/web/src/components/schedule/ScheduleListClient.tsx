@@ -1200,15 +1200,18 @@ export function ScheduleListClient({
       {/* 4. KAYAN İPTAL SEFERLER DUYURU BANDI */}
       {cancelledTrips.length > 0 && (
         <div className="px-3 pt-1.5 animate-fadeIn">
-          <div className="py-1.5 px-3 rounded-xl bg-linear-to-r from-rose-600 via-rose-700 to-red-800 text-white shadow-sm flex items-center gap-2 overflow-hidden border border-rose-500">
+          <div
+            role="region"
+            aria-labelledby="cancelled-trips-heading"
+            className="py-1.5 px-3 rounded-xl bg-linear-to-r from-rose-600 via-rose-700 to-red-800 text-white shadow-sm flex items-center gap-2 overflow-hidden border border-rose-500"
+          >
             <div className="flex items-center gap-1.5 shrink-0 bg-black/40 px-2 py-0.5 rounded-lg font-black text-[10px] tracking-wider uppercase border border-rose-400/50">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-              <span>İPTAL SEFERLER</span>
+              <span id="cancelled-trips-heading">İPTAL SEFERLER</span>
             </div>
 
             <MarqueeTicker
               speedPxPerSec={60}
-              ariaLabel="İptal edilen seferler"
               className="text-xs font-bold text-white"
             >
               {cancelledTrips.map(({ schedule, dyn }, idx) => (

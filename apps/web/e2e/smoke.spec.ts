@@ -1,16 +1,36 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+import { gotoReady, waitForHydration } from "./hydration";
 
 /**
  * Duman testleri: üretim build'i üzerinde kritik kullanıcı akışları.
  * Seçiciler mevcut erişilebilirlik etiketlerine dayanır (aria-label / role),
  * böylece kozmetik değişikliklerde kırılmaz.
+ *
+ * MOBİL NOTU: Bazı kontroller masaüstünde ayrı düğme, mobilde "Hızlı Araçlar
+ * Menüsü" içinde yaşar. Testler her iki yerleşimi de aynı semantik seçiciyle
+ * doğrular; erişilebilirlik adı değişmediği için bu bir gevşetme değildir.
  */
 
+/** Ayarlar çekmecesini masaüstü/mobil yerleşime göre açar. */
+async function openSettings(page: Page) {
+  const mobileTools = page.getByRole("button", { name: "Hızlı Araçlar Menüsü" });
+  if (await mobileTools.isVisible()) {
+    await mobileTools.click();
+    await page
+      .getByRole("button", { name: /Görünüm ve erişilebilirlik ayarları/ })
+      .click();
+    return;
+  }
+  await page.getByRole("button", { name: "Ayarlar" }).click();
+}
+
 test("Ana sayfa: sefer listesi, güven şeridi ve alt menü görünür", async ({ page }) => {
-  await page.goto("/");
+  await gotoReady(page);
 
   await expect(page.getByRole("navigation", { name: "Ana gezinme" })).toBeVisible();
-  await expect(page.getByText("Duyuru doğrulama")).toBeVisible();
+  // Güven şeridi mobilde yalnızca ikon + tarih gösterir; erişilebilir ad
+  // her iki yerleşimde de "Duyuru doğrulama" içerir.
+  await expect(page.getByRole("button", { name: /Duyuru doğrulama/ })).toBeVisible();
   // Gün rozeti (tarife günü) bugün şu biçimlerde görünür
   await expect(page.getByText(/Hafta içi|Cumartesi|Pazar|Tatil/).first()).toBeVisible();
   await expect(
@@ -30,7 +50,7 @@ test("Erişilebilirlik: viewport yakınlaştırmayı engellemez", async ({ page 
 });
 
 test("Ana sayfa: kaynaksız doluluk tahmini gösterilmez", async ({ page }) => {
-  await page.goto("/");
+  await gotoReady(page);
 
   await expect(page.getByRole("button", { name: /seferi, detay için açın/ }).first()).toBeVisible();
   await expect(page.getByText(/tahmini doluluk/i)).toHaveCount(0);
@@ -38,15 +58,15 @@ test("Ana sayfa: kaynaksız doluluk tahmini gösterilmez", async ({ page }) => {
 });
 
 test("Pano sekmesi: iskele kalkış panosu açılır", async ({ page }) => {
-  await page.goto("/?view=board");
+  await gotoReady(page, "/?view=board");
 
   await expect(page.getByText(/İSKELE KALKIŞ PANOSU/i)).toBeVisible();
   await expect(page.getByText(/İskelesi/).first()).toBeVisible();
 });
 
 test("Sefer detayı: çekmece açılır, Aktarma sekmesinde yürüme takibi görünür", async ({ page }) => {
-  test.setTimeout(60000);
-  await page.goto("/");
+  test.setTimeout(90_000);
+  await gotoReady(page);
 
   // Kalkışını yeni geçmiş kart ("HAREKET ETTİ", 30 sn'lik pencere) listede kendi
   // kronolojik yerinde kalır ve ilk sırada olabilir; detay akışı için listedeki
@@ -73,14 +93,21 @@ test("Sefer detayı: çekmece açılır, Aktarma sekmesinde yürüme takibi gör
 });
 
 test("Arama: doğal arama ile liste filtrelenir", async ({ page }) => {
-  await page.goto("/");
+  await gotoReady(page);
+
+  // NEDEN "Tüm Gün": varsayılan liste yalnızca YAKLAŞAN seferleri gösterir.
+  // Gece servis boşluğunda (00:10–06:00) ya da tek seferlik pencerelerde arama
+  // sonucu boş kalır ve test saate bağımlı olur. Tüm Gün modunda tarifenin
+  // tamamı (06:00–00:30) aranabilir; bu, ürünün arama sözleşmesini saate
+  // bağımlı olmadan ölçer.
+  await page.getByRole("button", { name: /Tüm Gün/ }).first().click();
 
   await page.getByRole("button", { name: "Ara", exact: true }).click();
   const search = page.getByPlaceholder(/İskele veya hat ara/i);
   await search.fill("Büyükada");
 
-  // Gece servis boşluğunda (son seferden ~00:10'a kadar) sonuç listesi boş olabilir;
-  // bu pencerede arama yine de yanıt vermiş olmalı (boş durum mesajı görünür).
+  // Sözleşme: sorgu yanıtlanır — ya Büyükada geçen bir sefer ya da açık
+  // "eşleşen sefer bulunamadı" mesajı görünür. Sessiz boş liste kabul edilmez.
   await expect(
     page
       .getByRole("button", { name: /Büyükada/ })
@@ -90,12 +117,12 @@ test("Arama: doğal arama ile liste filtrelenir", async ({ page }) => {
 });
 
 test("Tema kalıcılığı: Gün Işığı modu seçilir ve yenilemede korunur", async ({ page }) => {
-  test.setTimeout(60000);
-  await page.goto("/");
+  test.setTimeout(90_000);
+  await gotoReady(page);
 
   // Görünüm seçimi bugün Ayarlar çekmecesinde (DASHBOARD_SKINS); "sun-contrast"
   // önderroği "Gün Işığı & Erişilebilir" kartını seçerek uygulanır.
-  await page.getByRole("button", { name: "Ayarlar" }).click();
+  await openSettings(page);
 
   const sheet = page.getByText("Görünüm Modu", { exact: true });
   await sheet.waitFor({ timeout: 10000 });
@@ -104,12 +131,28 @@ test("Tema kalıcılığı: Gün Işığı modu seçilir ve yenilemede korunur",
   await skinCard.click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "sun-contrast");
 
+  /**
+   * Kalıcılık sözleşmesi iki adımlıdır ve ikisi ayrı ayrı doğrulanır:
+   *  1) Tercih localStorage'a yazılmalı (yoksa reload sonrası hiçbir şey
+   *     hatırlanamaz),
+   *  2) Yeni belgede tema, hidrasyondan bağımsız olarak head'deki satır içi
+   *     betikle uygulanmalı (FOUC yok).
+   * Önceki sürüm doğrudan reload sonrası niteliği okuyordu; SW devri ile
+   * yarışınca geçiş belgesinde boş değer görülüp sebepsiz düşüyordu.
+   */
+  const stored = await page.evaluate(() => localStorage.getItem("vapur_app_theme_v2"));
+  expect(stored, "tema tercihi localStorage'a yazılmalı").toBeTruthy();
+  expect(JSON.parse(stored as string).state.theme).toBe("sun-contrast");
+
   // Gece yükü altında reload bazen ERR_ABORTED verebilir (servis çalışanı devri);
   // kalıcılık kontrolü taze gezinmeyle de aynı şekilde doğrulanır.
   try {
-    await page.reload({ timeout: 15000 });
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
   } catch {
-    await page.goto("/", { timeout: 15000 });
+    await page.goto("/", { waitUntil: "domcontentloaded", timeout: 30_000 });
   }
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "sun-contrast");
+  await waitForHydration(page);
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "sun-contrast", {
+    timeout: 20_000,
+  });
 });

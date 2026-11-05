@@ -151,16 +151,17 @@ export function ServiceDataTrustBar({
             <ShieldCheck size={11} className="shrink-0 text-emerald-500" aria-hidden="true" />
           )}
           <span className="text-[10px] font-bold tabular-nums truncate">
+            {/* ERİŞİLEBİLİRLİK: etiket mobilde görsel olarak gizlense de erişilebilir
+                adda kalır (WCAG 2.5.3: görünen metin adın parçası olmalı). */}
+            <span className="sr-only sm:not-sr-only sm:mr-1">{t("trustAnnouncement")}: </span>
             {loading && !hasLiveVerifiedSource ? (
               <span>Canlı duyuru kaynakları doğrulanıyor...</span>
             ) : hasLiveVerifiedSource && liveTimeStr ? (
               <>
-                <span className="hidden sm:inline">{t("trustAnnouncement")}: </span>
                 Bugün {liveTimeStr} · {activeSourceCount} {t("sources")}
               </>
             ) : fresh.verifiedOnLabel ? (
               <>
-                <span className="hidden sm:inline">{t("trustAnnouncement")}: </span>
                 {fresh.verifiedOnLabel} ({fresh.ageLabel}) · {activeSourceCount} {t("sources")}
               </>
             ) : (

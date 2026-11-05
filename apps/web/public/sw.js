@@ -5,7 +5,12 @@
  * zaman aşımı yoktu. Vapurda/tünelde bağlantı "var ama ölü" olunca sayfa uzun
  * süre takılı kalıyor, çevrimdışı kabuğa hiç düşmüyordu — tam da hedef senaryo.
  *
- * v10 STRATEJİLERİ:
+ * İlk ziyarette kabuk ısısı, install sırasında "/" fetch edilerek DEĞİL,
+ * istemci tarafında (`ServiceWorkerRegister.warmShell`) yapılır. Install'da
+ * tam SSR fetch etmek her yeni context'te ek yük üretir ve SW aktivasyonunu o
+ * yanıta bağlar (ölçüldü: E2E matrisinde 30 sn+ timeout'lar).
+ *
+ * STRATEJİLER:
  *  1. Navigasyon (mode === 'navigate'): 3000 ms zaman aşımı; süre aşılırsa
  *     önbellekteki kabuk (/) hemen döner, ağ güncellemesi arka planda devam eder.
  *  2. /_next/static/ (hash'li, içerik değişmez): cache-first.
@@ -18,6 +23,45 @@
 const CACHE_NAME = 'vapur-cache-v10';
 const RUNTIME_MAX_ENTRIES = 60;
 const NAVIGATION_TIMEOUT_MS = 3000;
+
+/**
+ * TEST KANCASI — yapay ağ gecikmesi (ms).
+ *
+ * NEDEN: "yavaş ağda kabuk önbellekten döner" sözleşmesi, ağ gecikmesi
+ * gerçekten uygulanmadan ölçülemez. Playwright'ın `context.route` katmanı
+ * Service Worker'ın kendi `fetch()` isteğini görmez (belgelenmiş kısıt), bu
+ * yüzden gecikme testten ağ katmanına enjekte edilemiyor. Bu kanca, gecikmeyi
+ * SW'nin fetch yoluna ekleyerek 3000 ms'lik GERÇEK zaman aşımı yarışını
+ * (Promise.race + navigationFallback) deterministik biçimde test edilebilir
+ * kılar. Üretimde hiçbir istemci bu mesajı göndermez; varsayılan 0'dır.
+ */
+let testNetworkDelayMs = 0;
+
+self.addEventListener('message', (event) => {
+  const data = event.data || {};
+  // ÜRETİMDE ETKİSİZ: kanca yalnızca yerel/testere ortamında kabul edilir.
+  const isLocal =
+    self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
+  if (
+    isLocal &&
+    data.type === 'VAPUR_TEST_NETWORK_DELAY' &&
+    typeof data.ms === 'number'
+  ) {
+    testNetworkDelayMs = Math.max(0, Math.min(data.ms, 30_000));
+    // Onay: test, gecikmenin SW tarafında gerçekten kurulduğunu ölçer.
+    if (event.source && typeof event.source.postMessage === 'function') {
+      event.source.postMessage({ type: 'VAPUR_TEST_NETWORK_DELAY_ACK', ms: testNetworkDelayMs });
+    }
+  }
+});
+
+/** Test gecikmesi varsa fetch'i geciktirir; yoksa doğrudan fetch. */
+function fetchWithTestDelay(req) {
+  if (testNetworkDelayMs <= 0) return fetch(req);
+  return new Promise((resolve) => setTimeout(resolve, testNetworkDelayMs)).then(() =>
+    fetch(req),
+  );
+}
 
 const STATIC_FALLBACK_ASSETS = [
   '/manifest.json',
@@ -124,7 +168,7 @@ async function navigationFallback(req) {
 async function handleNavigation(event) {
   const req = event.request;
 
-  const networkPromise = fetch(req)
+  const networkPromise = fetchWithTestDelay(req)
     .then(async (response) => {
       if (response && response.status === 200) {
         const cacheControl = response.headers.get('Cache-Control') || '';
@@ -179,11 +223,19 @@ async function handleStaleWhileRevalidate(event) {
   const req = event.request;
   const cached = await caches.match(req, { ignoreVary: true });
 
+  /**
+   * Kabuk ("/") no-store yanıtla gelir (force-dynamic sayfa). Çevrimdışı yedek
+   * olarak yine de saklanmalıdır — handleNavigation'daki aynı kural. Bu satır
+   * olmadan `ServiceWorkerRegister.warmShell` fetch'i hiçbir şey önbelleğe
+   * almıyordu ve ilk ziyaret sonrası çevrimdışı yenileme 503'e düşüyordu.
+   */
+  const isShell = new URL(req.url).pathname === '/';
+
   const revalidate = fetch(req)
     .then(async (response) => {
       if (response && response.status === 200) {
         const cacheControl = response.headers.get('Cache-Control') || '';
-        if (!/\bno-store\b/i.test(cacheControl)) {
+        if (!/\bno-store\b/i.test(cacheControl) || isShell) {
           const copy = response.clone();
           await caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
           await trimCache(CACHE_NAME, RUNTIME_MAX_ENTRIES);
