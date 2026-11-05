@@ -68,6 +68,10 @@ function buildTrip(
     departureTime,
     arrivalTime: addMinutes(departureTime, opts.arrivalOffsetMin),
     platform: opts.platform,
+    // VERİ KURALI: iskele/rıhtım adları resmî sayfada birebir yayımlanmış
+    // biçimiyle doğrulanamadı. Bu yüzden "official" iddia edilmez; arayüz
+    // platformSource === "unknown" olduğunda platform bilgisini gizler.
+    platformSource: "unknown",
     price: MM_ADA_FARE,
     ...(opts.dayType ?? EVERYDAY),
     stops: opts.stops?.map((s) => ({
