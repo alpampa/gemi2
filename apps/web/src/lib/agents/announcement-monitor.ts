@@ -283,7 +283,7 @@ export async function runMonitorTick(opts: {
   let scanFailed = false;
   if (dueOperators.length > 0) {
     try {
-      const result = await scrapeAllAnnouncements({ operators: dueOperators });
+      const result = await scrapeAllAnnouncements({ operators: dueOperators, nowMs: now.getTime() });
       coverage = result.coverage;
       snapshots = result.snapshots;
     } catch {

@@ -10,8 +10,8 @@ import { resolveTripFreshness } from '@/lib/utils/data-freshness';
 /**
  * Returns current Istanbul time components (UTC+3)
  */
-export function getIstanbulTime() {
-  const now = new Date();
+export function getIstanbulTime(nowMs: number = Date.now()) {
+  const now = new Date(nowMs);
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Istanbul',
     year: 'numeric',
@@ -96,12 +96,20 @@ function checkTripRunsOnDay(
  * Builds schedule DTOs for the current day and tags day-type availability
  * so users can also inspect Weekday / Saturday / Sunday-Holiday timetables.
  */
-export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
-  const ist = getIstanbulTime();
+export async function getLiveOrOfficialSchedules(options?: {
+  /**
+   * Değerlendirme anı (ms). Varsayılan `Date.now()` üretim davranışıdır.
+   * Saat enjekte edilebilir olduğunda tazelik kapısı takvimden bağımsız
+   * doğrulanabilir (aksi halde "FRESH" iddiası 2 gün sonra kendiliğinden
+   * "AGING" olur ve test zamanla kırılır).
+   */
+  nowMs?: number;
+}): Promise<SchedulesResponse> {
+  const nowMs = options?.nowMs ?? Date.now();
+  const ist = getIstanbulTime(nowMs);
   const yearStr = ist.year;
   const monthStr = String(ist.month).padStart(2, '0');
   const dayStr = String(ist.day).padStart(2, '0');
-  const nowMs = Date.now();
 
   // 1. Sanitize: veri kaynağındaki bozuk kayıtları temizle
   //   - departureTime "HH:mm" formatında değilse kayıt atlanır

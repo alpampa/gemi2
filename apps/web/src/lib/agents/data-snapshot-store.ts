@@ -25,17 +25,34 @@ import announcementsSnapshot from "./data-snapshots/announcements.json";
 
 const announcementsRaw = announcementsSnapshot as AnnouncementsSnapshotFile;
 
-export function getStoredAnnouncements(): OperatorAnnouncement[] {
+/**
+ * Snapshot dosyasından yayımlanabilir duyuruları seçer.
+ *
+ * KURAL (c68659a "strict same-day cancellation policy"): kaynaktan doğrulanmış
+ * bir yayın tarihi (publishedAtSource === "SOURCE") olmayan kayıt YAYIMLANMAZ.
+ * Tarihsiz kaydı snapshot/tarama günüyle damgalamak, kaynağın söylemediği bir
+ * tarihi uydurmak olurdu; o yüzden böyle kayıtlar sessizce "güncel" sayılmaz.
+ *
+ * NEDEN SAF FONKSİYON: bu davranış, commit'li `announcements.json` dosyasının
+ * o günkü içeriğine bağlı olmadan doğrulanabilmeli. Snapshot her senkronda
+ * değişir; test onun içeriğine sabitlenirse veri güncellendiği anda kırılır.
+ */
+export function selectStoredAnnouncements(
+  snapshot: AnnouncementsSnapshotFile | undefined
+): OperatorAnnouncement[] {
   const out: OperatorAnnouncement[] = [];
-  for (const s of announcementsRaw?.sources ?? []) {
+  for (const s of snapshot?.sources ?? []) {
     for (const a of s.announcements ?? []) {
-      // Yalnızca kaynaktan doğrulanmış gerçek yayın tarihi olan kayıtlar döner
       if (a.publishedAt && a.publishedAtSource === "SOURCE") {
         out.push(a);
       }
     }
   }
   return out;
+}
+
+export function getStoredAnnouncements(): OperatorAnnouncement[] {
+  return selectStoredAnnouncements(announcementsRaw);
 }
 
 export function getStoredAnnouncementsMeta() {

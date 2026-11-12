@@ -282,18 +282,39 @@ describe("runMonitorTick (uçtan uca, sahte kaynaklar)", () => {
   });
 
   it("kaynak sonradan çökse de arşiv KORUNUR (veri sessizce kaybolmaz)", async () => {
+    // NEDEN AYRI TURLAR: fixture'lar gerçek sayfalardan farklı günlerde alındı
+    // (MM feed 16.10, Turyol popup 18.10) ve parser'lar "bugün" kuralını uygular.
+    // Tek bir turda hepsini aynı gün varsaymak fixture tarihlerini çarpıtmak
+    // olurdu. Her operatör kendi doğrulama gününde taranır; sonra kaynaklar
+    // çöktüğünde arşivin korunduğu ölçülür.
     vi.stubGlobal("fetch", okFetch());
-    await runMonitorTick({ trigger: "test", now: new Date("2026-10-19T10:00:00Z") });
+    await runMonitorTick({
+      trigger: "test",
+      now: new Date("2026-10-16T10:00:00Z"),
+      operators: ["Mavi Marmara"],
+    });
+    await runMonitorTick({
+      trigger: "test",
+      now: new Date("2026-10-18T10:00:00Z"),
+      operators: ["Turyol"],
+    });
 
     const failing = vi.fn(async () => new Response("bakım", { status: 503 }));
     vi.stubGlobal("fetch", failing);
-    const second = await runMonitorTick({ trigger: "test", now: new Date("2026-10-19T10:02:00Z") });
+    const second = await runMonitorTick({
+      trigger: "test",
+      now: new Date("2026-10-18T10:02:00Z"),
+      operators: ["Mavi Marmara", "Turyol"],
+    });
     expect(second.checksSucceeded).toBe(0);
-    expect(second.checksFailed).toBe(4);
+    expect(second.checksFailed).toBe(2);
 
     const state = await getMonitorState();
-    expect(state.archives.size).toBe(4);
+    expect(state.archives.size).toBe(2);
     expect(state.archives.get("Mavi Marmara")?.announcements.length).toBeGreaterThan(0);
-    expect(state.health.find((h) => h.operator === "Şehir Hatları")?.status).toBe("UNREACHABLE");
+    expect(state.archives.get("Turyol")?.announcements.length).toBeGreaterThan(0);
+    expect(state.health.find((h) => h.operator === "Mavi Marmara")?.status).toBe(
+      "UNREACHABLE"
+    );
   });
 });

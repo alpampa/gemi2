@@ -47,7 +47,13 @@ describe("getLiveOrOfficialSchedules — tazelik kapısı", () => {
   });
 
   it("Bostancı tarifesi bugünkü doğrulama damgasını taşır", async () => {
-    const res = await getLiveOrOfficialSchedules();
+    // "Tazelik" takvime göre değişen bir olgudur: gerçek saatle koşulursa bu
+    // test doğrulamadan 2 gün sonra kendiliğinden kırılır (FRESH → AGING).
+    // Değerlendirme anını doğrulama anına sabitleyerek ölçülen sözleşme
+    // deterministik hale getirilir; eşik davranışı ayrı testlerde sınanır.
+    const res = await getLiveOrOfficialSchedules({
+      nowMs: Date.parse(BOSTANCI_SEHIRHATLARI_VERIFIED_AT),
+    });
     const bostanci = res.schedules.filter((t) => t.id.startsWith("sh-bostanci-"));
     expect(bostanci.length).toBeGreaterThan(0);
     for (const trip of bostanci) {
