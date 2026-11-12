@@ -589,14 +589,14 @@ export function ScheduleCard(props: ScheduleCardProps) {
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-1.5 gap-y-0.5 font-black text-[13px] sm:text-base leading-tight min-w-0">
             <span
               title={dynState.currentOrigin}
-              className={`min-w-0 ${isCancelled ? "line-through opacity-70 text-slate-500 dark:text-slate-400" : "text-slate-900 dark:text-white"}`}
+              className={`min-w-0 ${isCancelled ? "line-through text-slate-600 dark:text-slate-300" : "text-slate-900 dark:text-white"}`}
             >
               {dynState.currentOrigin}
             </span>
             <span className="text-blue-600 dark:text-blue-400 font-extrabold text-xs sm:text-sm shrink-0">→</span>
             <span
               title={dynState.destination}
-              className={`min-w-0 ${isCancelled ? "line-through opacity-70 text-slate-500 dark:text-slate-400" : "text-blue-700 dark:text-blue-300 font-bold"}`}
+              className={`min-w-0 ${isCancelled ? "line-through text-slate-600 dark:text-slate-300" : "text-blue-700 dark:text-blue-300 font-bold"}`}
             >
               {routeDestinationDisplay}
             </span>
