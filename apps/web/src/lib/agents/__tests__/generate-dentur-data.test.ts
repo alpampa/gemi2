@@ -13,30 +13,39 @@ import { scrapeAllDenturSchedules } from "@/lib/agents/dentur-scraper";
  * ağ çağrısı yapılmaz. Üretilen JSON repoya işlenmiş gerçek veridir.
  */
 describe("dentur üretici", () => {
-  it("canlı veriyi çekip JSON üretir (env ile)", async () => {
-    if (process.env.GENERATE_DENTUR !== "1") return;
+  /**
+   * NEDEN açık süre: canlı ağ üreticisi (bkz. generate-announcements.test.ts).
+   * Varsayılan 5 sn, birden çok resmî sayfayı çeken bir üretici için gerçekçi
+   * değil; süre dolduğunda gecelik senkron düşer ve tarife yenilenmez.
+   */
+  it(
+    "canlı veriyi çekip JSON üretir (env ile)",
+    async () => {
+      if (process.env.GENERATE_DENTUR !== "1") return;
 
-    const { records, failures } = await scrapeAllDenturSchedules();
-    const payload = {
-      operator: "Dentur Avrasya",
-      sourceBase: "https://www.denturavrasya.com/tr-TR/hatlarimiz/*",
-      generatedAt: new Date().toISOString(),
-      scrapedAtUserAgent:
-        "Vapur-Sync-Agent/3.0 (resmi denturavrasya.com sayfalarından birebir)",
-      note: "Sayfalarda birebir yazılı saatler kaydedildi; 'Sürekli Sefer' pencereleri isContinuous ile işaretlidir, sahte dakika üretilmedi.",
-      failures,
-      lines: records,
-    } as const;
+      const { records, failures } = await scrapeAllDenturSchedules();
+      const payload = {
+        operator: "Dentur Avrasya",
+        sourceBase: "https://www.denturavrasya.com/tr-TR/hatlarimiz/*",
+        generatedAt: new Date().toISOString(),
+        scrapedAtUserAgent:
+          "Vapur-Sync-Agent/3.0 (resmi denturavrasya.com sayfalarından birebir)",
+        note: "Sayfalarda birebir yazılı saatler kaydedildi; 'Sürekli Sefer' pencereleri isContinuous ile işaretlidir, sahte dakika üretilmedi.",
+        failures,
+        lines: records,
+      } as const;
 
-    const outPath = fileURLToPath(
-      new URL("../../data/dentur-schedules.json", import.meta.url)
-    );
-    writeFileSync(outPath, JSON.stringify(payload, null, 2) + "\n", "utf-8");
-
-    if (failures.length > 0) {
-      throw new Error(
-        `Dentur üretimi kısmen başarısız: ${JSON.stringify(failures)}`
+      const outPath = fileURLToPath(
+        new URL("../../data/dentur-schedules.json", import.meta.url)
       );
-    }
-  });
+      writeFileSync(outPath, JSON.stringify(payload, null, 2) + "\n", "utf-8");
+
+      if (failures.length > 0) {
+        throw new Error(
+          `Dentur üretimi kısmen başarısız: ${JSON.stringify(failures)}`
+        );
+      }
+    },
+    180_000
+  );
 });
