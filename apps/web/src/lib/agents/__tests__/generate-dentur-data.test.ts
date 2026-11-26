@@ -24,6 +24,20 @@ describe("dentur üretici", () => {
       if (process.env.GENERATE_DENTUR !== "1") return;
 
       const { records, failures } = await scrapeAllDenturSchedules();
+
+      /**
+       * SIRA ÖNEMLİ: doğrulama YAZMADAN ÖNCE yapılır. Önceki sürüm dosyayı
+       * yazıp sonra hata fırlatıyordu; yani başarısız bir çalışma, doğrulanmış
+       * tarifeyi bozuk hâliyle EZİYOR ve ancak ondan sonra kırmızı oluyordu.
+       * 26 Kasım 2026'da tam bu oldu (569 kayıt -> 4 kayıt) ve bozuk veri
+       * commit'lendi. Artık eksik üretimde dosya hiç değişmez.
+       */
+      if (failures.length > 0) {
+        throw new Error(
+          `Dentur üretimi kısmen başarısız (${records.length} kayıt); tarife dosyası DEĞİŞTİRİLMEDİ: ${JSON.stringify(failures)}`
+        );
+      }
+
       const payload = {
         operator: "Dentur Avrasya",
         sourceBase: "https://www.denturavrasya.com/tr-TR/hatlarimiz/*",
@@ -39,12 +53,6 @@ describe("dentur üretici", () => {
         new URL("../../data/dentur-schedules.json", import.meta.url)
       );
       writeFileSync(outPath, JSON.stringify(payload, null, 2) + "\n", "utf-8");
-
-      if (failures.length > 0) {
-        throw new Error(
-          `Dentur üretimi kısmen başarısız: ${JSON.stringify(failures)}`
-        );
-      }
     },
     180_000
   );

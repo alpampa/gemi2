@@ -376,18 +376,44 @@ export const DENTUR_LINE_ENDPOINTS: Record<
 };
 
 /** Tüm hatları canlı çeker; başarısız hatları atlar (durum bilgisiyle raporlar) */
-export async function scrapeAllDenturSchedules(): Promise<{
+export type DenturLineKey = keyof typeof DENTUR_LINE_ENDPOINTS;
+
+/**
+ * Tüm hatları canlı çeker.
+ *
+ * KURAL: bir hat 0 sefer döndürdüyse bu "başarı" DEĞİL hatadır. Sayfa yapısı
+ * değiştiğinde parser sessizce boş dizi döndürüyordu; `failures` boş kaldığı
+ * için koruma tetiklenmiyor ve tarife yayına ~%99 eksik giriyordu (26 Kasım
+ * 2026: 569 kayıt -> 4 kayıt, failures=[]). Aktif bir hattın sıfır seferi
+ * olması gerçekçi olmadığı için bu durum hata olarak raporlanır.
+ */
+export async function scrapeAllDenturSchedules(options?: {
+  /** Test enjeksiyonu: varsayılan `scrapeDenturLine`. */
+  scrapeLine?: (
+    url: string,
+    line: DenturLineKey
+  ) => Promise<DenturLineRecord[]>;
+}): Promise<{
   records: DenturLineRecord[];
   failures: { line: string; error: string }[];
 }> {
   const failures: { line: string; error: string }[] = [];
   const records: DenturLineRecord[] = [];
+  const scrapeLine = options?.scrapeLine ?? scrapeDenturLine;
 
   for (const [line, url] of Object.entries(DENTUR_LINE_ENDPOINTS) as Array<
-    [keyof typeof DENTUR_LINE_ENDPOINTS, string]
+    [DenturLineKey, string]
   >) {
     try {
-      const recs = await scrapeDenturLine(url, line);
+      const recs = await scrapeLine(url, line);
+      if (recs.length === 0) {
+        failures.push({
+          line,
+          error:
+            "Kaynak alındı ama 0 sefer ayrıştırıldı (sayfa yapısı değişmiş olabilir)",
+        });
+        continue;
+      }
       records.push(...recs);
     } catch (err: unknown) {
       failures.push({ line, error: getErrorMessage(err, String(err)) });
