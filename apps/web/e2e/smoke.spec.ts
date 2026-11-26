@@ -14,18 +14,36 @@ import { gotoReady } from "./hydration";
 /** Ayarlar çekmecesini masaüstü/mobil yerleşime göre açar. */
 async function openSettings(page: Page) {
   const mobileTools = page.getByRole("button", { name: "Hızlı Araçlar Menüsü" });
+  const settingsItem = page.getByRole("button", {
+    name: /Görünüm ve erişilebilirlik ayarları/,
+  });
+
   if (await mobileTools.isVisible()) {
-    // NEDEN `force`: başlık saati/sayaç her saniye yeniden çiziliyor; WebKit'te
-    // paralel yük altında Playwright'ın "iki ardışık karede aynı kutu" kararlılık
-    // kontrolü hiç sağlanmıyor ve tıklama 90 sn bekliyordu (tam matriste bir kez).
-    // Bu adım bir HAZIRLIK adımıdır, iddia değil: ayarlar çekmecesinin gerçekten
-    // açıldığı hemen ardından `Görünüm Modu` ve tema kartı iddialarıyla
-    // doğrulanır. Kararlılık kontrolü atlanır, görünürlük/etkinlik korunur.
-    await mobileTools.click({ force: true });
-    await page
-      .getByRole("button", { name: /Görünüm ve erişilebilirlik ayarları/ })
-      .click({ force: true });
-    return;
+    /**
+     * Mobil araç menüsü bir TOGGLE'dır (`setIsToolsMenuOpen(!open)`) ve iki
+     * ayrı sebeple "menü kapalı" sonucu doğabilir:
+     *  1) Tıklama hidrasyondan önce gelirse React dinleyicisi yoktur → yutulur.
+     *  2) Tıklama, butonu örten bir katmana denk gelirse yine yutulur.
+     * İkisi de menünün HİÇ açılmaması gibi görünür; eski kod tek denemeyle
+     * 90 sn bekleyip düşüyordu (tam matriste iki kez). Çözüm, "aç" varsaymak
+     * yerine AÇILANA KADAR denemek: her turda toggle'a basılır, menü öğesi
+     * görünürse devam edilir. Menü zaten açıksa ikinci tur onu kapatır, üçüncü
+     * tur yeniden açar; döngü en fazla 3 tur sürer.
+     *
+     * Bu adım bir HAZIRLIK adımıdır: çekmece gerçekten açıldıktan sonra
+     * "Görünüm Modu" ve tema kartı iddialarıyla doğrulanır.
+     */
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await mobileTools.click({ force: true });
+      try {
+        await settingsItem.waitFor({ state: "visible", timeout: 5000 });
+        await settingsItem.click({ force: true });
+        return;
+      } catch {
+        // Menü açılmadı (veya tersine kapandı): tekrar dene.
+      }
+    }
+    throw new Error("Mobil araçlar menüsü açılmadı (3 deneme)");
   }
   await page.getByRole("button", { name: "Ayarlar" }).click({ force: true });
 }
