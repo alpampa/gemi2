@@ -7,6 +7,10 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import {
+  marqueeDurationSec,
+  resolveMarqueeLayout,
+} from "@/lib/utils/marquee-policy";
 
 interface MarqueeTickerProps {
   children: ReactNode;
@@ -50,18 +54,34 @@ export function MarqueeTicker({
 }: MarqueeTickerProps) {
   const outerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  /**
+   * İlk (gerçek) kopya. Genişlik ölçümü YALNIZCA buradan yapılır: dikişsiz
+   * döngü kopyası koşullu render edildiği için `track.scrollWidth / 2` hesabı
+   * kopya sayısına bağımlı olurdu (ölçüm ↔ kopya sayısı salınımı).
+   */
+  const copyRef = useRef<HTMLDivElement>(null);
   const [flowing, setFlowing] = useState(false);
+  /**
+   * İçerik kapsayıcıdan geniş mi? Akış (animasyon) kapalıyken kapsayıcı yatay
+   * kaydırılabilir hale gelir; klavyeyle erişilemeyen kaydırma bölgesi
+   * erişilebilirlik ihlalidir (axe: scrollable-region-focusable). Bu yüzden
+   * yalnızca gerçekten taşma varken kapsayıcı odaklanabilir yapılır.
+   */
+  const [scrollable, setScrollable] = useState(false);
   const [durationSec, setDurationSec] = useState(60);
-  // Tur sonu geri çağrısı her render'da tazelenir (bayat closure yok)
+  // Tur sonu geri çağrısı her commit sonunda tazelenir (bayat closure yok);
+  // ref yazımı render sırasında yapılamaz (React Compiler kuralı).
   const onCycleEndRef = useRef<(() => void) | undefined>(onCycleEnd);
-  onCycleEndRef.current = onCycleEnd;
+  useEffect(() => {
+    onCycleEndRef.current = onCycleEnd;
+  });
   // cycleKey verilmişse ölçüm yalnızca içerik değişince yeniden yapılır
   const effectiveKey = cycleKey ?? children;
 
   useEffect(() => {
     const outer = outerRef.current;
-    const track = trackRef.current;
-    if (!outer || !track) return;
+    const copy = copyRef.current;
+    if (!outer || !copy) return;
 
     const prefersReduced =
       typeof window.matchMedia === "function" &&
@@ -82,20 +102,24 @@ export function MarqueeTicker({
     };
 
     const measure = () => {
-      const singleCopyWidth = track.scrollWidth / 2;
-      const shouldFlow =
-        !prefersReduced && singleCopyWidth > outer.clientWidth + 1;
-      setFlowing(shouldFlow);
-      if (shouldFlow) {
-        setDurationSec(
-          Math.max(22, Math.round(singleCopyWidth / speedPxPerSec))
-        );
-      }
-      if (cycleTimer) clearTimeout(cycleTimer);
-      const durSec = shouldFlow
-        ? Math.max(22, Math.round(singleCopyWidth / speedPxPerSec))
+      // Tek kopya genişliği doğrudan ilk kopyadan okunur (kopya sayısından
+      // bağımsız). `track / 2` yaklaşımı koşullu kopyayla salınım üretirdi.
+      const layout = resolveMarqueeLayout({
+        copyWidthPx: copy.scrollWidth,
+        containerWidthPx: outer.clientWidth,
+        prefersReducedMotion: prefersReduced,
+      });
+      // Akış kararı ile taşma durumu ayrı tutulur: "hareketi azalt" tercihinde
+      // akış kapalıdır ama içerik taşıyorsa kaydırma bölgesi klavyeyle
+      // erişilebilir olmalıdır.
+      setScrollable(layout.overflows);
+      setFlowing(layout.flowing);
+      const durSec = layout.flowing
+        ? marqueeDurationSec(copy.scrollWidth, speedPxPerSec)
         : 0;
-      scheduleCycle(shouldFlow, durSec);
+      if (layout.flowing) setDurationSec(durSec);
+      if (cycleTimer) clearTimeout(cycleTimer);
+      scheduleCycle(layout.flowing, durSec);
     };
 
     measure();
@@ -105,6 +129,10 @@ export function MarqueeTicker({
     if (typeof ResizeObserver !== "undefined") {
       observer = new ResizeObserver(measure);
       observer.observe(outer);
+      // İçeriğin kendisi de izlenir: web fontu geç yüklendiğinde metin
+      // genişler ve yalnızca kapsayıcıyı izlemek bayat ölçümle sonuçlanır
+      // (taşan içerik akışsız/kaynaksız kalır).
+      observer.observe(copy);
     }
     window.addEventListener("resize", measure);
 
@@ -117,13 +145,21 @@ export function MarqueeTicker({
     };
   }, [effectiveKey, speedPxPerSec, fallbackCycleMs]);
 
+  // Akış kapalıyken içerik taşıyorsa bölge klavyeyle kaydırılabilir olmalı.
+  const keyboardScrollable = !flowing && scrollable;
+
   return (
     <div
       ref={outerRef}
-      role={ariaLabel ? "region" : undefined}
-      aria-label={ariaLabel}
-      className={`min-w-0 flex-1 overflow-hidden ${
-        flowing ? "" : "overflow-x-auto hide-scrollbar"
+      role={ariaLabel ? "region" : keyboardScrollable ? "group" : undefined}
+      aria-label={
+        ariaLabel ?? (keyboardScrollable ? "Yatay kaydırılabilir içerik" : undefined)
+      }
+      tabIndex={keyboardScrollable ? 0 : undefined}
+      className={`min-w-0 flex-1 ${
+        keyboardScrollable
+          ? "overflow-x-auto overflow-y-hidden hide-scrollbar focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          : "overflow-hidden"
       } ${className}`}
       style={
         flowing
@@ -145,16 +181,27 @@ export function MarqueeTicker({
             : undefined
         }
       >
-        <div className="flex shrink-0 items-center gap-4 pr-4 whitespace-nowrap">
-          {children}
-        </div>
         <div
+          ref={copyRef}
           className="flex shrink-0 items-center gap-4 pr-4 whitespace-nowrap"
-          aria-hidden="true"
-          inert
         >
           {children}
         </div>
+        {/*
+          Dikişsiz döngü için ikinci kopya YALNIZCA akış sırasında gerekir.
+          Akış yokken ikinci kopya görünür kalırsa (a) içerik gözle görülür
+          şekilde çiftlenir, (b) kapsayıcı iki kopya genişliğine taşarak
+          gereksiz yatay kaydırma bölgesi üretir. Bu yüzden kopya koşulludur.
+        */}
+        {flowing && (
+          <div
+            className="flex shrink-0 items-center gap-4 pr-4 whitespace-nowrap"
+            aria-hidden="true"
+            inert
+          >
+            {children}
+          </div>
+        )}
       </div>
     </div>
   );

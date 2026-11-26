@@ -10,6 +10,8 @@ COPY apps/web/package.json ./apps/web/
 RUN npm ci
 
 COPY . .
+# Standalone çıktı yalnızca Docker runtime'ı içindir (next.config.ts koşullu okur).
+ENV NEXT_OUTPUT=standalone
 # Build the Next.js app
 RUN npm run build --workspace=web
 

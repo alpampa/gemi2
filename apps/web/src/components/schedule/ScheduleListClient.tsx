@@ -48,6 +48,9 @@ import { usePreferencesStore } from "@/store/usePreferencesStore";
 import { TouristTripList } from "@/components/schedule/TouristTripList";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { useTransitClock } from "@/hooks/useTransitClock";
+import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
+import { useHydrated } from "@/hooks/useHydrated";
+import { useLocalStorageValue } from "@/hooks/useLocalStorageValue";
 import { LiveTripTrackerBar } from "@/components/schedule/LiveTripTrackerBar";
 import { IslandHopPickerModal } from "@/components/schedule/IslandHopPickerModal";
 import { PIER_GEO_COORDINATES, calculateDistanceKm, isIslandRoute } from "@/lib/data/piers";
@@ -151,6 +154,11 @@ export function ScheduleListClient({
   const activeDate = selectedDate < todayDateKey ? todayDateKey : selectedDate;
   const selectedDayType = getDayTypeForDate(activeDate, todayDateKey);
   const [urlPreferencesLoaded, setUrlPreferencesLoaded] = useState(false);
+  // Deep-link parametreleri ve kayıtlı görünüm tercihi dış depolardan okunur;
+  // effect yerine hidrasyon sonrası tek seferlik render-sırası uygulaması kullanılır.
+  const searchParams = useUrlSearchParams();
+  const storedCompactView = useLocalStorageValue("vapur_compact_view");
+  const hydrated = useHydrated();
   const lastSelectableDateKey = addDateDays(todayDateKey, 14);
   const selectedDateLabel = activeDate === todayDateKey ? undefined : formatDateWithWeekday(activeDate);
   const [showAllDay, setShowAllDay] = useState<boolean>(false);
@@ -172,48 +180,46 @@ export function ScheduleListClient({
     setScheduleCategory(category);
   };
 
-  // URL Deep-Linking: Sayfa açılışında ?from=, ?to=, ?day=, ?cat=, ?allDay= parametrelerini oku
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("vapur_compact_view");
-      if (saved !== null) {
-        setIsCompactDensity(saved === "true");
-      }
-      if (typeof window !== "undefined") {
-        const params = new URLSearchParams(window.location.search);
-        const fromParam = params.get("from");
-        const toParam = params.get("to");
-        const dayParam = params.get("day");
-        const dateParam = params.get("date");
-        const catParam = params.get("cat");
-        const allDayParam = params.get("allDay");
+  // URL Deep-Linking: ?from=, ?to=, ?day=, ?date=, ?cat=, ?allDay= parametreleri ve
+  // kayıtlı kompakt görünüm, hidrasyon tamamlandığında BİR KEZ render sırasında
+  // uygulanır (React'in "render sırasında durum ayarlama" deseni). Böylece
+  // effect içinde senkron setState (cascading render) oluşmaz.
+  if (hydrated && !urlPreferencesLoaded) {
+    setUrlPreferencesLoaded(true);
 
-        if (fromParam) setSelectedOrigin(fromParam);
-        if (toParam) setSelectedDestination(toParam);
-        if (fromParam || toParam) {
-          // Paylaşılan bir rota bağlantısıyla gelindiğinde kategori kilidini aç
-          if (!catParam) setSelectedCategory("ALL");
-        }
-        if (catParam === "ADALAR" || catParam === "BOGAZ" || catParam === "ALL") {
-          setSelectedCategory(catParam);
-        }
-        if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dateParam >= initialDateKey && dateParam <= addDateDays(initialDateKey, 14)) {
-          setSelectedDate(dateParam);
-        } else if (dayParam === "WEEKDAY" || dayParam === "SATURDAY" || dayParam === "SUNDAY") {
-          const mappedDate = Array.from({ length: 8 }, (_, index) => addDateDays(initialDateKey, index))
-            .find((date) => getDayTypeForDate(date, initialDateKey) === dayParam);
-          if (mappedDate) {
-            setSelectedDate(mappedDate);
-          }
-        }
-        if (allDayParam === "1" || allDayParam === "true") {
-          setShowAllDay(true);
-        }
-      }
-    } catch {} finally {
-      setUrlPreferencesLoaded(true);
+    if (storedCompactView !== null) {
+      setIsCompactDensity(storedCompactView === "true");
     }
-  }, []);
+
+    const fromParam = searchParams.get("from");
+    const toParam = searchParams.get("to");
+    const dayParam = searchParams.get("day");
+    const dateParam = searchParams.get("date");
+    const catParam = searchParams.get("cat");
+    const allDayParam = searchParams.get("allDay");
+
+    if (fromParam) setSelectedOrigin(fromParam);
+    if (toParam) setSelectedDestination(toParam);
+    if (fromParam || toParam) {
+      // Paylaşılan bir rota bağlantısıyla gelindiğinde kategori kilidini aç
+      if (!catParam) setSelectedCategory("ALL");
+    }
+    if (catParam === "ADALAR" || catParam === "BOGAZ" || catParam === "ALL") {
+      setSelectedCategory(catParam);
+    }
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dateParam >= initialDateKey && dateParam <= addDateDays(initialDateKey, 14)) {
+      setSelectedDate(dateParam);
+    } else if (dayParam === "WEEKDAY" || dayParam === "SATURDAY" || dayParam === "SUNDAY") {
+      const mappedDate = Array.from({ length: 8 }, (_, index) => addDateDays(initialDateKey, index))
+        .find((date) => getDayTypeForDate(date, initialDateKey) === dayParam);
+      if (mappedDate) {
+        setSelectedDate(mappedDate);
+      }
+    }
+    if (allDayParam === "1" || allDayParam === "true") {
+      setShowAllDay(true);
+    }
+  }
 
   // URL Deep-Linking Senkronizasyonu: Seçilen rota ve gün tipini URL'ye yansıt (Paylaşılabilir URL)
   useEffect(() => {
@@ -315,7 +321,10 @@ export function ScheduleListClient({
   }, [disruptions]);
 
   // Native IndexedDB Non-blocking Caching
-  const [effectiveSchedules, setEffectiveSchedules] = useState<ScheduleCardDto[]>(schedules);
+  const [offlineSchedules, setOfflineSchedules] = useState<ScheduleCardDto[]>([]);
+  // Sunucudan gelen seferler önceliklidir; yoksa çevrimdışı önbellek kullanılır.
+  // (Prop → state kopyası yerine render sırasında türetme.)
+  const effectiveSchedules = schedules.length > 0 ? schedules : offlineSchedules;
   const [sponsoredAds, setSponsoredAds] = useState<SponsoredAdOffer[]>(() => getSponsoredAdsStore());
 
   useEffect(() => {
@@ -344,12 +353,11 @@ export function ScheduleListClient({
     let isCancelled = false;
 
     if (schedules && schedules.length > 0) {
-      setEffectiveSchedules(schedules);
       saveSchedulesOffline(schedules).catch(() => {});
     } else {
       loadSchedulesOffline().then((cached) => {
         if (!isCancelled && cached && cached.length > 0) {
-          setEffectiveSchedules(cached);
+          setOfflineSchedules(cached);
         }
       }).catch(() => {});
     }
@@ -581,7 +589,7 @@ export function ScheduleListClient({
     let currentMinutes = 0;
     if (!isTimetablePreviewMode) {
       const parts = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit", hour12: false,
+        timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
       }).format(new Date(now)).split(":");
       currentMinutes = Number(parts[0]) * 60 + Number(parts[1]);
     }
@@ -734,7 +742,7 @@ export function ScheduleListClient({
         timeZone: "Europe/Istanbul",
         hour: "2-digit",
         minute: "2-digit",
-        hour12: false,
+        hourCycle: "h23",
       });
       const parts = formatter.format(new Date(now)).split(":");
       currMinutes = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
@@ -761,7 +769,12 @@ export function ScheduleListClient({
         dyn.countdown != null ||
         (dyn.minutesUntilDeparture != null && dyn.minutesUntilDeparture <= FAST_TICK_THRESHOLD_MIN)
     );
-    setTickMs(urgent ? 1000 : SLOW_TICK_INTERVAL_MS);
+    const nextTick = urgent ? 1000 : SLOW_TICK_INTERVAL_MS;
+    // Saat frekansı yalnızca aciliyet değiştiğinde güncellenir; effect içinde
+    // senkron setState yerine bir sonraki makro göreve devredilir (kural:
+    // cascading render yok, davranış aynı).
+    const timer = setTimeout(() => setTickMs(nextTick), 0);
+    return () => clearTimeout(timer);
   }, [upcomingTrips]);
 
   const cancelledTrips = useMemo(() => {
@@ -1187,15 +1200,18 @@ export function ScheduleListClient({
       {/* 4. KAYAN İPTAL SEFERLER DUYURU BANDI */}
       {cancelledTrips.length > 0 && (
         <div className="px-3 pt-1.5 animate-fadeIn">
-          <div className="py-1.5 px-3 rounded-xl bg-linear-to-r from-rose-600 via-rose-700 to-red-800 text-white shadow-sm flex items-center gap-2 overflow-hidden border border-rose-500">
+          <div
+            role="region"
+            aria-labelledby="cancelled-trips-heading"
+            className="py-1.5 px-3 rounded-xl bg-linear-to-r from-rose-600 via-rose-700 to-red-800 text-white shadow-sm flex items-center gap-2 overflow-hidden border border-rose-500"
+          >
             <div className="flex items-center gap-1.5 shrink-0 bg-black/40 px-2 py-0.5 rounded-lg font-black text-[10px] tracking-wider uppercase border border-rose-400/50">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-              <span>İPTAL SEFERLER</span>
+              <span id="cancelled-trips-heading">İPTAL SEFERLER</span>
             </div>
 
             <MarqueeTicker
               speedPxPerSec={60}
-              ariaLabel="İptal edilen seferler"
               className="text-xs font-bold text-white"
             >
               {cancelledTrips.map(({ schedule, dyn }, idx) => (
@@ -1298,10 +1314,14 @@ export function ScheduleListClient({
                       delayText={schedule.delayText}
                       vessel={schedule.vessel}
                       platform={schedule.platform}
+                      platformSource={schedule.platformSource}
                       price={schedule.price}
+                      priceSource={schedule.priceSource}
                       progress={schedule.progress}
                       stops={schedule.stops}
                       arrivalTime={schedule.arrivalTime}
+                      derivedArrivalTime={schedule.derivedArrivalTime}
+                      arrivalSource={schedule.arrivalSource}
                       isContinuous={schedule.isContinuous}
                       continuousUntil={schedule.continuousUntil}
                       isCompact={isCompactDensity}

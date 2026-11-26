@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, QrCode, CreditCard, ShieldCheck, RefreshCw, ExternalLink, Smartphone, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useHydrated } from "@/hooks/useHydrated";
 import { createPortal } from "react-dom";
 import { useLanguageStore } from "@/store/useLanguageStore";
 
@@ -15,12 +16,7 @@ export function IstanbulkartWalletModal({ isOpen, onClose }: IstanbulkartWalletM
   const { t, language } = useLanguageStore();
   const [secondsRemaining, setSecondsRemaining] = useState(60);
   const [qrToken, setQrToken] = useState("IST-8942-7104");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
+  const mounted = useHydrated();
   // Regenerate QR every 60 seconds (Standard BELBİM Digital Pass security protocol)
   useEffect(() => {
     if (!isOpen) return;

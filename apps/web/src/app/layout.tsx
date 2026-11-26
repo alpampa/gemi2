@@ -5,6 +5,7 @@ import "./globals.css";
 import "leaflet/dist/leaflet.css";
 import { NotificationContainer } from "@/components/ui/NotificationToast";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { HydrationSignal } from "@/components/pwa/HydrationSignal";
 import { ReducedMotionProvider } from "@/components/providers/ReducedMotionProvider";
 import { DARK_THEME_IDS, DEFAULT_THEME_ID, THEME_STORAGE_KEY } from "@/lib/theme-ids";
 
@@ -15,17 +16,32 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Vapur Seferleri — İstanbul Canlı Deniz Ulaşımı",
-  description: "İstanbul Şehir Hatları, Mavi Marmara ve Prens Tur canlı vapur kalkış panosu, durak takibi ve deniz hava durumu asistanı.",
+  title: "Vapur Seferleri — İstanbul Deniz Ulaşımı",
+  description: "İstanbul Şehir Hatları, Mavi Marmara ve Prens Tur güncel vapur kalkış panosu, iptal duyuruları ve deniz hava durumu.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Vapur",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0f1d",
+  // WCAG 1.4.4: Yakınlaştırma engellenmez. iOS'ta odakta yakınlaşmayı önlemek
+  // için input font-size 16px kuralı globals.css'te uygulanır (maximum-scale hack'i DEĞİL).
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f1f5f9" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0f1d" },
+  ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
 };
 
@@ -37,7 +53,6 @@ export default function RootLayout({
   return (
     <html lang="tr" className={inter.variable} suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -74,6 +89,7 @@ export default function RootLayout({
           />
         ) : null}
         <ReducedMotionProvider>
+          <HydrationSignal />
           <ServiceWorkerRegister />
           {children}
           <NotificationContainer />

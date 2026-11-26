@@ -99,10 +99,19 @@ export interface SehirHatlariCancellationStatus {
   hasCancellations: boolean;
 }
 
-export function parseSehirHatlariCancellationStatus(html: string): SehirHatlariCancellationStatus {
+/**
+ * `nowMs` NEDEN VAR: "yalnızca bugünün iptali geçerlidir" kuralı gerçek saate
+ * bağlıdır. Saat enjekte edilemezse parser'ın çıktısı takvim ilerledikçe
+ * değişir; gerçek sayfa fixture'larıyla yapılan testler ertesi gün sebepsiz
+ * kırılır. Varsayılan `Date.now()` üretim davranışını aynen korur.
+ */
+export function parseSehirHatlariCancellationStatus(
+  html: string,
+  nowMs: number = Date.now()
+): SehirHatlariCancellationStatus {
   const dateMatch = html.match(/news-detail-date[^>]*>\s*([\d.]+)\s*<\/p>/);
   const pageDate = dateMatch?.[1];
-  const todayTr = toTrDate();
+  const todayTr = toTrDate(nowMs);
 
   // ESKİ FORMAT: tek satır durum cümlesi ("İptal seferimiz bulunmamaktadır.")
   const stmtMatch = html.match(/İptal seferimiz\s+([^<]{2,120})\.?\s*<\/p>/i);
@@ -137,11 +146,14 @@ export function parseSehirHatlariCancellationStatus(html: string): SehirHatlariC
   };
 }
 
-export function parseSehirHatlariAnnouncements(html: string): OperatorAnnouncement[] {
+export function parseSehirHatlariAnnouncements(
+  html: string,
+  nowMs: number = Date.now()
+): OperatorAnnouncement[] {
   const out: OperatorAnnouncement[] = [];
-  const todayTr = toTrDate();
+  const todayTr = toTrDate(nowMs);
 
-  const status = parseSehirHatlariCancellationStatus(html);
+  const status = parseSehirHatlariCancellationStatus(html, nowMs);
   if (status.date === todayTr && status.hasCancellations) {
     out.push({
       id: `sh-status-${status.date}`,
@@ -284,7 +296,10 @@ const MM_ROUTE_LABELS: Record<string, string> = {
   sirkeci: "Sirkeci-Büyükada",
 };
 
-export function parseMaviMarmaraStatusFeed(raw: string): OperatorAnnouncement[] {
+export function parseMaviMarmaraStatusFeed(
+  raw: string,
+  nowMs: number = Date.now()
+): OperatorAnnouncement[] {
   const feed = parseJsonLoose<{
     updated_at?: unknown;
     updatedAt?: unknown;
@@ -304,7 +319,7 @@ export function parseMaviMarmaraStatusFeed(raw: string): OperatorAnnouncement[] 
       : "";
   const parsedMs = rawTs ? Date.parse(rawTs) : Number.NaN;
   const feedTrDate = !Number.isNaN(parsedMs) ? toTrDate(parsedMs) : extractTrDate(rawTs);
-  const todayTr = toTrDate();
+  const todayTr = toTrDate(nowMs);
 
   if (!feedTrDate || feedTrDate !== todayTr) {
     return [];
@@ -340,7 +355,10 @@ export function parseMaviMarmaraStatusFeed(raw: string): OperatorAnnouncement[] 
 /* TURYOL (turyol.com ana sayfa aktif duyuru popup'ı)                   */
 /* ------------------------------------------------------------------ */
 
-export function parseTuryolAnnouncements(html: string): OperatorAnnouncement[] {
+export function parseTuryolAnnouncements(
+  html: string,
+  nowMs: number = Date.now()
+): OperatorAnnouncement[] {
   if (!normalizePierName(decodeHtmlEntities(html)).includes("iptal")) return [];
 
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
@@ -363,7 +381,7 @@ export function parseTuryolAnnouncements(html: string): OperatorAnnouncement[] {
 
   // HAYATİ DOĞRULAMA: Popup metni içinde bugünün tarihi açıkça yer almalıdır.
   const popupDate = extractTrDate(text) ?? parseTrLongDate(text);
-  const todayTr = toTrDate();
+  const todayTr = toTrDate(nowMs);
   if (!popupDate || popupDate !== todayTr) {
     return [];
   }
@@ -424,8 +442,13 @@ export type SourceProxy = "jina" | "allorigins" | "codetabs";
 export interface AnnouncementSource {
   operator: string;
   url: string;
-  parser: (html: string) => OperatorAnnouncement[];
-  parseStatus?: (html: string) => unknown;
+  /**
+   * `nowMs` opsiyoneldir: parser'lar "bugün" kuralını gerçek saatten değil,
+   * verilen andan hesaplar. Üretimde verilmez (Date.now()); testler fixture
+   * tarihini vererek takvimden bağımsız doğrulama yapar.
+   */
+  parser: (html: string, nowMs?: number) => OperatorAnnouncement[];
+  parseStatus?: (html: string, nowMs?: number) => unknown;
   validate?: (text: string) => boolean;
   fallbacks?: SourceProxy[];
 }
@@ -573,14 +596,17 @@ export async function fetchAnnouncementSource(
   throw new Error(`Kaynak alınamadı — ${errors.join(" | ")}`);
 }
 
-async function enrichCancellationBodies(announcements: OperatorAnnouncement[]): Promise<void> {
+async function enrichCancellationBodies(
+  announcements: OperatorAnnouncement[],
+  nowMs: number = Date.now()
+): Promise<void> {
   const candidates = announcements
     .filter(
       (a) =>
         !a.body &&
         a.type === "CANCELLED_TRIPS" &&
         a.sourceUrl.includes("/duyurular/") &&
-        isAnnouncementCurrent(a)
+        isAnnouncementCurrent(a, nowMs)
     )
     .slice(0, MAX_DETAIL_FETCHES);
 
@@ -617,6 +643,8 @@ export interface OperatorScanReport {
 
 export async function scrapeAllAnnouncements(options?: {
   operators?: string[];
+  /** Tüm kaynaklar için ortak "şimdi" (ms). Üretimde verilmez. */
+  nowMs?: number;
 }): Promise<{
   snapshots: AnnouncementsSnapshot[];
   failures: { operator: string; error: string }[];
@@ -631,13 +659,16 @@ export async function scrapeAllAnnouncements(options?: {
     ? ANNOUNCEMENT_SOURCES.filter((s) => only.has(s.operator))
     : ANNOUNCEMENT_SOURCES;
   const latencies = new Map<string, number>();
+  // "Bugün" kuralı tüm kaynaklarda AYNI andan hesaplanmalı; aksi halde gece
+  // yarısını geçen bir taramada kaynaklar farklı güne düşebilir.
+  const nowMs = options?.nowMs ?? Date.now();
 
   const settled = await Promise.allSettled(
     sources.map(async (source) => {
       const started = Date.now();
       try {
         const { text: html, via } = await fetchAnnouncementSource(source, SOURCE_TIMEOUT_MS);
-        const announcements = source.parser(html);
+        const announcements = source.parser(html, nowMs);
         // KESİN KURAL: Kaynaktan gerçek yayın tarihi (publishedAt) gelmeyen hiçbir
         // duyuru bugünün tarihiyle damgalanmaz! Yalnızca kaynaktan tarihi doğrulanmış
         // duyurular SOURCE olarak işaretlenir.
@@ -646,7 +677,7 @@ export async function scrapeAllAnnouncements(options?: {
             a.publishedAtSource = "SOURCE";
           }
         }
-        await enrichCancellationBodies(announcements);
+        await enrichCancellationBodies(announcements, nowMs);
         return { source, announcements, via };
       } finally {
         latencies.set(source.operator, Date.now() - started);
@@ -660,7 +691,9 @@ export async function scrapeAllAnnouncements(options?: {
       const { announcements, via } = result.value;
       snapshots.push({
         operator: source.operator,
-        fetchedAt: new Date().toISOString(),
+        // Damga, taramanın ortak saatinden üretilir: gece yarısını geçen bir
+        // turda farklı kaynakların farklı güne düşmesi engellenir.
+        fetchedAt: new Date(nowMs).toISOString(),
         sourceUrl: source.url,
         announcements,
       });

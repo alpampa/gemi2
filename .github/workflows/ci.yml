@@ -44,8 +44,12 @@ jobs:
       - name: Production build
         run: npm run build
 
-      - name: Playwright browsers (chromium)
-        run: npx playwright install --with-deps chromium
+      # Playwright yapılandırması ÜÇ proje koşar: chromium (Desktop Chrome),
+      # pixel-7 (Chromium tabanlı) ve iphone-13 (WebKit). Yalnızca `chromium`
+      # kurulduğunda WebKit projesi "Executable doesn't exist" ile düşüyordu
+      # (30 test). Kurulum, ilan edilen projelerle birebir eşleşmeli.
+      - name: Playwright browsers (chromium + webkit)
+        run: npx playwright install --with-deps chromium webkit
 
       - name: E2E smoke (Playwright)
         run: npm run test:e2e

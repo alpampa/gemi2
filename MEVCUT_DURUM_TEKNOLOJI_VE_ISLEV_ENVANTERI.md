@@ -1,5 +1,12 @@
 # Vapur (FerryFlow) — Mevcut Durum, Teknoloji ve İşlev Envanteri
 
+> **Güncellik notu (29.10.2026):** Bu envanter önceki bir kod anlık görüntüsüne dayanır ve tarihsel
+> bulgular içerir; güncel kaynak kodu incelemesi yerine kullanılmamalıdır. Örneğin rapordaki
+> “John Doe” profil tanımı ve `operator-tariffs.ts` için yazılmış “untracked” Git durumu mevcut
+> kod/ağaç durumuyla uyuşmuyor; Service Worker sürümü de sonradan değişmiştir. Değişiklik öncesi
+> çalışma ağacı temizdi. Yeni incelemelerde dosya, sürüm, test ve Git durumu bulgularını yeniden
+> doğrulayın.
+
 > **Rapor tipi:** Devralma amaçlı, kanıta dayalı durum tespiti (salt okuma).
 > **Hazırlanma yöntemi:** Kaynak kodu, yapılandırmalar, veri dosyaları, testler ve çalıştırılabilir doğrulamalar.
 > **Kod değişikliği yapılmadı.** Yalnızca bu rapor dosyası oluşturuldu.

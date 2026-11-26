@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useHydrated } from "@/hooks/useHydrated";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Moon, Car, Bus, Clock, ShieldCheck, MapPin, Sparkles, Navigation, AlertTriangle, ArrowRight } from "lucide-react";
@@ -13,11 +14,8 @@ interface LateNightTransitModalProps {
 
 export function LateNightTransitModal({ isOpen, onClose }: LateNightTransitModalProps) {
   const [activeTab, setActiveTab] = useState<"DOLMUS" | "TAXI" | "METROBUS">("DOLMUS");
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!isOpen || !mounted) return null;
 
@@ -201,7 +199,7 @@ export function LateNightTransitModal({ isOpen, onClose }: LateNightTransitModal
                       {METROBUS_NIGHT_INFO.service}
                     </h5>
                     <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold">
-                      İstanbul\'un 24 saat kesintisiz kıtalararası omurgası
+                      İstanbul&apos;un 24 saat kesintisiz kıtalararası omurgası
                     </p>
                   </div>
                 </div>

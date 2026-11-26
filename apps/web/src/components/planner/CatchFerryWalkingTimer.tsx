@@ -17,7 +17,8 @@ export function CatchFerryWalkingTimer({ departureTime, originPier }: CatchFerry
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [isChimeEnabled, setIsChimeEnabled] = useState<boolean>(false);
-  const [hasPlayedChime, setHasPlayedChime] = useState<boolean>(false);
+  // Zil bir kez çalsın: render'ı etkilemeyen guard olduğu için state değil ref.
+  const hasPlayedChimeRef = useRef<boolean>(false);
 
   // Tek saat kaynağı: useTransitClock (1sn tick, sekme gizliyken durur)
   const { nowMs } = useTransitClock();
@@ -126,11 +127,11 @@ export function CatchFerryWalkingTimer({ departureTime, originPier }: CatchFerry
 
   // Audio trigger
   useEffect(() => {
-    if (isChimeEnabled && !hasPlayedChime && leaveThresholdMinutes <= 3 && leaveThresholdMinutes >= 0) {
+    if (isChimeEnabled && !hasPlayedChimeRef.current && leaveThresholdMinutes <= 3 && leaveThresholdMinutes >= 0) {
       playChime();
-      setHasPlayedChime(true);
+      hasPlayedChimeRef.current = true;
     }
-  }, [isChimeEnabled, hasPlayedChime, leaveThresholdMinutes]);
+  }, [isChimeEnabled, leaveThresholdMinutes]);
 
   // Visual status
   let statusBadge = {

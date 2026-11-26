@@ -14,7 +14,8 @@ import {
 const DEFAULT_TICKET_PRICE = "65,21 ₺";
 
 /** Sefer verisinde platform yoksa gösterilen varsayılan rıhtım adı */
-const DEFAULT_PLATFORM = "Ana Rıhtım";
+// Platform adı yalnızca kaynakta varsa taşınır; uydurma varsayılan yoktur.
+
 
 export interface RouteOption {
   type: "DIRECT" | "TRANSFER";
@@ -135,7 +136,7 @@ export function planJourney(
             operator: s.operator,
             departureTime: depTime,
             arrivalTime: minutesToTime(absArrM),
-            platform: s.platform || DEFAULT_PLATFORM,
+            platform: s.platform || "",
             price: s.price || DEFAULT_TICKET_PRICE,
             tripId: s.id
           }
@@ -242,7 +243,7 @@ export function planJourney(
                 operator: l1.operator,
                 departureTime: l1DepTime,
                 arrivalTime: l1ArrTime,
-                platform: l1.platform || DEFAULT_PLATFORM,
+                platform: l1.platform || "",
                 price: l1.price || DEFAULT_TICKET_PRICE,
                 tripId: l1.id
               },
@@ -252,7 +253,7 @@ export function planJourney(
                 operator: l2.operator,
                 departureTime: l2DepTime,
                 arrivalTime: l2ArrTime,
-                platform: l2.platform || "Aktarma Rıhtımı",
+                platform: l2.platform || "",
                 price: l2.price || DEFAULT_TICKET_PRICE,
                 tripId: l2.id
               }

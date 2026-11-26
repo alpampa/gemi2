@@ -1,43 +1,89 @@
 import { describe, expect, it } from "vitest";
 import {
-  getStoredAnnouncements,
   getStoredAnnouncementsMeta,
+  selectStoredAnnouncements,
+  type AnnouncementsSnapshotFile,
 } from "@/lib/agents/data-snapshot-store";
-import { isAnnouncementCurrent } from "@/lib/utils/announcement-filter";
+import type { OperatorAnnouncement } from "@/lib/types/announcement";
 
-const ON_19_OCT = Date.parse("2026-10-19T12:00:00Z");
-const ON_17_OCT = Date.parse("2026-10-17T15:00:00Z");
+/**
+ * Bu test dosyası BİLİNÇLİ olarak commit'li `announcements.json` içeriğine
+ * sabitlenmez: snapshot her senkron turunda yeniden yazılır (kaynak sayfası
+ * değişir, kayıt eklenir/çıkar). Testin ölçtüğü şey dosyanın o günkü hâli
+ * değil, depo sözleşmesidir:
+ *   - kaynaktan doğrulanmış yayın tarihi taşıyan kayıt yayımlanır,
+ *   - tarihsiz kayıt snapshot günüyle damgalanıp "bugün" gibi sunulmaz.
+ */
+function record(
+  overrides: Partial<OperatorAnnouncement> = {}
+): OperatorAnnouncement {
+  return {
+    id: "sh-status-29.10.2026",
+    operator: "Şehir Hatları",
+    title: "İptal Seferler",
+    type: "INFO",
+    sourceUrl: "https://sehirhatlari.istanbul/tr/iptal-seferler",
+    sourceVerified: true,
+    ...overrides,
+  };
+}
 
-describe("getStoredAnnouncements — bayat snapshot güncellik", () => {
-  it("tarihsiz kayıtlar snapshot üretim günüyle damgalanır (17.10.2026)", () => {
-    const meta = getStoredAnnouncementsMeta();
-    expect(meta.generatedAt).toBe("2026-10-17T14:52:49.987Z");
+function snapshot(
+  announcements: OperatorAnnouncement[],
+  operator = "Şehir Hatları"
+): AnnouncementsSnapshotFile {
+  return {
+    generatedAt: "2026-10-29T14:20:00.000Z",
+    sources: [
+      {
+        operator,
+        fetchedAt: "2026-10-29T14:20:00.000Z",
+        sourceUrl: "https://sehirhatlari.istanbul/tr/iptal-seferler",
+        announcements,
+      },
+    ],
+  };
+}
 
-    const all = getStoredAnnouncements();
-    const mm = all.find((a) => a.operator === "Mavi Marmara");
-    const turyol = all.find((a) => a.operator === "Turyol");
-    expect(mm?.publishedAt).toBe("17.10.2026");
-    expect(mm?.publishedAtSource).toBe("SCAN_DAY");
-    expect(turyol?.publishedAt).toBe("17.10.2026");
-  });
-
-  it("17.10 iptalleri 19.10'da GÖSTERİLMEZ (bayat iptal sızmaz)", () => {
-    const all = getStoredAnnouncements();
-    const stale = all.filter(
-      (a) =>
-        (a.type === "CANCELLATION" || a.type === "CANCELLED_TRIPS") &&
-        !isAnnouncementCurrent(a, ON_19_OCT)
+describe("selectStoredAnnouncements — snapshot yayın sözleşmesi", () => {
+  it("kaynaktan doğrulanmış yayın tarihi olan kayıt yayımlanır", () => {
+    const stored = selectStoredAnnouncements(
+      snapshot([
+        record({ publishedAt: "29.10.2026", publishedAtSource: "SOURCE" }),
+      ])
     );
-    expect(stale.length).toBeGreaterThan(0);
-
-    const sh = all.find((a) => a.id === "sh-status-17.10.2026");
-    expect(sh).toBeTruthy();
-    expect(isAnnouncementCurrent(sh!, ON_19_OCT)).toBe(false);
+    expect(stored).toHaveLength(1);
+    expect(stored[0].publishedAt).toBe("29.10.2026");
+    expect(stored[0].publishedAtSource).toBe("SOURCE");
   });
 
-  it("aynı snapshot 17.10'da geçerlidir (regresyon: gününde gösterilir)", () => {
-    const all = getStoredAnnouncements();
-    const sh = all.find((a) => a.id === "sh-status-17.10.2026");
-    expect(isAnnouncementCurrent(sh!, ON_17_OCT)).toBe(true);
+  it("tarihsiz kayıt snapshot günüyle DAMGALANMAZ (uydurma tarih yok)", () => {
+    const stored = selectStoredAnnouncements(snapshot([record()]));
+    expect(stored).toHaveLength(0);
+  });
+
+  it("SCAN_DAY damgalı kayıt yayımlanmaz (tarihi kaynak söylemedi)", () => {
+    const stored = selectStoredAnnouncements(
+      snapshot([
+        record({ publishedAt: "29.10.2026", publishedAtSource: "SCAN_DAY" }),
+      ])
+    );
+    expect(stored).toHaveLength(0);
+  });
+
+  it("bozuk/eksik snapshot çökmez, boş liste döner", () => {
+    expect(selectStoredAnnouncements(undefined)).toEqual([]);
+    expect(
+      selectStoredAnnouncements({ generatedAt: "2026-10-29T14:20:00.000Z", sources: [] })
+    ).toEqual([]);
+  });
+});
+
+describe("getStoredAnnouncementsMeta", () => {
+  it("commit'li snapshot'ın üretim zamanı ve kaynak sayısı raporlanır", () => {
+    const meta = getStoredAnnouncementsMeta();
+    // Değer senkronla değişir; sözleşme "geçerli ISO damga + sayı" olmasıdır.
+    expect(Number.isNaN(Date.parse(meta.generatedAt ?? ""))).toBe(false);
+    expect(meta.sourceCount).toBeGreaterThanOrEqual(0);
   });
 });

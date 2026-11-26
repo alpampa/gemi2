@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { X, Maximize, Minimize, QrCode, Building2, Anchor } from "lucide-react";
 import { useTransitClock } from "@/hooks/useTransitClock";
+import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { resolveDynamicTrip } from "@/lib/utils/dynamic-trip";
 import type { ScheduleCardDto } from "@/lib/types/schedule";
 import { useLanguageStore } from "@/store/useLanguageStore";
@@ -36,31 +37,24 @@ export function BoardTvMode({
   const { nowMs } = useTransitClock(1000, { serverTimeIso, keepTickingWhenHidden: true });
   const { t } = useLanguageStore();
 
-  const [selectedPier, setSelectedPier] = useState<string>("ALL");
-  const [partnerName, setPartnerName] = useState<string>(propPartnerName || "");
+  const searchParams = useUrlSearchParams();
+  const [pierOverride, setPierOverride] = useState<string | null>(null);
+  const [partnerOverride, setPartnerOverride] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // URL parametrelerini oku (?pier=...&partner=...)
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const pierParam = params.get("pier") || defaultPier;
-      const partnerParam = params.get("partner") || propPartnerName;
-      if (pierParam) setSelectedPier(pierParam);
-      if (partnerParam) setPartnerName(partnerParam);
-    }
-  }, [defaultPier, propPartnerName]);
+  // URL parametreleri (?pier=...&partner=...) render sırasında okunur;
+  // kullanıcı seçimi varsa o önceliklidir.
+  const selectedPier = pierOverride ?? searchParams.get("pier") ?? defaultPier ?? "ALL";
+  const partnerName = partnerOverride ?? searchParams.get("partner") ?? propPartnerName ?? "";
 
   // Screen Wake Lock API: Ekranın kapanmasını önle
   useEffect(() => {
-    let wakeLock: any = null;
+    let wakeLock: WakeLockSentinel | null = null;
 
     async function requestWakeLock() {
       try {
-        if ("wakeLock" in navigator && (navigator as any).wakeLock) {
-          wakeLock = await (navigator as any).wakeLock.request("screen");
-        }
-      } catch (err) {
+        wakeLock = await navigator.wakeLock.request("screen");
+      } catch {
         // WakeLock desteklenmiyor veya izin reddedildi; sessizce devam et
       }
     }
@@ -147,7 +141,14 @@ export function BoardTvMode({
 
   const clockLabel = useMemo(() => {
     try {
-      return new Date(nowMs).toLocaleTimeString("tr-TR", { hour12: false });
+      // Saat alanları açıkça istenir: `hourCycle` yalnızca `hour` verildiğinde
+      // dikkate alınır. `tr-TR` varsayılanı gece yarısını "24:00:00" gösterir.
+      return new Date(nowMs).toLocaleTimeString("tr-TR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23",
+      });
     } catch {
       return "--:--:--";
     }
@@ -174,13 +175,13 @@ export function BoardTvMode({
                 {partnerName ? partnerName.toUpperCase() : "İSTANBUL DENİZ ULAŞIMI"}
               </span>
               <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                CANLI PANO
+                GÜNCEL PANO
               </span>
             </div>
             <h1 className="text-base sm:text-lg font-black text-white truncate">
               {selectedPier !== "ALL"
-                ? `${selectedPier} İskelesi Canlı Kalkış Panosu`
-                : "Tüm İskeleler Canlı Sefer Panosu"}
+                ? `${selectedPier} İskelesi Güncel Kalkış Panosu`
+                : "Tüm İskeleler Güncel Sefer Panosu"}
             </h1>
           </div>
         </div>
@@ -191,7 +192,7 @@ export function BoardTvMode({
           <div className="relative">
             <select
               value={selectedPier}
-              onChange={(e) => setSelectedPier(e.target.value)}
+              onChange={(e) => setPierOverride(e.target.value)}
               aria-label="Pano iskelesi seçin"
               className="min-h-[40px] pl-3 pr-7 py-1 bg-slate-900 border border-slate-700 rounded-xl text-xs font-bold text-slate-200 appearance-none focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer"
             >
@@ -257,9 +258,11 @@ export function BoardTvMode({
                   <span className="text-base sm:text-lg font-black text-white truncate block">
                     {dyn.currentOrigin}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400 truncate block">
-                    {trip.platform || "Yolcu Rıhtımı"}
-                  </span>
+                  {trip.platform ? (
+                    <span className="text-[10px] font-bold text-slate-400 truncate block">
+                      {trip.platform}
+                    </span>
+                  ) : null}
                 </div>
                 <div className="min-w-0">
                   <span className="text-base sm:text-lg font-bold text-slate-200 truncate block">
@@ -313,7 +316,7 @@ export function BoardTvMode({
           {partnerName ? (
             <span className="flex items-center gap-1.5 text-slate-300 font-bold">
               <Building2 size={13} className="text-amber-400" />
-              <span>{partnerName} Misafirleri İçin Özel Canlı İskele Panosu</span>
+              <span>{partnerName} Misafirleri İçin Özel İskele Panosu</span>
             </span>
           ) : (
             <span>İBB Şehir Hatları, İDO, Mavi Marmara, Dentur, Prens Tur ve Turyol Resmi Seferleri</span>

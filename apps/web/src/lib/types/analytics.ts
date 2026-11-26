@@ -4,7 +4,8 @@ export type TelemetryEventType =
   | "PIER_PROXIMITY"
   | "TRIP_UNDERWAY_GPS"
   | "ONBOARD_CONFIRMED"
-  | "RADAR_CLICKED";
+  | "RADAR_CLICKED"
+  | "ROUTE_SEARCH";
 
 export interface TelemetryEventPayload {
   sessionId?: string;
@@ -28,6 +29,7 @@ export interface LineStats {
   atPier: number;
   underwayGps: number;
   confirmedOnboard: number;
+  routeSearches?: number;
 }
 
 export interface OperatorStats {
@@ -38,6 +40,7 @@ export interface OperatorStats {
 
 export interface DailyAnalyticsSummary {
   date: string; // YYYY-MM-DD
+  storage: "shared" | "process-local";
   totalAppOpens: number;
   totalLocationGranted: number;
   totalPierVisits: number;

@@ -8,19 +8,22 @@ export async function GET(request: NextRequest) {
   if (!verifyAdminAuth(request)) {
     return NextResponse.json(
       { error: "Unauthorized: Admin access key required" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
   try {
-    const stats = getTelemetrySummary();
+    const stats = await getTelemetrySummary();
     return NextResponse.json(stats, {
       headers: {
-        "Cache-Control": "no-store, max-age=0"
-      }
+        "Cache-Control": "no-store, max-age=0",
+      },
     });
   } catch (error) {
     console.error("Telemetry stats error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

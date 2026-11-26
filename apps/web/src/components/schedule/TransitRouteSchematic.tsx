@@ -20,13 +20,22 @@ interface TransitRouteSchematicProps {
   underway?: UnderwaySegment | null;
   /** Kalkışına ≤5 dk kalan iskele — şeritte saati yanıp söner */
   soonDeparturePier?: string | null;
+  /**
+   * Şema KOYU bir kartın içinde mi? Öne çıkan (hero) kart teması ne olursa
+   * olsun `bg-[#0b1528]` kullanır; `dark:` varyantları açık temada devreye
+   * girmediği için durak adları koyu zeminde koyu kalıp okunamıyordu
+   * (`text-slate-900` → 1.02:1). Bu bayrak, zemin gerçekten koyuyken metni
+   * temadan bağımsız olarak açık renge sabitler.
+   */
+  onDark?: boolean;
 }
 
 /**
  * Massimo Vignelli & TfL Transit Standardı: Metro/Tramvay Şeması Tarzı Güzergâh Grafiği.
  * Uzun ada ve boğaz hatlarında durak sırasını şematik bir çizgi üzerinde gösterir.
- * `underway` verilirse ada vapuru ikonu zamana göre ilerler: seyir mavi, iskeleye
- * yaklaşırken (≤ 3 dk) amber yanıp söner, varışta yeşile döner (metro mantığı).
+ * `underway` verilirse ada vapuru ikonu ZAMANA GÖRE TAHMİNLE ilerler: seyir mavi,
+ * iskeleye yaklaşırken (≤ 3 dk) amber yanıp söner, varışta yeşile döner. Bu bir
+ * GPS/AIS konumu değildir; ikon "Tahmini seyir ilerlemesi (GPS değil)" etiketi taşır.
  *
  * KULLANICI KURALI (mobil): Şeritteki durak adları HER ZAMAN TAM yazılır —
  * kısaltma yok. Vapur bir duraktan hareket ettiğinde o durak şeridin SOL
@@ -48,6 +57,7 @@ export function TransitRouteSchematic({
   operator,
   underway,
   soonDeparturePier,
+  onDark = false,
 }: TransitRouteSchematicProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const shipRef = useRef<HTMLDivElement | null>(null);
@@ -131,7 +141,8 @@ export function TransitRouteSchematic({
 
   return (
     <div className="w-full mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/80 animate-fadeIn">
-      <div ref={scrollRef} className="overflow-x-auto hide-scrollbar py-1">
+      {/* WCAG 2.2: Yatay kaydırılabilir bölge klavyeyle erişilebilir olmalı */}
+      <div ref={scrollRef} tabIndex={0} aria-label="Durak ve saat zinciri" className="overflow-x-auto hide-scrollbar py-1">
         <div className="relative flex items-center min-w-max px-1">
           {fullChain.map((stop, index) => {
             const isFirst = index === 0;
@@ -172,8 +183,12 @@ export function TransitRouteSchematic({
                       title={isSoonPier ? `${stop.name} kalkışı yaklaşıyor` : undefined}
                       className={`text-[9px] sm:text-[9.5px] font-mono tabular-nums leading-none mb-2 ${
                         isSoonPier
-                          ? "font-black text-amber-600 dark:text-amber-400 animate-pulse"
-                          : "font-bold text-slate-500 dark:text-slate-400"
+                          ? onDark
+                            ? "font-black text-amber-300 animate-attention"
+                            : "font-black text-amber-800 dark:text-amber-300 animate-attention"
+                          : onDark
+                            ? "font-bold text-slate-400"
+                            : "font-bold text-slate-500 dark:text-slate-400"
                       }`}
                     >
                       {stop.time}
@@ -194,10 +209,16 @@ export function TransitRouteSchematic({
                   <span
                     className={`text-[10px] mt-1 font-bold whitespace-nowrap leading-none ${
                       isSoonPier
-                        ? "font-black text-amber-700 dark:text-amber-300 animate-pulse"
+                        ? onDark
+                          ? "font-black text-amber-300 animate-attention"
+                          : "font-black text-amber-800 dark:text-amber-300 animate-attention"
                         : isFirst || isLast
-                        ? "text-slate-900 dark:text-white font-extrabold"
-                        : "text-slate-600 dark:text-slate-400 font-medium"
+                        ? onDark
+                          ? "text-white font-extrabold"
+                          : "text-slate-900 dark:text-white font-extrabold"
+                        : onDark
+                          ? "text-slate-300 font-medium"
+                          : "text-slate-600 dark:text-slate-400 font-medium"
                     }`}
                   >
                     {stop.name}
@@ -219,6 +240,9 @@ export function TransitRouteSchematic({
                       />
                       <div
                         ref={shipRef}
+                        role="img"
+                        aria-label="Tahmini seyir ilerlemesi (GPS değil)"
+                        title="Tahmini seyir ilerlemesi (GPS değil)"
                         className="absolute bottom-0 z-10 -translate-x-1/2 translate-y-[2px] transition-[left] duration-1000 ease-linear"
                         style={{ left: `${live.ratio * 100}%` }}
                       >

@@ -28,12 +28,19 @@ export interface ScheduleCardDto {
   targetTimeIso?: string;
   delayText?: string;
   vessel?: string;
+  /** Kaynakta doğrulanmış platform; bilinmiyorsa boş string. */
   platform: string;
+  platformSource?: "official" | "unknown";
   price: string;
+  priceSource?: "official-operator" | "official-fare-table" | "unknown";
   progress: number;
   category?: 'ADALAR' | 'BOGAZ';
   stops?: { name: string; time: string }[];
+  /** Yalnızca resmî tarifede yazan varış saati. */
   arrivalTime?: string;
+  /** Seyir süresi tahmininden üretilen varış; arayüzde "~" ve "tahmini" ile gösterilir. */
+  derivedArrivalTime?: string;
+  arrivalSource?: "official" | "derived" | "unknown";
 
   /** Sürekli sefer penceresi ise start saati (HH:mm) */
   isContinuous?: boolean;
@@ -47,10 +54,31 @@ export interface ScheduleCardDto {
   runsWeekday?: boolean;
   runsSaturday?: boolean;
   runsSunday?: boolean;
+
+  /** Kaydın resmî kaynaktan son doğrulanma zamanı (ISO). Bilinmiyorsa yok. */
+  verifiedAt?: string;
+  /** Tazelik seviyesi; UNKNOWN = doğrulama tarihi yok (taze iddia edilmez). */
+  freshnessLevel?: "FRESH" | "AGING" | "STALE" | "UNKNOWN";
+}
+
+/** Sefer listesinin veri kalitesi özeti (tazelik kapısı sonucu). */
+export interface ScheduleDataQuality {
+  /** Kapıya giren kayıt sayısı */
+  totalCount: number;
+  /** Yayımlanan kayıt sayısı */
+  publishedCount: number;
+  /** Doğrulama süresi dolduğu için gizlenen kayıt sayısı */
+  expiredCount: number;
+  /** Doğrulama tarihi bilinmeyen (gizlenmeyen) kayıt sayısı */
+  undatedCount: number;
+  /** Yayımlanan kayıtlar arasındaki en eski/en yeni doğrulama damgası */
+  oldestVerifiedAt: string | null;
+  newestVerifiedAt: string | null;
 }
 
 export interface SchedulesResponse {
   serverTimeIso: string;
   serverDateFormatted?: string;
   schedules: ScheduleCardDto[];
+  dataQuality?: ScheduleDataQuality;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { ScheduleListClient } from "@/components/schedule/ScheduleListClient";
 import { DepartureBoardView } from "@/components/views/DepartureBoardView";
 import { PiersDirectoryView } from "@/components/views/PiersDirectoryView";
@@ -18,10 +18,18 @@ interface MainAppShellProps {
   marineWeather?: MarineWeatherStatus | null;
   /** Resmî kaynakların en son doğrulanma üst verisi (sunucudan gelir). */
   sourceFreshness: SourceFreshnessMeta;
+  /** ?view= ile sunucudan çözümlenen ilk sekme; hidrasyona kadar bekleme olmaz. */
+  initialView?: string;
 }
 
-export function MainAppShell({ schedules, serverTimeIso, marineWeather, sourceFreshness }: MainAppShellProps) {
-  const [activeTab, setActiveTab] = useState<string>("schedules");
+export function MainAppShell({
+  schedules,
+  serverTimeIso,
+  marineWeather,
+  sourceFreshness,
+  initialView = "schedules",
+}: MainAppShellProps) {
+  const [activeTab, setActiveTab] = useState<string>(initialView);
   const [forcedPierFilter, setForcedPierFilter] = useState<string | null>(null);
 
   const todaySchedules = useMemo(
@@ -29,15 +37,8 @@ export function MainAppShell({ schedules, serverTimeIso, marineWeather, sourceFr
     [schedules]
   );
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const view = params.get("view");
-      if (view === "piers" || view === "weather" || view === "favorites" || view === "schedules" || view === "board") {
-        setActiveTab(view);
-      }
-    }
-  }, []);
+  // `?view=` sunucuda (page.tsx resolveInitialView) çözülüp initialView olarak
+  // gelir; istemcide yeniden okuyup setState etmek gereksiz ve yarışa açıktı.
 
   const handleSelectPierForSchedules = (pierName: string) => {
     setForcedPierFilter(pierName);

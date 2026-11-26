@@ -1,10 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useState } from "react";
 import { createPortal } from "react-dom";
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { useHydrated } from "@/hooks/useHydrated";
+import { useTransitClock } from "@/hooks/useTransitClock";
+import { SLOW_TICK_INTERVAL_MS } from "@/lib/constants";
 import { ShieldAlert, ShieldCheck, ExternalLink, X, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
 import { resolveServiceDayInfo, tariffBadgeLabel } from "@/lib/utils/service-day-info";
-import { resolveDataFreshness } from "@/lib/utils/data-freshness";
+import {
+  resolveAnnouncementFreshness,
+  resolveDataFreshness,
+} from "@/lib/utils/data-freshness";
 import { useLanguageStore } from "@/store/useLanguageStore";
 import { useAnnouncementStore } from "@/store/useAnnouncementStore";
 import { OPERATOR_REGISTRY } from "@/lib/data/operator-registry";
@@ -12,6 +19,12 @@ import { OPERATOR_REGISTRY } from "@/lib/data/operator-registry";
 export interface SourceFreshnessMeta {
   generatedAt?: string;
   sourceCount: number;
+  /** Yayımlanan seferler arasındaki en eski tarife doğrulama damgası (ISO). */
+  tariffOldestVerifiedAt?: string;
+  /** Doğrulama süresi dolduğu için gizlenen sefer sayısı. */
+  tariffExpiredCount?: number;
+  /** Doğrulama tarihi bilinmeyen sefer sayısı. */
+  tariffUndatedCount?: number;
 }
 
 export type SelectedDayFilter = "TODAY" | "WEEKDAY" | "SATURDAY" | "SUNDAY";
@@ -26,7 +39,7 @@ const TIME_FORMATTER = new Intl.DateTimeFormat("tr-TR", {
   timeZone: "Europe/Istanbul",
   hour: "2-digit",
   minute: "2-digit",
-  hour12: false,
+  hourCycle: "h23",
 });
 
 export function ServiceDataTrustBar({
@@ -36,39 +49,41 @@ export function ServiceDataTrustBar({
 }: ServiceDataTrustBarProps) {
   const { t } = useLanguageStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
 
   const liveScanAt = useAnnouncementStore((s) => s.liveScanAt);
+  const snapshotGeneratedAt = useAnnouncementStore((s) => s.snapshotGeneratedAt);
   const loadedAt = useAnnouncementStore((s) => s.loadedAt);
   const coverage = useAnnouncementStore((s) => s.coverage);
   const loading = useAnnouncementStore((s) => s.loading);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const closeModal = useCallback(() => setIsModalOpen(false), []);
+  const modalRef = useModalA11y(isModalOpen, closeModal);
 
-  useEffect(() => {
-    if (!isModalOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsModalOpen(false);
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isModalOpen]);
-
-  const parsedMs = Date.parse(serverTimeIso);
-  const serverMs = Number.isNaN(parsedMs) ? Date.now() : parsedMs;
+  // Paylaşılan transit saati: render sırasında impure Date.now() çağrılmaz;
+  // sunucu damgası bilinmiyorsa saat damgası ile tazelik hesaplanır.
+  const { nowMs } = useTransitClock(SLOW_TICK_INTERVAL_MS, { serverTimeIso });
+  const serverMs = nowMs;
   const day = resolveServiceDayInfo(serverMs);
 
   // Canlı tarama verisi ulaştıysa ve en az bir resmi kaynak canlı doğrulandıysa canlı zaman damgasını kullan;
   // aksi halde sunucu snapshot tarihine geri dön (asla sahte/göreceli tarih üretme).
   const hasLiveVerifiedSource = coverage.some((c) => c.status === "SCANNED" && !c.usedFallback);
   const effectiveGeneratedAt = hasLiveVerifiedSource
-    ? (liveScanAt || loadedAt || freshness.generatedAt)
-    : (freshness.generatedAt || liveScanAt || loadedAt);
+    ? (liveScanAt || snapshotGeneratedAt || freshness.generatedAt)
+    : (snapshotGeneratedAt || freshness.generatedAt || liveScanAt);
   const effectiveNowMs = loadedAt ? Math.max(serverMs, Date.parse(loadedAt)) : serverMs;
 
+  // DUYURU tazeliği dakika sınıfıdır; tarife (gün) tazeliğinden ayrı eşiklerle ölçülür.
+  const announcementFresh = resolveAnnouncementFreshness(effectiveGeneratedAt, effectiveNowMs);
+  const needsOperatorCheck = announcementFresh.isStale;
+
   const fresh = resolveDataFreshness(effectiveGeneratedAt, effectiveNowMs);
+  // Tarife (sefer) verisinin en eski doğrulama damgası; duyuru tazeliğinden AYRI.
+  const tariffFresh = resolveDataFreshness(
+    freshness.tariffOldestVerifiedAt,
+    effectiveNowMs,
+  );
   const liveTimeStr =
     hasLiveVerifiedSource && effectiveGeneratedAt
       ? TIME_FORMATTER.format(new Date(effectiveGeneratedAt))
@@ -119,29 +134,34 @@ export function ServiceDataTrustBar({
           aria-expanded={isModalOpen}
           title="Resmi duyuru ve tarife kaynaklarının doğrulama durumunu incelemek için tıklayın"
           className={`flex items-center gap-1 min-w-0 overflow-hidden px-1.5 py-0.5 rounded-lg border transition-colors cursor-pointer ${
-            fresh.isStale
+            needsOperatorCheck
+              ? "text-rose-700 dark:text-rose-400 border-rose-300/70 dark:border-rose-700/50 bg-rose-50/70 dark:bg-rose-950/30 hover:bg-rose-100/70"
+              : fresh.isStale
               ? "text-amber-700 dark:text-amber-400 border-amber-300/60 dark:border-amber-700/50 bg-amber-50/60 dark:bg-amber-950/30 hover:bg-amber-100/70"
               : "text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-slate-100 dark:hover:bg-slate-800/70"
           }`}
         >
           {loading ? (
             <RefreshCw size={11} className="shrink-0 text-blue-500 animate-spin" aria-hidden="true" />
+          ) : needsOperatorCheck ? (
+            <ShieldAlert size={11} className="shrink-0 text-rose-500" aria-hidden="true" />
           ) : fresh.isStale ? (
             <ShieldAlert size={11} className="shrink-0 text-amber-500" aria-hidden="true" />
           ) : (
             <ShieldCheck size={11} className="shrink-0 text-emerald-500" aria-hidden="true" />
           )}
           <span className="text-[10px] font-bold tabular-nums truncate">
+            {/* ERİŞİLEBİLİRLİK: etiket mobilde görsel olarak gizlense de erişilebilir
+                adda kalır (WCAG 2.5.3: görünen metin adın parçası olmalı). */}
+            <span className="sr-only sm:not-sr-only sm:mr-1">{t("trustAnnouncement")}: </span>
             {loading && !hasLiveVerifiedSource ? (
               <span>Canlı duyuru kaynakları doğrulanıyor...</span>
             ) : hasLiveVerifiedSource && liveTimeStr ? (
               <>
-                <span className="hidden sm:inline">{t("trustAnnouncement")}: </span>
                 Bugün {liveTimeStr} · {activeSourceCount} {t("sources")}
               </>
             ) : fresh.verifiedOnLabel ? (
               <>
-                <span className="hidden sm:inline">{t("trustAnnouncement")}: </span>
                 {fresh.verifiedOnLabel} ({fresh.ageLabel}) · {activeSourceCount} {t("sources")}
               </>
             ) : (
@@ -149,6 +169,14 @@ export function ServiceDataTrustBar({
             )}
           </span>
         </button>
+        {needsOperatorCheck && !loading && (
+          <span
+            role="status"
+            className="hidden md:inline text-[10px] font-black text-rose-700 dark:text-rose-400 truncate shrink-0"
+          >
+            ⚠ Duyurular {announcementFresh.ageLabel} doğrulandı; iptal bilgisi eksik olabilir
+          </span>
+        )}
       </div>
 
       {isModalOpen &&
@@ -159,6 +187,7 @@ export function ServiceDataTrustBar({
             onClick={() => setIsModalOpen(false)}
           >
             <div
+              ref={modalRef}
               role="dialog"
               aria-modal="true"
               aria-label="Resmi Duyuru ve Tarife Kaynak Doğrulama Durumu"
@@ -188,6 +217,15 @@ export function ServiceDataTrustBar({
               </div>
 
               <div className="p-4 sm:p-5 space-y-3 max-h-[75vh] overflow-y-auto">
+                {needsOperatorCheck && (
+                  <div
+                    role="alert"
+                    className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-xs font-bold text-rose-700 dark:text-rose-300"
+                  >
+                    Duyurular {announcementFresh.ageLabel} doğrulandı; iptal bilgisi eksik olabilir.
+                    Resmî duyuru sayfalarını kontrol edin.
+                  </div>
+                )}
                 <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs space-y-1">
                   <div className="flex items-center justify-between font-bold">
                     <span className="text-slate-500 dark:text-slate-400">Aktif Tarife Günü:</span>
@@ -195,12 +233,44 @@ export function ServiceDataTrustBar({
                   </div>
                   <div className="flex items-center justify-between font-bold">
                     <span className="text-slate-500 dark:text-slate-400">Son Duyuru Kontrolü:</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-mono">
+                    <span
+                      className={`font-mono ${
+                        announcementFresh.isStale || fresh.isStale
+                          ? "text-rose-600 dark:text-rose-400"
+                          : "text-emerald-600 dark:text-emerald-400"
+                      }`}
+                    >
                       {hasLiveVerifiedSource && liveTimeStr
                         ? `Bugün ${liveTimeStr} (Canlı Tarama)`
-                        : `${fresh.verifiedOnLabel ?? "Bilinmiyor"} (${fresh.ageLabel})`}
+                        : `${announcementFresh.verifiedLabel ? `${announcementFresh.verifiedLabel} - ` : ""}${fresh.verifiedOnLabel ?? "Bilinmiyor"} (${fresh.ageLabel})`}
                     </span>
                   </div>
+                  <div className="flex items-center justify-between font-bold">
+                    <span className="text-slate-500 dark:text-slate-400">Tarife Son Doğrulaması (en eski):</span>
+                    <span
+                      className={`font-mono ${
+                        tariffFresh.isStale
+                          ? "text-amber-600 dark:text-amber-400"
+                          : "text-emerald-600 dark:text-emerald-400"
+                      }`}
+                    >
+                      {tariffFresh.verifiedOnLabel
+                        ? `${tariffFresh.verifiedOnLabel} (${tariffFresh.ageLabel})`
+                        : "Bilinmiyor"}
+                    </span>
+                  </div>
+                  {(freshness.tariffUndatedCount ?? 0) > 0 && (
+                    <p className="text-[10px] leading-snug text-slate-500 dark:text-slate-400 font-semibold pt-0.5">
+                      {freshness.tariffUndatedCount} sefer kaydında doğrulama tarihi yok; bu
+                      kayıtlar için tazelik iddia edilmiyor.
+                    </p>
+                  )}
+                  {(freshness.tariffExpiredCount ?? 0) > 0 && (
+                    <p className="text-[10px] leading-snug text-amber-700 dark:text-amber-300 font-bold pt-0.5">
+                      Doğrulama süresi dolduğu için {freshness.tariffExpiredCount} sefer
+                      yayımlanmıyor.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -208,6 +278,7 @@ export function ServiceDataTrustBar({
                     const cov = coverage.find((c) => c.operator === op.name);
                     const isLiveOk = cov?.status === "SCANNED" && !cov?.usedFallback;
                     const isFallback = cov?.usedFallback;
+                    const checkedLabel = cov?.checkedAt ? TIME_FORMATTER.format(new Date(cov.checkedAt)) : null;
 
                     return (
                       <div
@@ -235,6 +306,11 @@ export function ServiceDataTrustBar({
                           </div>
                           <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
                             {cov?.note || op.statusNote}
+                          </p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">
+                            {checkedLabel
+                              ? `Son kontrol: bugün ${checkedLabel}`
+                              : "Son kontrol: bilinmiyor"}
                           </p>
                         </div>
 

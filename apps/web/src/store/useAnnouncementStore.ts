@@ -10,6 +10,8 @@ export interface OperatorCoverageItem {
   announcementCount?: number;
   note?: string;
   usedFallback?: boolean;
+  /** Bu operatör için son başarılı kontrol zamanı (ISO); bilinmiyorsa yok — uydurma yok */
+  checkedAt?: string;
 }
 
 interface AnnouncementState {
@@ -18,7 +20,10 @@ interface AnnouncementState {
   sourceHealth: OperatorHealth[];
   recentChanges: ChangeEvent[];
   coverage: OperatorCoverageItem[];
+  /** Son başarılı CANLI tarama zamanı (tarama yapılmadıysa null — uydurma yok) */
   liveScanAt: string | null;
+  /** Sunucudaki saklanan duyuru snapshot'ının damgası (varsa) */
+  snapshotGeneratedAt: string | null;
   loadedAt: string | null;
   loading: boolean;
   error: string | null;
@@ -29,6 +34,7 @@ interface AnnouncementState {
     recentChanges?: ChangeEvent[];
     coverage?: OperatorCoverageItem[];
     liveScanAt?: string | null;
+    snapshotGeneratedAt?: string | null;
   }) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -41,6 +47,7 @@ export const useAnnouncementStore = create<AnnouncementState>((set) => ({
   recentChanges: [],
   coverage: [],
   liveScanAt: null,
+  snapshotGeneratedAt: null,
   loadedAt: null,
   loading: false,
   error: null,
@@ -52,7 +59,8 @@ export const useAnnouncementStore = create<AnnouncementState>((set) => ({
       sourceHealth: data.sourceHealth ?? [],
       recentChanges: data.recentChanges ?? [],
       coverage: data.coverage ?? [],
-      liveScanAt: data.liveScanAt ?? nowIso,
+      liveScanAt: data.liveScanAt ?? null,
+      snapshotGeneratedAt: data.snapshotGeneratedAt ?? null,
       loadedAt: nowIso,
     });
   },

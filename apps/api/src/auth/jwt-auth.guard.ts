@@ -41,9 +41,14 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Token bulunamadı.');
     }
 
+    const secret = process.env.JWT_ACCESS_SECRET;
+    if (!secret) {
+      throw new UnauthorizedException('JWT erişim sırrı yapılandırılmamış.');
+    }
+
     try {
       const payload = this.jwt.verify<JwtPayload>(token, {
-        secret: process.env.JWT_ACCESS_SECRET ?? 'dev_access_secret',
+        secret,
       });
       request.user = payload;
       return true;

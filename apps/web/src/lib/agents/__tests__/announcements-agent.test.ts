@@ -29,11 +29,27 @@ function fixture(name: string): string {
   return readFileSync(fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url)), "utf-8");
 }
 
+/**
+ * Fixture tarihlerine sabitlenmiş "şimdi" değerleri.
+ *
+ * NEDEN: parser'lar "bugün" kuralını uygular (iptal yalnızca kendi gününde
+ * geçerlidir). Gerçek saat kullanılırsa gerçek bir sayfadan alınmış fixture,
+ * ertesi gün otomatik olarak "dün" olur ve test takvimle birlikte çürür.
+ * Fixture'ın kendi tarihini vermek, ölçülen davranışı deterministik yapar;
+ * "başka günde elenir" iddiası ayrıca test edilir.
+ */
+const ON_04_OCT = new Date(2026, 9, 4, 12, 0).getTime();
+const ON_17_OCT = new Date(2026, 9, 17, 12, 0).getTime();
+/** MM feed `updated_at` = 2026-10-16T06:18:38Z → İstanbul 16.10.2026 */
+const ON_16_OCT = new Date(2026, 9, 16, 12, 0).getTime();
+/** Turyol popup metnindeki tarih: 18.10.2026 */
+const ON_18_OCT = new Date(2026, 9, 18, 12, 0).getTime();
+
 describe("Şehir Hatları duyuru ajanı (fixture)", () => {
   const html = fixture("sehirhatlari-iptal-seferler.html");
 
   it("iptal durumunu doğru çözer (04.10.2026)", () => {
-    const status = parseSehirHatlariCancellationStatus(html);
+    const status = parseSehirHatlariCancellationStatus(html, ON_04_OCT);
     expect(status.date).toBe("04.10.2026");
     // Ham HTML'deki birebir metin: "İptal seferimiz bulunmamaktadır."
     expect(status.statement).toContain("İptal seferimiz bulunmamaktadır");
@@ -41,7 +57,7 @@ describe("Şehir Hatları duyuru ajanı (fixture)", () => {
   });
 
   it("\"Diğer Duyurular\" listesini çıkarır", () => {
-    const announcements = parseSehirHatlariAnnouncements(html);
+    const announcements = parseSehirHatlariAnnouncements(html, ON_04_OCT);
     expect(announcements.length).toBeGreaterThan(5);
     // İlk kayıt bugünkü durum, ardından gerçek duyurular gelir
     expect(announcements[0].id).toContain("sh-status");
@@ -58,7 +74,7 @@ describe("Şehir Hatları YENİ iptal formatı (17.10.2026 fixture — gerçek s
   const html = fixture("sehirhatlari-iptal-seferler-17102026.html");
 
   it("sayfa içine gömülü iptal duyurusunu (yeni format) durum olarak çözer", () => {
-    const status = parseSehirHatlariCancellationStatus(html);
+    const status = parseSehirHatlariCancellationStatus(html, ON_17_OCT);
     expect(status.date).toBe("17.10.2026");
     expect(status.hasCancellations).toBe(true);
     expect(status.statement).toContain("gerçekleştirilemeyecektir");
@@ -81,7 +97,7 @@ describe("Şehir Hatları YENİ iptal formatı (17.10.2026 fixture — gerçek s
   });
 
   it("durum kaydı CANCELLED_TRIPS olur; aynı günün liste kopyası MÜKERRER gösterilmez", () => {
-    const announcements = parseSehirHatlariAnnouncements(html);
+    const announcements = parseSehirHatlariAnnouncements(html, ON_17_OCT);
     const statusItem = announcements[0];
     expect(statusItem.type).toBe("CANCELLED_TRIPS");
     expect(statusItem.title).toContain("17.10.2026");
@@ -101,7 +117,7 @@ describe("Şehir Hatları YENİ iptal formatı (17.10.2026 fixture — gerçek s
   });
 
   it("KULLANICI KURALI: iptal edilen ADALAR hatları kartlarda CANCELLED olur, çalışan hat olmaz", () => {
-    const statusItem = parseSehirHatlariAnnouncements(html)[0];
+    const statusItem = parseSehirHatlariAnnouncements(html, ON_17_OCT)[0];
     const disruptions = matchAnnouncementToTrips(statusItem);
     expect(disruptions.length).toBeGreaterThan(20);
     expect(disruptions.every((d) => d.kind === "CANCELLED")).toBe(true);
@@ -172,7 +188,7 @@ describe("Mavi Marmara duyuru ajanı (durum.mavimarmara.net feed.json fixture)",
   const feed = fixture("mavi-marmara-durum-feed.json");
 
   it("cancelled hatlardan İPTAL duyurusu üretir (firmanın kendi etiketleriyle)", () => {
-    const anns = parseMaviMarmaraStatusFeed(feed);
+    const anns = parseMaviMarmaraStatusFeed(feed, ON_16_OCT);
     expect(anns).toHaveLength(1);
     const a = anns[0];
     expect(a.operator).toBe("Mavi Marmara");
@@ -188,7 +204,7 @@ describe("Mavi Marmara duyuru ajanı (durum.mavimarmara.net feed.json fixture)",
   });
 
   it("eşleştirici MM iptallerini MM seferlerine bağlar (uydurma yok)", () => {
-    const anns = parseMaviMarmaraStatusFeed(feed);
+    const anns = parseMaviMarmaraStatusFeed(feed, ON_16_OCT);
     const disruptions = matchAnnouncementToTrips(anns[0]);
     expect(disruptions.length).toBeGreaterThan(0);
     expect(disruptions.every((d) => d.operator === "Mavi Marmara")).toBe(true);
@@ -216,9 +232,9 @@ describe("Mavi Marmara duyuru ajanı (durum.mavimarmara.net feed.json fixture)",
         besiktas: { status: "disrupted", note: "" },
       },
     });
-    expect(parseMaviMarmaraStatusFeed(running)).toHaveLength(0);
-    expect(parseMaviMarmaraStatusFeed("{bozuk")).toHaveLength(0);
-    expect(parseMaviMarmaraStatusFeed("")).toHaveLength(0);
+    expect(parseMaviMarmaraStatusFeed(running, ON_17_OCT)).toHaveLength(0);
+    expect(parseMaviMarmaraStatusFeed("{bozuk", ON_17_OCT)).toHaveLength(0);
+    expect(parseMaviMarmaraStatusFeed("", ON_17_OCT)).toHaveLength(0);
   });
 });
 
@@ -226,7 +242,7 @@ describe("Turyol duyuru ajanı (ana sayfa aktif popup fixture)", () => {
   const html = fixture("turyol-aktif-popup.html");
 
   it("popup metnini birebir çıkarır; Ada iptaline dayalı eşleştirme çapası ekler", () => {
-    const anns = parseTuryolAnnouncements(html);
+    const anns = parseTuryolAnnouncements(html, ON_18_OCT);
     expect(anns).toHaveLength(1);
     const a = anns[0];
     expect(a.operator).toBe("Turyol");
@@ -240,7 +256,7 @@ describe("Turyol duyuru ajanı (ana sayfa aktif popup fixture)", () => {
   });
 
   it("eşleştirici YALNIZCA Turyol ADALAR seferlerini işaretler (Boğaz hattı etkilenmez)", () => {
-    const anns = parseTuryolAnnouncements(html);
+    const anns = parseTuryolAnnouncements(html, ON_18_OCT);
     const disruptions = matchAnnouncementToTrips(anns[0]);
     const turyolAdaTrips = OFFICIAL_SCHEDULES_DATA.filter(
       (t) => t.operator === "Turyol" && t.category === "ADALAR"
@@ -259,9 +275,9 @@ describe("Turyol duyuru ajanı (ana sayfa aktif popup fixture)", () => {
 
   it("iptal yoksa duyuru üretmez", () => {
     expect(
-      parseTuryolAnnouncements("<body><div>Duyuru bulunmamaktadır.</div></body>")
+      parseTuryolAnnouncements("<body><div>Duyuru bulunmamaktadır.</div></body>", ON_18_OCT)
     ).toHaveLength(0);
-    expect(parseTuryolAnnouncements("")).toHaveLength(0);
+    expect(parseTuryolAnnouncements("", ON_18_OCT)).toHaveLength(0);
   });
 });
 
@@ -361,6 +377,7 @@ describe("KULLANICI KURALI: TÜM firmalar taranır (çok-firmalı tarama)", () =
     try {
       const { coverage, snapshots } = await scrapeAllAnnouncements({
         operators: ["Mavi Marmara"],
+        nowMs: ON_16_OCT,
       });
       const mm = coverage.find((c) => c.operator === "Mavi Marmara");
       expect(mm?.status).toBe("SCANNED");

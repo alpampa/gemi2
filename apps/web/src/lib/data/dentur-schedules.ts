@@ -21,7 +21,9 @@ interface DenturScheduleFile {
 
 // Next.js JSON import'u tip güvenli değildir; bilinçli cast.
  
-const denturRaw = require("./dentur-schedules.json") as DenturScheduleFile;
+import denturSnapshot from "./dentur-schedules.json";
+
+const denturRaw = denturSnapshot as DenturScheduleFile;
 
 const DAY_TYPE_RUNS: Record<
   DenturDayType,
@@ -39,6 +41,9 @@ const DAY_TYPE_RUNS: Record<
 // Beşiktaş-Kadıköy) ücreti resmi sitede YAYINLANMIYOR → "—" (uydurma yasak).
 const ADA_FARE = "200 ₺";
 const CITY_FARE_UNVERIFIED = "—";
+
+/** Hat sayfalarının kökü; JSON'daki sourceBase joker (`*`) içerdiği için kullanılmaz. */
+const DENTUR_SOURCE_URL = "https://www.denturavrasya.com/tr-TR/hatlarimiz/";
 
 function slug(s: string): string {
   return s
@@ -95,6 +100,9 @@ export function getDenturSchedules(): RawOfficialTrip[] {
       isContinuous: isContinues || undefined,
       continuousUntil: r.continuousUntil,
       lineName: r.line,
+      sourceUrl: DENTUR_SOURCE_URL,
+      // Doğrulama damgası: JSON'un üretildiği an (canlı scrape zamanı).
+      verifiedAt: denturRaw.generatedAt,
     });
   }
 

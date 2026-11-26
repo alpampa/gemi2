@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { runNightlyTariffSync } from "@/lib/agents/daily-sync-job";
 import { OFFICIAL_SCHEDULES_DATA } from "@/lib/data/official-schedules";
 import { verifyCronAuth } from "@/lib/utils/cron-auth";
+import { getErrorMessage } from "@/lib/utils/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
   );
 
   const now = new Date();
-  const istanbulTimeStr = now.toLocaleTimeString("tr-TR", { timeZone: "Europe/Istanbul", hour12: false });
+  const istanbulTimeStr = now.toLocaleTimeString("tr-TR", { timeZone: "Europe/Istanbul", hourCycle: "h23" });
   const istanbulDateStr = now.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" });
 
   try {
@@ -41,12 +42,12 @@ export async function GET(request: NextRequest) {
       summary: result.summary,
       reports: result.reports,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       {
         success: false,
         job: "GECELIK_23_00_RESMI_TARIFE_VE_DUYURU_SENKRON_AJANI",
-        error: error?.message || "Sync failed",
+        error: getErrorMessage(error, "Sync failed"),
         timestamp: now.toISOString(),
       },
       { status: 500 }

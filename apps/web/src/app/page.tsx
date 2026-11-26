@@ -8,11 +8,24 @@ import { fetchLiveMarineWeather, type MarineWeatherStatus } from "@/lib/services
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+/** MainAppShell'in desteklediği sekmeler; bilinmeyen ?view=değerleri schedules'a düşer. */
+const VALID_VIEWS = new Set(["schedules", "piers", "weather", "favorites", "board"]);
+
+/** Server tarafında ?view= ile ilk sekme belirlenir; hidrasyona kadar bekleme olmaz. */
+function resolveInitialView(searchParams: Record<string, string | string[] | undefined>): string {
+  const raw = Array.isArray(searchParams.view) ? searchParams.view[0] : searchParams.view;
+  return raw && VALID_VIEWS.has(raw) ? raw : "schedules";
+}
+
 async function getSchedules(): Promise<SchedulesResponse> {
   return await getLiveOrOfficialSchedules();
 }
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   let data: SchedulesResponse | null = null;
   let weather: MarineWeatherStatus | null = null;
 
@@ -42,6 +55,7 @@ export default async function Home() {
   const schedules = data?.schedules || [];
   const serverTimeIso = data?.serverTimeIso || new Date().toISOString();
   const announcementsMeta = getStoredAnnouncementsMeta();
+  const initialView = resolveInitialView(await searchParams);
 
   return (
     <div className="min-h-screen w-full bg-[#040914] text-slate-100 flex justify-center">
@@ -56,7 +70,11 @@ export default async function Home() {
             sourceFreshness={{
               generatedAt: announcementsMeta.generatedAt,
               sourceCount: announcementsMeta.sourceCount,
+              tariffOldestVerifiedAt: data?.dataQuality?.oldestVerifiedAt ?? undefined,
+              tariffExpiredCount: data?.dataQuality?.expiredCount,
+              tariffUndatedCount: data?.dataQuality?.undatedCount,
             }}
+            initialView={initialView}
           />
         </main>
       </div>

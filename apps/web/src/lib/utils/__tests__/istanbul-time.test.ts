@@ -16,6 +16,7 @@ import {
   nightRolloverDayOffset,
   toAbsoluteDayMinutes,
   formatRemainingShort,
+  formatIstanbulHhmm,
 } from "@/lib/utils/istanbul-time";
 
 // Sabit referans anlar (İstanbul yerel saatiyle):
@@ -77,6 +78,37 @@ describe("getIstanbulParts", () => {
     expect(parts.dateStr).toBe("2026-10-02");
     expect(parts.hour).toBe(0);
     expect(parts.minute).toBe(5);
+  });
+
+  /**
+   * Sözleşme: saat alanı her zaman 00–23. `hour12: false` locale'in saat
+   * döngüsüne düştüğü için ICU sürümüne göre gece yarısını "24:xx" veriyordu
+   * (CI'da Node 20 "24:02" üretti, yerelde Node 24 "00:02"). Bu test tüm günü
+   * tarayarak döngünün `h24`'e kaymasını yakalar; tek bir anı örneklemek
+   * yeterli değildir.
+   */
+  it("günün her saati 0–23 aralığında kalır (h24 sızıntısı yok)", () => {
+    const dayStart = new Date("2026-10-02T00:00:00+03:00").getTime();
+    const seen: number[] = [];
+    for (let h = 0; h < 24; h++) {
+      const parts = getIstanbulParts(dayStart + h * 60 * 60 * 1000);
+      expect(parts.hour, `${h}. saat ${parts.hour} döndü`).toBe(h);
+      expect(parts.dateStr).toBe("2026-10-02");
+      seen.push(parts.hour);
+    }
+    expect(seen).toHaveLength(24);
+  });
+});
+
+describe("formatIstanbulHhmm", () => {
+  it("gece yarısını 24:xx olarak değil 00:xx olarak biçimlendirir", () => {
+    expect(formatIstanbulHhmm(AFTER_MIDNIGHT_0005)).toBe("00:05");
+    expect(formatIstanbulHhmm(new Date("2026-10-02T00:00:00+03:00").getTime())).toBe("00:00");
+    // Biçimlendirilmiş hiçbir saat "24" ile başlayamaz: tarifede 24:02 yoktur.
+    for (let m = 0; m < 24 * 60; m += 37) {
+      const hhmm = formatIstanbulHhmm(new Date("2026-10-02T00:00:00+03:00").getTime() + m * 60_000);
+      expect(hhmmToMinutes(hhmm), `${hhmm} geçersiz`).not.toBeNull();
+    }
   });
 });
 

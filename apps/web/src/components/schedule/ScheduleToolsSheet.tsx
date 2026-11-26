@@ -1,5 +1,6 @@
 "use client";
 
+import { useHydrated } from "@/hooks/useHydrated";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -42,11 +43,8 @@ export function ScheduleToolsSheet({
   onClearFilters,
 }: ScheduleToolsSheetProps) {
   const { t } = useLanguageStore();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // ESC tuşu ile kapatma (WCAG 2.1 AA klavye erişilebilirliği)
   useEffect(() => {

@@ -1,37 +1,43 @@
-import { describe, it, expect } from "vitest";
-import { isIslandPier, isIslandRoute } from "@/lib/data/piers";
+import { describe, expect, it } from "vitest";
+import { normalizePierName, isKnownPier } from "@/lib/data/piers";
 
-describe("isIslandPier and isIslandRoute", () => {
-  it("Ada iskelelerini doğru tespit eder", () => {
-    expect(isIslandPier("Büyükada")).toBe(true);
-    expect(isIslandPier("Heybeliada")).toBe(true);
-    expect(isIslandPier("Burgazada")).toBe(true);
-    expect(isIslandPier("Kınalıada")).toBe(true);
-    expect(isIslandPier("Sedef Adası")).toBe(true);
+describe("normalizePierName — iskele adı tek kanonik ada çevrilir", () => {
+  it("büyük/küçük harf ve diyakritik farkları tek ada indirger", () => {
+    const variants = ["HEYBELİADA", "Heybeliada", "heybeliada", "HEYBELIADA"];
+    const canon = new Set(variants.map(normalizePierName));
+    expect([...canon]).toEqual(["Heybeliada"]);
   });
 
-  it("Anakara iskelelerini doğru tespit eder (ada değil)", () => {
-    expect(isIslandPier("Kabataş")).toBe(false);
-    expect(isIslandPier("Kadıköy")).toBe(false);
-    expect(isIslandPier("Bostancı")).toBe(false);
-    expect(isIslandPier("Eminönü")).toBe(false);
-    expect(isIslandPier("Beşiktaş")).toBe(false);
-    expect(isIslandPier("Üsküdar")).toBe(false);
-    expect(isIslandPier("Karaköy")).toBe(false);
+  it("Türkçe büyük İ/KABATAŞ doğru çevrilir", () => {
+    expect(normalizePierName("KABATAŞ")).toBe("Kabataş");
+    expect(normalizePierName("kabatas")).toBe("Kabataş");
   });
 
-  it("isIslandRoute: En az bir ucu ada olan rotaları ada rotası kabul eder", () => {
-    expect(isIslandRoute("Büyükada", "Kabataş")).toBe(true);
-    expect(isIslandRoute("Kabataş", "Heybeliada")).toBe(true);
-    expect(isIslandRoute("Bostancı", "Büyükada")).toBe(true);
-    expect(isIslandRoute("Heybeliada", "Burgazada")).toBe(true);
+  it("Sirkeci resmî kaynak yazımını Eminönü kanonik adına çevirir", () => {
+    expect(normalizePierName("SİRKECİ")).toBe("Eminönü");
+    expect(normalizePierName("sirkeci")).toBe("Eminönü");
   });
 
-  it("isIslandRoute: İki ucu da anakara olan (örn: Kadıköy -> Kabataş) rotaları ada rotası SAYMAZ", () => {
-    // Vapur Adalar'dan gelip Kadıköy'e ulaştığında Kadıköy -> Kabataş bacağı anakaradan anakarayadır!
-    expect(isIslandRoute("Kadıköy", "Kabataş")).toBe(false);
-    expect(isIslandRoute("Eminönü", "Kadıköy")).toBe(false);
-    expect(isIslandRoute("Beşiktaş", "Kadıköy")).toBe(false);
-    expect(isIslandRoute("Bostancı", "Kadıköy")).toBe(false);
+  it("bilinmeyen adı DEĞİŞTİRMEZ (tahmin yok)", () => {
+    expect(normalizePierName("Boğaz Turu")).toBe("Boğaz Turu");
+    expect(normalizePierName("Bilinmeyen İskele")).toBe("Bilinmeyen İskele");
+  });
+
+  it("boş girdide boş döner", () => {
+    expect(normalizePierName(undefined)).toBe("");
+    expect(normalizePierName(null)).toBe("");
+    expect(normalizePierName("   ")).toBe("");
+  });
+
+  it("isKnownPier yalnızca gerçek eşleşmede true döner", () => {
+    expect(isKnownPier("BÜYÜKADA")).toBe(true);
+    expect(isKnownPier("Kadıköy")).toBe(true);
+    expect(isKnownPier("Uzay İskelesi")).toBe(false);
+  });
+
+  it("kanonik yazımlar için kimlik döner", () => {
+    for (const name of ["Büyükada", "Kadıköy", "Üsküdar", "Bostancı"]) {
+      expect(normalizePierName(name)).toBe(name);
+    }
   });
 });

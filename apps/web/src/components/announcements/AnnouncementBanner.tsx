@@ -97,7 +97,7 @@ export function AnnouncementBanner({ announcements, className = "" }: Announceme
         type="button"
         onClick={handlePrev}
         aria-label="Önceki duyuru"
-        className="relative flex h-7 w-7 sm:h-10 sm:w-10 items-center justify-center rounded-md active:bg-slate-200/60 dark:active:bg-slate-800 sm:hover:text-slate-700 dark:sm:hover:text-slate-200 sm:hover:bg-slate-200/60 dark:sm:hover:bg-slate-800 cursor-pointer ml-1 after:content-[''] after:absolute after:left-1/2 after:top-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:h-10 after:w-[30px] sm:after:hidden"
+        className="relative flex h-11 w-11 items-center justify-center rounded-md active:bg-slate-200/60 dark:active:bg-slate-800 sm:hover:text-slate-700 dark:sm:hover:text-slate-200 sm:hover:bg-slate-200/60 dark:sm:hover:bg-slate-800 cursor-pointer ml-1"
       >
         <ChevronLeft size={14} />
       </button>
@@ -105,7 +105,7 @@ export function AnnouncementBanner({ announcements, className = "" }: Announceme
         type="button"
         onClick={handleNext}
         aria-label="Sonraki duyuru"
-        className="relative flex h-7 w-7 sm:h-10 sm:w-10 items-center justify-center rounded-md active:bg-slate-200/60 dark:active:bg-slate-800 sm:hover:text-slate-700 dark:sm:hover:text-slate-200 sm:hover:bg-slate-200/60 dark:sm:hover:bg-slate-800 cursor-pointer after:content-[''] after:absolute after:left-1/2 after:top-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:h-10 after:w-[30px] sm:after:hidden"
+        className="relative flex h-11 w-11 items-center justify-center rounded-md active:bg-slate-200/60 dark:active:bg-slate-800 sm:hover:text-slate-700 dark:sm:hover:text-slate-200 sm:hover:bg-slate-200/60 dark:sm:hover:bg-slate-800 cursor-pointer"
       >
         <ChevronRight size={14} />
       </button>
@@ -114,7 +114,7 @@ export function AnnouncementBanner({ announcements, className = "" }: Announceme
 
   return (
     <>
-      <div className={`px-3 pt-1.5 animate-fadeIn ${className}`} role="region" aria-label="Firma duyuruları">
+      <div className={`px-3 pt-1.5 animate-fadeIn ${className}`} role="region" aria-labelledby="announcement-banner-heading">
       <div
         className={`rounded-xl border px-2.5 py-1 sm:py-1.5 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 transition-all ${
           hasCancellation
@@ -135,6 +135,7 @@ export function AnnouncementBanner({ announcements, className = "" }: Announceme
               {hasCancellation ? <AlertTriangle size={13} aria-hidden /> : <Megaphone size={13} aria-hidden />}
             </span>
             <span
+              id="announcement-banner-heading"
               className={`text-[9.5px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${
                 hasCancellation
                   ? "bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300"
@@ -173,8 +174,7 @@ export function AnnouncementBanner({ announcements, className = "" }: Announceme
             <button
               type="button"
               onClick={() => setDetailItem(currentItem)}
-              aria-label="Duyuru detayını aç"
-              className={`font-semibold text-xs sm:text-[11px] leading-tight hover:underline inline-flex items-center gap-1 min-h-8 sm:min-h-10 cursor-pointer text-left ${
+              className={`font-semibold text-xs sm:text-[11px] leading-tight hover:underline inline-flex items-center gap-1 min-h-11 cursor-pointer text-left ${
                 tone === "danger"
                   ? "text-rose-700 dark:text-rose-200 font-bold"
                   : "text-slate-800 dark:text-slate-200"
@@ -197,6 +197,10 @@ export function AnnouncementBanner({ announcements, className = "" }: Announceme
                 </>
               )}
               <Info size={10} className="shrink-0 opacity-60 ml-0.5" aria-hidden />
+              {/* ERİŞİLEBİLİRLİK: aria-label kaldırıldı (WCAG 2.5.3 — görünen metin
+                  erişilebilir adın parçası olmalı). Eylem ipucu görünmez metinle
+                  eklenir; ekran okuyucu duyuru metnini + "detayı aç"ı birlikte okur. */}
+              <span className="sr-only"> — duyuru detayını aç</span>
             </button>
           </MarqueeTicker>
         </div>

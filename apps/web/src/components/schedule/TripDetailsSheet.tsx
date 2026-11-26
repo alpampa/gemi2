@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Ship,
@@ -32,7 +32,6 @@ import {
 import { OperatorLogo } from "@/components/ui/OperatorLogo";
 import { TripStatusBadge } from "./ScheduleCard";
 import type { ScheduleCardDto } from "@/lib/types/schedule";
-import { getTripAmenities } from "@/lib/utils/occupancy";
 import { calculateDeckRecommendation } from "@/lib/utils/deck-guide";
 import { getPierTransit } from "@/lib/data/pier-transit-connections";
 import { getPierGroundTransit } from "@/lib/data/pier-taxi-transit";
@@ -44,6 +43,7 @@ import { SLOW_TICK_INTERVAL_MS } from "@/lib/constants";
 import { useAlarmStore } from "@/store/useAlarmStore";
 import { useFavoritesStore } from "@/store/useFavoritesStore";
 import { useActiveVoyageStore } from "@/store/useActiveVoyageStore";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { getReportedVesselName } from "@/lib/utils/vessel-info";
 import { useLanguageStore } from "@/store/useLanguageStore";
 import { requestNotificationPermission } from "@/lib/utils/sound";
@@ -84,7 +84,7 @@ export function TripDetailsSheet({
       schedule.departureTime,
       schedule.targetTimeIso || new Date(nowMs).toISOString(),
       schedule.stops,
-      schedule.arrivalTime,
+      schedule.arrivalTime ?? schedule.derivedArrivalTime,
       nowMs,
       serverTimeIso
     );
@@ -98,15 +98,8 @@ export function TripDetailsSheet({
   const [isVesselHeritageOpen, setIsVesselHeritageOpen] = useState(false);
   const [isPierAtlasOpen, setIsPierAtlasOpen] = useState(false);
 
-  // Escape tuşu ile kapatma (klavye erişilebilirliği)
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  // Esc / odak tuzağı / Android geri tuşu — tek ortak hook.
+  const modalRef = useModalA11y(isOpen && schedule !== null, onClose);
 
   const islandGuide = useMemo(() => {
     if (!schedule) return null;
@@ -126,7 +119,6 @@ export function TripDetailsSheet({
   const isFav = isFavorite(routeKey);
   const hasAlarm = isAlarmSet(schedule.id);
 
-  const amenities = getTripAmenities(schedule.operator);
   const originTransit = getPierTransit(schedule.origin);
   const destTransit = getPierTransit(schedule.destination);
   const groundTransit = getPierGroundTransit(schedule.origin);
@@ -179,6 +171,7 @@ export function TripDetailsSheet({
 
           {/* Clean Ergonomic Bottom Sheet */}
           <motion.div
+            ref={modalRef}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -186,7 +179,7 @@ export function TripDetailsSheet({
             role="dialog"
             aria-modal="true"
             aria-label={`Sefer detayı: ${schedule.origin}'den ${schedule.destination}'na ${schedule.departureTime}`}
-            className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white dark:bg-[#0c1322] border-t border-slate-200 dark:border-slate-800 rounded-t-[28px] z-50 p-4 sm:p-6 text-slate-900 dark:text-white shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto"
+            className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white dark:bg-[#0c1322] border-t border-slate-200 dark:border-slate-800 rounded-t-[28px] z-50 p-4 sm:p-6 text-slate-900 dark:text-white shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto overscroll-contain"
             style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}
           >
             {/* Grab Handle */}
@@ -388,7 +381,11 @@ export function TripDetailsSheet({
                       {dynState?.currentDepartureTime || schedule.departureTime}
                     </div>
                     <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5 truncate">
-                      {schedule.arrivalTime ? `Varış ~${schedule.arrivalTime}` : "Planlı Sefer"}
+                      {schedule.arrivalSource === "official" && schedule.arrivalTime
+                        ? `Varış ${schedule.arrivalTime}`
+                        : schedule.derivedArrivalTime
+                        ? `Varış ~${schedule.derivedArrivalTime} (tahmini)`
+                        : "Varış bilgisi yok"}
                     </div>
                   </div>
 
@@ -400,9 +397,15 @@ export function TripDetailsSheet({
                     <div className="text-xs sm:text-base font-black text-slate-900 dark:text-white truncate">
                       {dynState?.currentOrigin || schedule.origin}
                     </div>
-                    <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold truncate mt-0.5">
-                      {schedule.platform || "Yolcu Rıhtımı"}
-                    </div>
+                    {schedule.platform && schedule.platformSource !== "unknown" ? (
+                      <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold truncate mt-0.5">
+                        {schedule.platform}
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
+                        Platform bilgisi yok
+                      </div>
+                    )}
                   </div>
 
                   <div className="bg-slate-50 dark:bg-slate-900/90 p-2.5 sm:p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
@@ -443,31 +446,17 @@ export function TripDetailsSheet({
                 </div>
 
                 {/* VAPUR İÇİ OLANAKLAR VE GÜVERTE TAVSİYESİ */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800">
-                    <span className="text-[10px] font-black uppercase text-slate-400 block mb-1.5">Vapur İçi İkram & Hizmetler</span>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {amenities.map((item) => (
-                        <span key={item.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-300">
-                          <span>{item.icon}</span>
-                          <span>{item.label}</span>
-                        </span>
-                      ))}
-                    </div>
+                {deckAdvice && (
+                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 flex flex-col justify-center text-xs">
+                    <span className="text-[10px] font-black uppercase text-amber-500 mb-1 flex items-center gap-1">
+                      <Compass size={11} aria-hidden="true" />
+                      <span>Güverte & Manzara Tavsiyesi</span>
+                    </span>
+                    <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">
+                      <strong>{deckAdvice.recommendedSideLabel}:</strong> {deckAdvice.summary}
+                    </p>
                   </div>
-
-                  {deckAdvice && (
-                    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 flex flex-col justify-center">
-                      <span className="text-[10px] font-black uppercase text-amber-500 mb-1 flex items-center gap-1">
-                        <Compass size={11} />
-                        <span>Güverte & Manzara Tavsiyesi</span>
-                      </span>
-                      <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">
-                        <strong>{deckAdvice.recommendedSideLabel}:</strong> {deckAdvice.summary}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                )}
 
                 {/* KÜLTÜREL VAPUR KİMLİĞİ VE İSKELE ATLASI BUTONLARI */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">

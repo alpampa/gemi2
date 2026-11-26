@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { CreditCard, QrCode, AlertTriangle, CheckCircle2, ChevronRight, RefreshCw } from "lucide-react";
 import { IstanbulkartWalletModal } from "@/components/wallet/IstanbulkartWalletModal";
+import { useHydrated } from "@/hooks/useHydrated";
+import { useLocalStorageValue, writeLocalStorageValue } from "@/hooks/useLocalStorageValue";
 
 interface TurnstileCheckBannerProps {
   tripPrice?: string; // e.g. "65,21 ₺" or "151,23 ₺"
@@ -13,25 +15,20 @@ interface TurnstileCheckBannerProps {
 export function TurnstileCheckBanner({ tripPrice = "65,21 ₺", originPier = "Kadıköy", isAdalar = false }: TurnstileCheckBannerProps) {
   const [balance, setBalance] = useState<number>(35.0);
   const [isWalletOpen, setIsWalletOpen] = useState<boolean>(false);
-  const [mounted, setMounted] = useState<boolean>(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem("vapur_simulated_balance");
-    if (saved) {
-      const val = parseFloat(saved);
-      if (!isNaN(val)) setBalance(val);
-    }
-  }, []);
+  const mounted = useHydrated();
+  // Simüle bakiye localStorage'da tutulur; dış depo olarak okunur.
+  const storedBalance = useLocalStorageValue("vapur_simulated_balance");
+  const storedBalanceValue = storedBalance === null ? Number.NaN : parseFloat(storedBalance);
+  const effectiveBalance = Number.isNaN(storedBalanceValue) ? balance : storedBalanceValue;
 
   // Fiyat metni Türkçe biçimde gelebilir: "151,23 ₺", "230 ₺", "—".
   const priceVal = parseFloat(tripPrice.replace(",", ".").replace(/[^0-9.]/g, "")) || (isAdalar ? 151.23 : 65.21);
-  const isInsufficient = balance < priceVal;
+  const isInsufficient = effectiveBalance < priceVal;
 
   const handleSimulateTopup = () => {
-    const newBal = balance + 50.0;
+    const newBal = effectiveBalance + 50.0;
     setBalance(newBal);
-    localStorage.setItem("vapur_simulated_balance", newBal.toString());
+    writeLocalStorageValue("vapur_simulated_balance", newBal.toString());
   };
 
   if (!mounted) return null;
@@ -69,9 +66,9 @@ export function TurnstileCheckBanner({ tripPrice = "65,21 ₺", originPier = "Ka
 
               <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug mt-0.5 truncate">
                 {isInsufficient ? (
-                  <>Mevcut Bakiyeniz: <strong>{balance.toFixed(2)} ₺</strong> (Sefer: <strong>{tripPrice}</strong>). Turnikede beklememek için QR kod açın.</>
+                  <>Mevcut Bakiyeniz: <strong>{effectiveBalance.toFixed(2)} ₺</strong> (Sefer: <strong>{tripPrice}</strong>). Turnikede beklememek için QR kod açın.</>
                 ) : (
-                  <>Mevcut Bakiyeniz: <strong>{balance.toFixed(2)} ₺</strong> (Sefer: <strong>{tripPrice}</strong>). Turnikeden doğrudan geçebilirsiniz.</>
+                  <>Mevcut Bakiyeniz: <strong>{effectiveBalance.toFixed(2)} ₺</strong> (Sefer: <strong>{tripPrice}</strong>). Turnikeden doğrudan geçebilirsiniz.</>
                 )}
               </p>
             </div>

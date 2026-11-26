@@ -3,6 +3,8 @@
 import { useState, useMemo } from "react";
 import { Ship, Clock, MapPin, Navigation, ChevronRight, Bell, BellRing, Sparkles } from "lucide-react";
 import type { ScheduleCardDto } from "@/lib/types/schedule";
+import { useTransitClock } from "@/hooks/useTransitClock";
+import { SLOW_TICK_INTERVAL_MS } from "@/lib/constants";
 import { resolveDynamicTrip } from "@/lib/utils/dynamic-trip";
 import { useAlarmStore } from "@/store/useAlarmStore";
 import { useLanguageStore } from "@/store/useLanguageStore";
@@ -38,9 +40,12 @@ export function PierDepartureBoard({
   const { isAlarmSet, toggleAlarm } = useAlarmStore();
   const { t } = useLanguageStore();
 
+  // Paylaşılan transit saati: render sırasında impure Date.now() çağrılmaz.
+  const { nowMs } = useTransitClock(SLOW_TICK_INTERVAL_MS, { serverTimeIso });
+
   // Find next 3 departures from activePier
   const nextDepartures = useMemo(() => {
-    const now = Date.now();
+    const now = nowMs;
     const matches: { schedule: ScheduleCardDto; dyn: ReturnType<typeof resolveDynamicTrip> }[] = [];
 
     for (const trip of schedules) {
@@ -48,7 +53,7 @@ export function PierDepartureBoard({
         trip.origin,
         trip.destination,
         trip.departureTime,
-        trip.targetTimeIso || new Date().toISOString(),
+        trip.targetTimeIso || new Date(nowMs).toISOString(),
         trip.stops,
         undefined,
         now,
@@ -70,7 +75,7 @@ export function PierDepartureBoard({
     matches.sort((a, b) => a.dyn.currentDepartureTime.localeCompare(b.dyn.currentDepartureTime));
 
     return matches.slice(0, 3);
-  }, [schedules, activePier, serverTimeIso]);
+  }, [schedules, activePier, serverTimeIso, nowMs]);
 
   return (
     <div className="px-3 pt-2">
@@ -192,10 +197,14 @@ export function PierDepartureBoard({
 
                   {/* Slot Footer: Platform & Price */}
                   <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-800 text-slate-400">
-                    <span className="flex items-center gap-1 font-semibold text-slate-300 truncate">
-                      <MapPin size={11} className="text-amber-400 shrink-0" />
-                      <span>{schedule.platform || "Ana Rıhtım"}</span>
-                    </span>
+                    {schedule.platform && schedule.platformSource !== "unknown" ? (
+                      <span className="flex items-center gap-1 font-semibold text-slate-300 truncate">
+                        <MapPin size={11} className="text-amber-400 shrink-0" aria-hidden="true" />
+                        <span>{schedule.platform}</span>
+                      </span>
+                    ) : (
+                      <span className="text-slate-500">Platform bilgisi yok</span>
+                    )}
                     <span className="font-mono font-bold text-emerald-400 shrink-0">
                       {schedule.price}
                     </span>

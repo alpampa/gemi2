@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useHydrated } from "@/hooks/useHydrated";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,11 +23,8 @@ export function SettingsSheet({ isOpen, onClose }: SettingsSheetProps) {
   const { t } = useLanguageStore();
   const { fontScale, setFontScale, touristMode, setTouristMode } = usePreferencesStore();
   const { activeSkinId, setSkinId } = useDashboardSkinStore();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!isOpen || !mounted) return null;
 

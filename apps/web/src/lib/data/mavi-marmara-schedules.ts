@@ -42,6 +42,13 @@ const EVERYDAY = { runsWeekday: true, runsSaturday: true, runsSunday: true };
 const NOT_SUNDAY_HOLIDAY = { runsWeekday: true, runsSaturday: true, runsSunday: false };
 const WEEKEND_ONLY = { runsWeekday: false, runsSaturday: true, runsSunday: true };
 
+/**
+ * Tarife sayfalarının okunduğu tarih (dosya başlığındaki "Erişim tarihi").
+ * Uydurma değildir; o gün resmî tarife sayfaları okunarak saatler çıkarıldı.
+ */
+const MM_VERIFIED_AT = "2026-10-04T00:00:00+03:00";
+const MM_SOURCE_URL = "https://www.mavimarmara.net/tarifeler/";
+
 // Resmi doğrulama 2026-10-18 (mavimarmara.net ana sayfa): İstanbul Kart
 // Tam 151,23 ₺ / Öğrenci 75,64 ₺ / Adakart 90,70 ₺. Kart başına Tam gösterilir.
 const MM_ADA_FARE = "151,23 ₺";
@@ -68,12 +75,18 @@ function buildTrip(
     departureTime,
     arrivalTime: addMinutes(departureTime, opts.arrivalOffsetMin),
     platform: opts.platform,
+    // VERİ KURALI: iskele/rıhtım adları resmî sayfada birebir yayımlanmış
+    // biçimiyle doğrulanamadı. Bu yüzden "official" iddia edilmez; arayüz
+    // platformSource === "unknown" olduğunda platform bilgisini gizler.
+    platformSource: "unknown",
     price: MM_ADA_FARE,
     ...(opts.dayType ?? EVERYDAY),
     stops: opts.stops?.map((s) => ({
       name: s.name,
       time: addMinutes(departureTime, s.offsetMin),
     })),
+    sourceUrl: MM_SOURCE_URL,
+    verifiedAt: MM_VERIFIED_AT,
   };
 }
 

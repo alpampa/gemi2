@@ -86,7 +86,7 @@ export function MarineAisRadarModal({
                 id="marine-registry-title"
                 className="text-sm font-black text-white truncate"
               >
-                Gemi Sicili ve Harici Canlı Takip
+                Gemi Sicili ve Harici Takip
               </h3>
               <p className="text-[11px] text-slate-400 mt-0.5">
                 {origin} → {destination} · uygulama içinde AIS konumu gösterilmez
@@ -109,7 +109,7 @@ export function MarineAisRadarModal({
               <p className="text-[11px] leading-relaxed text-amber-100">
                 Bu ekran <strong>gerçek AIS verisi kullanmaz</strong>. Simüle hız, ilerleme
                 veya gemi konumu gösterilmez. Geminin o anki fiziksel konumu için aşağıdaki
-                harici canlı takip bağlantılarını kullanın.
+                harici takip bağlantılarını kullanın.
               </p>
             </div>
 

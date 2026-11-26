@@ -6,6 +6,9 @@ import {
   kvDel,
   kvGet,
   kvGetJson,
+  kvGetJsonStrict,
+  kvIncrementWithTtl,
+  kvRunLuaJson,
   kvSet,
   kvSetJson,
   kvSetNx,
@@ -51,6 +54,20 @@ describe("kv-store — in-memory yedek", () => {
     const payload = { a: 1, b: ["x", "y"] };
     await kvSetJson("vapur:json", payload);
     expect(await kvGetJson("vapur:json")).toEqual(payload);
+  });
+
+  it("strict JSON read and Lua update do not claim shared storage without KV", async () => {
+    expect(await kvGetJsonStrict("vapur:missing")).toBeNull();
+    expect(await kvRunLuaJson("return '{}'", ["vapur:missing"], [])).toBeNull();
+  });
+
+  it("atomik hız sınırı sayacı memory modunda artar ve TTL ile sıfırlanır", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-19T10:00:00Z"));
+    expect(await kvIncrementWithTtl("vapur:rate-test", 60)).toBe(1);
+    expect(await kvIncrementWithTtl("vapur:rate-test", 60)).toBe(2);
+    vi.setSystemTime(new Date("2026-10-19T10:01:01Z"));
+    expect(await kvIncrementWithTtl("vapur:rate-test", 60)).toBe(1);
   });
 
   it("bozuk JSON null döner (çökmez)", async () => {

@@ -8,6 +8,8 @@ import { isIslandRoute } from "@/lib/data/piers";
 import { useAlarmStore } from "@/store/useAlarmStore";
 import { requestNotificationPermission } from "@/lib/utils/sound";
 import { triggerHaptic } from "@/lib/utils/haptics";
+import { useTransitClock } from "@/hooks/useTransitClock";
+import { SLOW_TICK_INTERVAL_MS } from "@/lib/constants";
 
 interface LastFerrySafeguardBannerProps {
   schedules: ScheduleCardDto[];
@@ -36,7 +38,10 @@ export function LastFerrySafeguardBanner({
   const { isAlarmSet, toggleAlarm } = useAlarmStore();
   const [alarmJustSet, setAlarmJustSet] = useState(false);
 
-  const serverMs = Date.parse(serverTimeIso) || Date.now();
+  // Paylaşılan transit saati: cihaz saati yerine sunucu damgasıyla senkron;
+  // render sırasında impure Date.now() çağrılmaz (React Compiler kuralı).
+  const { nowMs } = useTransitClock(SLOW_TICK_INTERVAL_MS, { serverTimeIso });
+  const serverMs = nowMs;
   const { hour, minute } = getIstanbulParts(serverMs);
   const nowTotalMins = hour < 4 ? (hour + 24) * 60 + minute : hour * 60 + minute;
 

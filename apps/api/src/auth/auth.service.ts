@@ -32,16 +32,25 @@ export class AuthService {
 
   // ---- config helpers ----
   private get accessSecret(): string {
-    return process.env.JWT_ACCESS_SECRET ?? 'dev_access_secret';
+    const secret = process.env.JWT_ACCESS_SECRET;
+    if (!secret) throw new Error('JWT_ACCESS_SECRET tanımlanmalıdır.');
+    return secret;
   }
   private get refreshSecret(): string {
-    return process.env.JWT_REFRESH_SECRET ?? 'dev_refresh_secret';
+    const secret = process.env.JWT_REFRESH_SECRET;
+    if (!secret) throw new Error('JWT_REFRESH_SECRET tanımlanmalıdır.');
+    return secret;
   }
   private get accessTtl(): JwtSignOptions['expiresIn'] {
     return (process.env.JWT_ACCESS_TTL ?? '15m') as JwtSignOptions['expiresIn'];
   }
   private get refreshTtl(): JwtSignOptions['expiresIn'] {
     return (process.env.JWT_REFRESH_TTL ?? '7d') as JwtSignOptions['expiresIn'];
+  }
+
+  private assertSecretsConfigured(): void {
+    void this.accessSecret;
+    void this.refreshSecret;
   }
 
   private hashToken(token: string): string {
@@ -79,6 +88,7 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto): Promise<AuthTokens> {
+    this.assertSecretsConfigured();
     const email = dto.email.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -94,6 +104,7 @@ export class AuthService {
   }
 
   async login(dto: LoginDto): Promise<AuthTokens> {
+    this.assertSecretsConfigured();
     const email = dto.email.trim().toLowerCase();
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || !user.active) {
@@ -119,6 +130,7 @@ export class AuthService {
    * kullanıcının tüm oturumları güvenlik gereği iptal edilir.
    */
   async refresh(refreshToken: string): Promise<AuthTokens> {
+    this.assertSecretsConfigured();
     let payload: { sub: string };
     try {
       payload = this.jwt.verify(refreshToken, { secret: this.refreshSecret });

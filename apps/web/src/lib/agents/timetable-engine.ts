@@ -1,39 +1,30 @@
 import { OFFICIAL_SCHEDULES_DATA, RawOfficialTrip } from '../data/official-schedules';
 import type { ScheduleCardDto, SchedulesResponse, TripStatus } from '@/lib/types/schedule';
-import { getOfficialRouteFare, resolveRealisticPlatform } from '@/lib/data/official-fares';
+import { getOfficialRouteFare } from '@/lib/data/official-fares';
 import { selfHealTripRecord } from '@/lib/agents/self-healing-engine';
 import { checkTurkishHoliday } from '@/lib/utils/holiday-calendar';
-import { istanbulIsoFor, compareHhmm, nightRolloverDayOffset } from '@/lib/utils/istanbul-time';
+import { getIstanbulParts, istanbulIsoFor, compareHhmm, nightRolloverDayOffset } from '@/lib/utils/istanbul-time';
+import { normalizePierName } from '@/lib/data/piers';
+import { resolveTripFreshness } from '@/lib/utils/data-freshness';
 
 /**
  * Returns current Istanbul time components (UTC+3)
  */
-export function getIstanbulTime() {
-  const now = new Date();
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Istanbul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  });
-  
-  const parts = formatter.formatToParts(now);
-  const map: Record<string, string> = {};
-  parts.forEach(p => { map[p.type] = p.value; });
+export function getIstanbulTime(nowMs: number = Date.now()) {
+  const now = new Date(nowMs);
 
-  const year = parseInt(map.year, 10);
-  const month = parseInt(map.month, 10);
-  const day = parseInt(map.day, 10);
-  const hour = parseInt(map.hour, 10);
-  const minute = parseInt(map.minute, 10);
+  // Tek kaynak: `getIstanbulParts`. Burada ayrı bir Intl formatter tutmak
+  // `hour12: false` → `h24` hatasını kopyalıyordu; gece yarısı saat 24
+  // okunduğunda gün türü (hafta içi/Cumartesi/Pazar) yanlış hesaplanabilirdi.
+  const parts = getIstanbulParts(nowMs);
+  const year = parts.year;
+  const month = parts.month;
+  const day = parts.day;
+  const hour = parts.hour;
+  const minute = parts.minute;
 
   // Day of week in Istanbul (0 = Sun, 1 = Mon, ..., 6 = Sat)
-  const istanbulDate = new Date(Date.UTC(year, month - 1, day, hour, minute));
-  const dayOfWeek = istanbulDate.getUTCDay();
+  const dayOfWeek = parts.dayOfWeek;
   const isSaturday = dayOfWeek === 6;
   const isSunday = dayOfWeek === 0;
   const isWeekend = isSaturday || isSunday;
@@ -94,18 +85,26 @@ function checkTripRunsOnDay(
  * Builds schedule DTOs for the current day and tags day-type availability
  * so users can also inspect Weekday / Saturday / Sunday-Holiday timetables.
  */
-export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
-  const ist = getIstanbulTime();
+export async function getLiveOrOfficialSchedules(options?: {
+  /**
+   * Değerlendirme anı (ms). Varsayılan `Date.now()` üretim davranışıdır.
+   * Saat enjekte edilebilir olduğunda tazelik kapısı takvimden bağımsız
+   * doğrulanabilir (aksi halde "FRESH" iddiası 2 gün sonra kendiliğinden
+   * "AGING" olur ve test zamanla kırılır).
+   */
+  nowMs?: number;
+}): Promise<SchedulesResponse> {
+  const nowMs = options?.nowMs ?? Date.now();
+  const ist = getIstanbulTime(nowMs);
   const yearStr = ist.year;
   const monthStr = String(ist.month).padStart(2, '0');
   const dayStr = String(ist.day).padStart(2, '0');
-  const nowMs = Date.now();
 
   // 1. Sanitize: veri kaynağındaki bozuk kayıtları temizle
   //   - departureTime "HH:mm" formatında değilse kayıt atlanır
   //   - origin/destination placeholder metin taşıyorsa atlanır (örn: "Sadece Hafta İçi...")
-  //   - varış < kalkış ve kalkış 17:00'den önceyse veri hatasıdır: varış temizlenir,
-  //     selfHealTripRecord gerçekçi seyir süresine göre yeniden hesaplar.
+  //   - varış < kalkış ve kalkış 17:00'den önceyse veri hatasıdır: resmî varış
+  //     temizlenir; selfHealTripRecord yalnızca "tahmini" alanı işaretler.
   //     17:00 sonrası kalkışta bu gece yarısını aşan gerçek seferdir, korunur.
   const sanitizedTrips: RawOfficialTrip[] = OFFICIAL_SCHEDULES_DATA
     .filter(trip => /^\d{2}:\d{2}$/.test(trip.departureTime))
@@ -117,9 +116,16 @@ export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
     )
     .map(trip => {
       // Ara durak temizliği: stops içinde kalkış veya varış iskelesiyle aynı isimde olanlar temizlenir
-      const cleanedStops = trip.stops?.filter(
-        st => st.name.trim() !== trip.origin.trim() && st.name.trim() !== trip.destination.trim()
-      );
+      // İSKELE ADI NORMALİZASYONU (tek ingest noktası): kaynaklar büyük harfli
+      // ad getirse bile (HEYBELİADA / KABATAŞ / SİRKECİ) filtrede tek kanonik
+      // ada çevrilir. Bilinmeyen ad AYNEN korunur; tahminle eşleme yapılmaz.
+      const canonOrigin = normalizePierName(trip.origin);
+      const canonDestination = normalizePierName(trip.destination);
+      const cleanedStops = trip.stops
+        ?.map((st) => ({ ...st, name: normalizePierName(st.name) }))
+        .filter(
+          st => st.name.trim() !== canonOrigin.trim() && st.name.trim() !== canonDestination.trim()
+        );
       const depHour = parseInt(trip.departureTime.slice(0, 2), 10);
       const hasBadArrival =
         !!trip.arrivalTime &&
@@ -128,12 +134,24 @@ export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
         depHour < 17;
       return {
         ...(hasBadArrival ? { ...trip, arrivalTime: undefined } : trip),
+        origin: canonOrigin,
+        destination: canonDestination,
         stops: cleanedStops && cleanedStops.length > 0 ? cleanedStops : undefined
       };
     });
 
-  // 2. Map raw official trips to full ScheduleCardDto with day-type flags
-  const schedules: ScheduleCardDto[] = sanitizedTrips.map((rawTrip) => {
+  // 2. Harita: ham resmî seferleri gün tipi bayraklarıyla tam DTO'ya çevir.
+  // TAZELİK KAPISI (AGENTS.md): doğrulama süresi SCHEDULE_EXPIRY_DAYS'i aşan
+  // kayıt yayımlanmaz. Tarihi BİLİNMEYEN kayıt gizlenmez (kanıtsız silme
+  // yapılmaz); "UNKNOWN" olarak işaretlenir ve kullanıcıya tarihi yok denir.
+  const assessedTrips = sanitizedTrips.map((trip) => ({
+    trip,
+    freshness: resolveTripFreshness(trip.verifiedAt, nowMs),
+  }));
+  const publishedTrips = assessedTrips.filter((x) => !x.freshness.isExpired);
+  const expiredCount = assessedTrips.length - publishedTrips.length;
+
+  const schedules: ScheduleCardDto[] = publishedTrips.map(({ trip: rawTrip, freshness }) => {
     const dayFlags = checkTripRunsOnDay(rawTrip, ist);
     const trip = selfHealTripRecord(rawTrip);
     const [hh, mm] = trip.departureTime.split(':');
@@ -146,6 +164,10 @@ export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
     const resolvedPrice = trip.operator === "Şehir Hatları"
       ? officialFare.fullFare
       : (operatorPrice ?? officialFare.fullFare);
+    const priceSource: "official-operator" | "official-fare-table" =
+      trip.operator !== "Şehir Hatları" && operatorPrice
+        ? "official-operator"
+        : "official-fare-table";
 
     // Gece seferi (00:00-04:59 kalkış) akşam saatlerinde (20:00+) görüntülenirken
     // kalkış yarına taşınır: 23:50'de 00:15 seferi "GİTTİ" değil "yaklaşan" olur.
@@ -195,12 +217,16 @@ export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
       status,
       delayText,
       targetTimeIso: targetIso,
-      platform: resolveRealisticPlatform(trip.origin, trip.destination, trip.operator),
+      platform: trip.platform ?? "",
+      platformSource: trip.platformSource ?? (trip.platform ? "official" : "unknown"),
       price: resolvedPrice,
+      priceSource,
       progress,
       category: trip.category || (trip.destination.includes('ada') || trip.origin.includes('ada') || trip.destination === 'Büyükada' || trip.origin === 'Büyükada' ? 'ADALAR' : 'BOGAZ'),
       stops: trip.stops && trip.stops.length > 0 ? trip.stops : undefined,
       arrivalTime: trip.arrivalTime,
+      derivedArrivalTime: trip.derivedArrivalTime,
+      arrivalSource: trip.arrivalSource ?? (trip.arrivalTime ? "official" : "unknown"),
       isContinuous: trip.isContinuous || undefined,
       continuousUntil: trip.continuousUntil,
       lineName: trip.lineName,
@@ -208,6 +234,8 @@ export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
       runsWeekday: dayFlags.runsWeekday,
       runsSaturday: dayFlags.runsSaturday,
       runsSunday: dayFlags.runsSunday,
+      verifiedAt: freshness.verifiedAt ?? undefined,
+      freshnessLevel: freshness.level,
     };
   });
 
@@ -217,9 +245,24 @@ export async function getLiveOrOfficialSchedules(): Promise<SchedulesResponse> {
     (a.targetTimeIso ?? a.departureTime).localeCompare(b.targetTimeIso ?? b.departureTime)
   );
 
+  const dated = publishedTrips
+    .map((x) => x.freshness.verifiedAt)
+    .filter((v): v is string => Boolean(v))
+    .sort();
+  const oldestVerifiedAt = dated[0] ?? null;
+  const newestVerifiedAt = dated[dated.length - 1] ?? null;
+
   return {
     serverTimeIso: ist.serverTimeIso,
     serverDateFormatted: ist.serverDateFormatted,
-    schedules
+    schedules,
+    dataQuality: {
+      totalCount: assessedTrips.length,
+      publishedCount: schedules.length,
+      expiredCount,
+      undatedCount: publishedTrips.filter((x) => x.freshness.level === "UNKNOWN").length,
+      oldestVerifiedAt,
+      newestVerifiedAt,
+    },
   };
 }

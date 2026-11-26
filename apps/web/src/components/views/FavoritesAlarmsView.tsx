@@ -6,6 +6,8 @@ import { Star, Bell, BellRing, Ship, Clock, ArrowRight, Trash2 } from "lucide-re
 import type { ScheduleCardDto } from "@/lib/types/schedule";
 import { ScheduleCard } from "@/components/schedule/ScheduleCard";
 import { useState } from "react";
+import { useTransitClock } from "@/hooks/useTransitClock";
+import { SLOW_TICK_INTERVAL_MS } from "@/lib/constants";
 import { TripDetailsSheet } from "@/components/schedule/TripDetailsSheet";
 
 interface FavoritesAlarmsViewProps {
@@ -18,6 +20,8 @@ export function FavoritesAlarmsView({ schedules, serverTimeIso, onNavigateToSche
   const { favorites, toggleFavorite } = useFavoritesStore();
   const { alarms, toggleAlarm } = useAlarmStore();
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleCardDto | null>(null);
+  // Kartlara paylaşılan saat damgası: her kart kendi Date.now() cagrisini yapmaz.
+  const { nowMs } = useTransitClock(SLOW_TICK_INTERVAL_MS, { serverTimeIso });
 
   // Filter schedules that match favorited routes: "Kadıköy → Karaköy"
   const favoritedSchedules = schedules.filter(s => {
@@ -179,13 +183,18 @@ export function FavoritesAlarmsView({ schedules, serverTimeIso, onNavigateToSche
                   status={schedule.status}
                   targetTimeIso={schedule.targetTimeIso}
                   serverTimeIso={serverTimeIso}
+                  nowMs={nowMs}
                   delayText={schedule.delayText}
                   vessel={schedule.vessel}
                   platform={schedule.platform}
+                  platformSource={schedule.platformSource}
                   price={schedule.price}
+                  priceSource={schedule.priceSource}
                   progress={schedule.progress}
                   stops={schedule.stops}
                   arrivalTime={schedule.arrivalTime}
+                  derivedArrivalTime={schedule.derivedArrivalTime}
+                  arrivalSource={schedule.arrivalSource}
                   onClick={() => setSelectedSchedule(schedule)}
                 />
               ))

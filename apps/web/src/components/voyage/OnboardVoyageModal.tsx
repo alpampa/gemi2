@@ -69,14 +69,14 @@ export function OnboardVoyageModal({
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-black text-white tracking-tight">
-                    CANLI GEMİ İÇİ SEYİR KOKPİTİ
+                    GEMİ İÇİ SEYİR REHBERİ
                   </h3>
-                  <span className="text-[9px] font-mono font-black bg-emerald-500 text-slate-950 px-1.5 py-0.2 rounded uppercase animate-pulse">
-                    ONBOARD AIS
+                  <span className="text-[9px] font-mono font-black bg-slate-600 text-white px-1.5 py-0.2 rounded uppercase">
+                    AIS YOK
                   </span>
                 </div>
                 <p className="text-xs text-slate-400 font-semibold">
-                  Telsiz (AIS) Eşleştirilmiş Canlı Gemi Telemetrisi & Emniyet Kartı
+                  Tarifeye dayalı seyir bilgisi & emniyet kartı (canlı GPS değil)
                 </p>
               </div>
             </div>

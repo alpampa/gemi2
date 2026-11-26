@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@/lib/utils/errors";
 /**
  * DENTUR AVRASYA — GERÇEK TARİFE PARSE ENGİNİ
  *
@@ -388,8 +389,8 @@ export async function scrapeAllDenturSchedules(): Promise<{
     try {
       const recs = await scrapeDenturLine(url, line);
       records.push(...recs);
-    } catch (err: any) {
-      failures.push({ line, error: err?.message || String(err) });
+    } catch (err: unknown) {
+      failures.push({ line, error: getErrorMessage(err, String(err)) });
     }
   }
 

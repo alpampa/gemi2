@@ -68,9 +68,12 @@ export class TrackingGateway
 
     if (!token) return false;
 
+    const secret = process.env.JWT_ACCESS_SECRET;
+    if (!secret) return false;
+
     try {
       this.jwt.verify(token, {
-        secret: process.env.JWT_ACCESS_SECRET ?? 'dev_access_secret',
+        secret,
       });
       return true;
     } catch {

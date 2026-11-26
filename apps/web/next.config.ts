@@ -10,10 +10,17 @@ const scriptSrc = [
 ];
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  /**
+   * `standalone` yalnızca Docker imajı için gerekir (apps/web/Dockerfile
+   * NEXT_OUTPUT=standalone ile derler). Standart `next build` normal çıktı
+   * üretir; böylece `next start`-tabanlı Playwright e2e kurulumu çalışır.
+   */
+  output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   transpilePackages: ['react-map-gl', 'mapbox-gl', 'zustand', 'framer-motion', 'lucide-react'],
   experimental: {
     cpus: 2,
+    // Güvenlik yükseltme işaretçisi (next upgrade --agent=security, 16.4.0 → 16.4.5)
+    agentUpgrade: "security",
   },
   async headers() {
     return [

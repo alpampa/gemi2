@@ -120,7 +120,7 @@ export function useTransitClock(intervalMs: number = 1000, options: TransitClock
     const now = new Date(Date.now() + (sharedOffsetMs ?? 0));
     return {
       nowMs: now.getTime(),
-      timeStr: now.toLocaleTimeString("tr-TR", { timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }),
+      timeStr: now.toLocaleTimeString("tr-TR", { timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }),
       dateStr: now.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "short", day: "numeric", month: "short" }),
       isTabVisible: typeof document !== "undefined" ? !document.hidden : true,
     };
@@ -135,7 +135,7 @@ export function useTransitClock(intervalMs: number = 1000, options: TransitClock
       const now = new Date(Date.now() + (sharedOffsetMs ?? 0));
       setClock({
         nowMs: now.getTime(),
-        timeStr: now.toLocaleTimeString("tr-TR", { timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }),
+        timeStr: now.toLocaleTimeString("tr-TR", { timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }),
         dateStr: now.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "short", day: "numeric", month: "short" }),
         isTabVisible: !document.hidden,
       });

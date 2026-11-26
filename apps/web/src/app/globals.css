@@ -158,8 +158,19 @@ body {
   justify-content: center;
 }
 
-button, a, input, select {
+button, a, input, select, textarea {
   touch-action: manipulation;
+}
+
+/*
+ * iOS ZOOM-ON-FOCUS DÜZELTMESİ (WCAG 1.4.4 uyumlu):
+ * Safari, 16px'ten küçük yazı tipine sahip bir alana odaklanınca sayfayı
+ * kendiliğinden yakınlaştırır. maximum-scale ile zoomu KİLİTLEMEK yerine
+ * form alanlarını 16px'e çıkarırız; böylece kullanıcı yine istediği kadar
+ * yakınlaştırabilir. Bileşen sınıfları Tailwind ile ezilemez (important).
+ */
+input, select, textarea {
+  font-size: 16px;
 }
 
 /* Glassmorphism utility */
@@ -518,6 +529,8 @@ html.text-scale-lg {
   .ferry-wave,
   .ferry-gull,
   .pier-anchor,
+  .animate-attention,
+  .animate-chip-flash,
   .animate-time-blink {
     animation: none;
   }
@@ -527,19 +540,58 @@ html.text-scale-lg {
    KALKIŞ SAATİ ACİL YANIP SÖNME — son 5 dakikada saatin kendisi yanıp söner.
    Kullanıcı kuralı: "EN YAKIN" rozeti kaldırıldı; en yakın seferi saatin
    net biçimde yanıp sönmesi belli eder (rozet değil, zamanın kendisi).
+
+   ÖNEMLİ (WCAG 1.4.3 + axe): opaklık animasyonu metni düşük fazda arka
+   plana karıştırır ve kontrast 1.5:1'e düşer. Bu nedenle yanıp sönme metnin
+   opaklığında değil, arka plandaki kırmızı hafif vurguda yapılır; harf
+   rengi her fazda sabit ve geçerli kontrastta kalır.
    ========================================================================== */
 @keyframes time-blink {
   0%,
   49.9% {
-    opacity: 1;
+    background-color: transparent;
   }
   50%,
   100% {
-    opacity: 0.28;
+    background-color: rgb(244 63 94 / 16%);
   }
 }
 
 .animate-time-blink {
   animation: time-blink 1.05s linear infinite;
-  will-change: opacity;
+  will-change: background-color;
+  border-radius: 6px;
+}
+
+/* ==========================================================================
+   DİKKAT ÇEKME (pulse yerine): metin opaklığını düşürmek yerine
+   (a) metin ışıması — text-shadow dekoratif, harf rengi ve kontrast sabit,
+   (b) çip halkası — box-shadow dekoratif, çip kendi renginde kalır.
+   ========================================================================== */
+@keyframes attention-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 0 rgb(0 0 0 / 0%);
+  }
+  50% {
+    text-shadow: 0 0 9px currentColor;
+  }
+}
+
+.animate-attention {
+  animation: attention-glow 1.4s ease-in-out infinite;
+}
+
+@keyframes chip-flash {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(244 63 94 / 55%);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgb(244 63 94 / 0%);
+  }
+}
+
+.animate-chip-flash {
+  animation: chip-flash 1.4s ease-in-out infinite;
 }

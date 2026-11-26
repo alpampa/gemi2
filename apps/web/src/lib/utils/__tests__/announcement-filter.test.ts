@@ -34,9 +34,15 @@ describe("isAnnouncementCurrent — iptal duyuruları yalnızca yayınlandığı
     expect(isAnnouncementCurrent(ann({ publishedAt: "17.10.2026" }), NOW)).toBe(false);
   });
 
-  it("tarihsiz canlı iptal kaydı (MM/Turyol popup) gösterilir", () => {
+  it("tarihsiz iptal kaydı GÖSTERİLMEZ (kaynak tarih vermediyse 'bugün' iddiası kurulamaz)", () => {
+    // Ürün sözleşmesi (announcement-filter.ts): iptal duyurusu ancak açık bir
+    // yayın tarihi taşıyorsa ve o tarih bugünse geçerlidir. Tarihsiz kaydı
+    // gösterip "bugün iptal var" demek, kaynağın söylemediği bir bilgiyi
+    // uydurmak olurdu. Canlı akışlarda (MM feed / Turyol popup) parsers
+    // `publishedAt` alanını kaynağın kendi tarihinden doldurur; bu yüzden
+    // gerçek kayıtlar tarihsiz kalmaz.
     const a = ann({ publishedAt: undefined });
-    expect(isAnnouncementCurrent(a, NOW)).toBe(true);
+    expect(isAnnouncementCurrent(a, NOW)).toBe(false);
   });
 
   it("tarihsiz kayıt tarama günüyle damgalanınca ertesi gün ELENİR", () => {

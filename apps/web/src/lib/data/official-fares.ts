@@ -92,6 +92,7 @@ const SH_PAIR_CLASS: Record<string, string> = {
   "anadolu hisari|istinye": "bogazUgramali", // Çengelköy-İstinye ring hattı durağı
   "beykoz|uskudar": "bogazUgramali",
   "bostanci|kabatas": "bogazUgramali", // Bostancı-Moda-Karaköy-Kabataş hattı
+  "bostanci|moda": "bogazUgramali", // Bostancı-Moda-Karaköy-Kabataş hattı
   "bostanci|karakoy": "bogazUgramali",
   "besiktas|rumelikavagi": "bogazUgramali",
   "besiktas|eyupsultan": "bogazUgramali", // Haliç hatları 76,90

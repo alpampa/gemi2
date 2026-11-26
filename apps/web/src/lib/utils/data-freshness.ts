@@ -7,7 +7,10 @@
  * tazelik İDDİA EDİLMEZ (level: UNKNOWN).
  *
  * EŞİKLER: Aşağıdaki değerler arayüz uyarı eşikleridir; resmî bir SLA değildir.
- * Senkronizasyon ajanı günde bir kez çalışır (Vercel cron: 0 22 * * *).
+ * - TARİFE: günlük senkron üzerinden gün sınıfı eşikler (FRESH_MAX_AGE_DAYS).
+ * - DUYURU/İPTAL: dakika sınıfında ayrı eşikler (resolveAnnouncementFreshness).
+ * Zamanlama tablosu: docs/DATA-SYNC.md (vercel.json 5 21 * * * UTC = 00:05 TR;
+ * Actions nightly 0 20 * * * UTC = 23:00 TR).
  */
 
 export type FreshnessLevel = "FRESH" | "AGING" | "STALE" | "UNKNOWN";
@@ -24,10 +27,97 @@ export interface DataFreshness {
   isStale: boolean;
 }
 
-/** 2 güne kadar taze (günlük cron + 1 gün tolerans) */
+/** Tarife verisi: 2 güne kadar taze (günlük senkron + 1 gün tolerans) */
 export const FRESH_MAX_AGE_DAYS = 2;
 /** 7 güne kadar "eskimekte"; üzeri "bayat" */
 export const AGING_MAX_AGE_DAYS = 7;
+
+/**
+ * Tarife kaydının YAYINDAN GİZLENME eşiği (gün).
+ *
+ * Uyarı eşiklerinden (2/7 gün) farklıdır: 7 günü geçen kayıt "bayat" olarak
+ * işaretlenir ama hâlâ gösterilir; 45 gün boyunca hiç doğrulanmamış kayıt ise
+ * artık güncel kabul edilmez ve sefer listesinden çıkarılır (AGENTS.md:
+ * "doğrulama süresi dolan sefer bilgisi gizlenmelidir").
+ *
+ * 45 gün gerekçesi: resmî tarifeler sezonluk (yaz/kış) dönemlerde sabit kalır;
+ * 45 gün, bir sezonluk dönemin büyük bölümünde hiçbir doğrulama yapılmadığı
+ * anlamına gelir ve gizleme için muhafazakâr bir alt sınırdır. Eşik tek
+ * kaynaktır; değiştirilirse docs/DATA-SYNC.md de güncellenmelidir.
+ */
+export const SCHEDULE_EXPIRY_DAYS = 45;
+
+// ---------- DUYURU TAZELİĞİ (dakika sınıfı; iptal duyuruları için) ----------
+
+/**
+ * Duyuru bu dakikaya kadar taze sayılır. Dakikalık izleme + saatlik tarama
+ * hattına göre [AGENTS.md doğrulama kuralı] "geçerli" sınıfın üst sınırı.
+ */
+export const ANNOUNCEMENT_FRESH_MAX_MIN = 90;
+/** Bu dakikayı aşan duyuru verisi BAYATTIR ve kırmızı uyarı gerektirir. */
+export const ANNOUNCEMENT_STALE_MIN = 360;
+
+export interface AnnouncementFreshness {
+  /** Doğrulamadan bu yana geçen dakika; bilinmiyorsa null */
+  ageMinutes: number | null;
+  level: FreshnessLevel;
+  /** "14:05" (istanbul) — bilinmiyorsa null */
+  verifiedLabel: string | null;
+  /** "12 dk önce" / "2 saat önce" / "7 saat önce" / "bilinmiyor" */
+  ageLabel: string;
+  /** STALE veya UNKNOWN — kırmızı uyarı gösterilmeli */
+  isStale: boolean;
+}
+
+/**
+ * Duyuru/iptal verisi için dakika sınıfı tazelik.
+ * Tarife tazeliğinden (gün sınıfı) AYRIDIR: bir iptal duyurusu 2 gün
+ * eskimişse felakettir, tarifeye göre "taze" gösterilmesi dürüst değildir.
+ */
+export function resolveAnnouncementFreshness(
+  generatedAtIso?: string | null,
+  nowMs: number = Date.now(),
+): AnnouncementFreshness {
+  const parsed = generatedAtIso ? Date.parse(generatedAtIso) : Number.NaN;
+
+  if (!Number.isFinite(parsed)) {
+    return {
+      ageMinutes: null,
+      level: "UNKNOWN",
+      verifiedLabel: null,
+      ageLabel: "doğrulama yok",
+      isStale: true,
+    };
+  }
+
+  const diffMinutes = Math.max(0, Math.floor((nowMs - parsed) / 60_000));
+  const hours = Math.floor(diffMinutes / 60);
+
+  const level: FreshnessLevel =
+    diffMinutes <= ANNOUNCEMENT_FRESH_MAX_MIN
+      ? "FRESH"
+      : diffMinutes <= ANNOUNCEMENT_STALE_MIN
+      ? "AGING"
+      : "STALE";
+
+  const ageLabel =
+    hours >= 1 ? `${hours} saat önce` : `${diffMinutes} dk önce`;
+
+  const TIME_FMT = new Intl.DateTimeFormat("tr-TR", {
+    timeZone: "Europe/Istanbul",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+
+  return {
+    ageMinutes: diffMinutes,
+    level,
+    verifiedLabel: TIME_FMT.format(parsed),
+    ageLabel,
+    isStale: level === "STALE",
+  };
+}
 
 const MS_PER_DAY = 86_400_000;
 
@@ -73,5 +163,35 @@ export function resolveDataFreshness(
     verifiedOnLabel: DATE_FORMATTER.format(parsed),
     ageLabel,
     isStale: level === "STALE",
+  };
+}
+
+export interface TripFreshness {
+  /** Kaydın kendi doğrulama damgası; yoksa null */
+  verifiedAt: string | null;
+  ageDays: number | null;
+  level: FreshnessLevel;
+  /** "5 Kasım 2026" — bilinmiyorsa null */
+  verifiedOnLabel: string | null;
+  /** SCHEDULE_EXPIRY_DAYS aşıldı mı? (yayından çıkarılmalı) */
+  isExpired: boolean;
+}
+
+/**
+ * Sefer/tarife kaydı için tazelik. Doğrulama tarihi yoksa seviye UNKNOWN'dır:
+ * kayıt "taze" sayılmaz ama uydurma bir tarih de üretilmez. Gizleme kararı
+ * yalnızca tarihi BİLİNEN ve eşiği aşan kayıtlar için verilir.
+ */
+export function resolveTripFreshness(
+  verifiedAt?: string | null,
+  nowMs: number = Date.now(),
+): TripFreshness {
+  const base = resolveDataFreshness(verifiedAt, nowMs);
+  return {
+    verifiedAt: base.ageDays == null ? null : (verifiedAt ?? null),
+    ageDays: base.ageDays,
+    level: base.level,
+    verifiedOnLabel: base.verifiedOnLabel,
+    isExpired: base.ageDays != null && base.ageDays > SCHEDULE_EXPIRY_DAYS,
   };
 }

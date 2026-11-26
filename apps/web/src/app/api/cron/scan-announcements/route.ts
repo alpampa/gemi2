@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLiveScan } from "@/lib/agents/live-scan-cache";
 import { verifyCronAuth } from "@/lib/utils/cron-auth";
+import { checkBostanciOfficialSources } from "@/lib/agents/bostanci-schedule-watch";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
+  const scheduleSources = await checkBostanciOfficialSources();
   const scan = await getLiveScan({ force: true });
   if (!scan) {
     return NextResponse.json(
@@ -39,5 +41,6 @@ export async function GET(request: NextRequest) {
     failed,
     noSource,
     announcementCount: scan.snapshots.reduce((n, s) => n + s.announcements.length, 0),
+    scheduleSources,
   });
 }
