@@ -23,6 +23,15 @@
 const CACHE_NAME = 'vapur-cache-v10';
 const RUNTIME_MAX_ENTRIES = 60;
 const NAVIGATION_TIMEOUT_MS = 3000;
+/**
+ * Önbellekte kabuk YOKKEN ağ için tanınan ek süre.
+ *
+ * `NAVIGATION_TIMEOUT_MS` yalnızca "hızlı kabuk" sözleşmesidir; bu süre
+ * dolduğunda çevrimdışı olduğumuz anlamına GELMEZ. Sunucu yavaş ama
+ * sağlıklıyken "Çevrimdışısınız" göstermemek için ağ sonucu bu süre kadar
+ * daha beklenir.
+ */
+const LATE_NETWORK_GRACE_MS = 15000;
 
 /**
  * TEST KANCASI — yapay ağ gecikmesi (ms).
@@ -32,7 +41,7 @@ const NAVIGATION_TIMEOUT_MS = 3000;
  * Service Worker'ın kendi `fetch()` isteğini görmez (belgelenmiş kısıt), bu
  * yüzden gecikme testten ağ katmanına enjekte edilemiyor. Bu kanca, gecikmeyi
  * SW'nin fetch yoluna ekleyerek 3000 ms'lik GERÇEK zaman aşımı yarışını
- * (Promise.race + navigationFallback) deterministik biçimde test edilebilir
+ *  (Promise.race + önbellek yedeği) deterministik biçimde test edilebilir
  * kılar. Üretimde hiçbir istemci bu mesajı göndermez; varsayılan 0'dır.
  */
 let testNetworkDelayMs = 0;
@@ -135,8 +144,13 @@ function withShellMarker(response) {
   });
 }
 
-/** Çevrimdışı kabuk: istenen belge, sonra kök, sonra minimal HTML. */
-async function navigationFallback(req) {
+/**
+ * Önbellekteki kabuk: istenen belge, sonra kök. Yoksa `null` döner.
+ *
+ * ÖNEMLİ: `null` "çevrimdışı" demek DEĞİLDİR. Yalnızca "hızlı sunacak
+ * önbelleklenmiş kabuk yok" demektir; karar `handleNavigation` verir.
+ */
+async function cachedShellResponse(req) {
   const cached = await caches.match(req, { ignoreVary: true });
   if (cached) return withShellMarker(cached);
 
@@ -145,6 +159,11 @@ async function navigationFallback(req) {
     (await caches.match(new URL('/', req.url).href, { ignoreVary: true }));
   if (rootFallback) return withShellMarker(rootFallback);
 
+  return null;
+}
+
+/** Son çare: gerçekten çevrimdışıyken gösterilen minimal sayfa (503). */
+function offlinePageResponse() {
   return new Response(
     '<!doctype html><html lang="tr"><head><meta charset="utf-8">' +
       '<meta name="viewport" content="width=device-width, initial-scale=1">' +
@@ -189,9 +208,25 @@ async function handleNavigation(event) {
   const winner = await Promise.race([networkPromise, timeout]);
   if (winner) return winner;
 
-  // Ağ yavaş/ölü: önce önbellekten sun, ağ isteğini arka planda sürdür.
+  // 3 sn doldu: yavaş ağ. Önce önbellekteki kabuk sunulur (sözleşme).
   event.waitUntil(networkPromise.catch(() => {}));
-  return navigationFallback(req);
+  const cachedShell = await cachedShellResponse(req);
+  if (cachedShell) return cachedShell;
+
+  /**
+   * Önbellekte kabuk YOK. Burada "çevrimdışısınız" demek için kanıt gerekir:
+   * sunucu yavaş ama SAĞLIKLI olabilir (ana sayfa SSR'ı ~3.8 MB; yük altında
+   * 3 sn'yi aşması normal). Eski davranış bu durumda doğrudan 503 çevrimdışı
+   * sayfası döndürüyordu — çalışan bağlantıda "Çevrimdışısınız" yalanı ve
+   * hidrasyonu hiç çalışmayan boş bir belge. Ağ sonucu ek bir süre beklenir;
+   * çevrimdışı sayfası yalnızca ağ GERÇEKTEN başarısızsa gösterilir.
+   */
+  const late = await Promise.race([
+    networkPromise,
+    new Promise((resolve) => setTimeout(() => resolve(null), LATE_NETWORK_GRACE_MS)),
+  ]);
+  if (late) return late;
+  return offlinePageResponse();
 }
 
 /** Hash'li Next.js varlıkları: cache-first (içerik değişmez). */

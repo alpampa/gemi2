@@ -128,4 +128,36 @@ test.describe("Service Worker — zayıf ağ dayanıklılığı", () => {
     expect(elapsed).toBeLessThan(5500);
     await expect(page.locator("body")).toBeVisible();
   });
+
+  /**
+   * REGRESYON: "yavaş sunucu" ile "çevrimdışı" AYNI ŞEY DEĞİLDİR.
+   *
+   * Önbellekte kabuk yokken 3 sn'lik hızlı-kabuk bütçesi dolduğunda eski kod
+   * doğrudan 503 "Çevrimdışısınız" sayfası döndürüyordu. Ana sayfanın SSR'ı
+   * ~3.8 MB olduğu için yük altında 3 sn'yi aşması normal; sonuç, ÇALIŞAN
+   * bağlantıda kullanıcıya "çevrimdışısınız" denmesi ve hidrasyonu hiç
+   * çalışmayan boş bir belge (tema niteliği bile yok). Bu test o yolu kilitler:
+   * kabuk önbellekte YOKKEN yavaş ağ yanıtı yine de gerçek sayfa olmalı.
+   */
+  test("kabuk önbellekte yokken yavaş ağ çevrimdışı sayfası göstermez", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded", timeout: 90_000 });
+    await waitForServiceWorkerControl(page);
+
+    // Bu gezinme SW tarafından yakalanmadığı için "/" önbellekte OLMAMALI.
+    const cachedShell = await page.evaluate(async () => {
+      const hit = await caches.match("/", { ignoreVary: true });
+      return Boolean(hit);
+    });
+    expect(cachedShell, "ön koşul: kabuk önbellekte olmamalı").toBe(false);
+
+    // Ağ isteğini 6 sn geciktir: 3 sn'lik hızlı-kabuk bütçesi kesin aşılır.
+    await setSwNetworkDelay(page, 6000);
+
+    const res = await page.reload({ waitUntil: "domcontentloaded", timeout: 40_000 });
+    expect(res?.status(), "gerçek sunucu yanıtı dönmeli").toBe(200);
+    expect(res?.headers()["x-vapur-shell"]).not.toBe("offline");
+    await expect(page.getByRole("navigation", { name: "Ana gezinme" })).toBeVisible({
+      timeout: 30_000,
+    });
+  });
 });
