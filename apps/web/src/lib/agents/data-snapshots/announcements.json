@@ -1,85 +1,277 @@
 {
-  "generatedAt": "2026-10-29T14:20:00.000Z",
-  "failures": [],
+  "generatedAt": "2026-11-26T19:00:17.175Z",
+  "failures": [
+    {
+      "operator": "Şehir Hatları",
+      "error": "Kaynak alınamadı — direct: HTTP 403: https://sehirhatlari.istanbul/tr/iptal-seferler | allorigins: The operation was aborted due to timeout | codetabs: The operation was aborted due to timeout"
+    }
+  ],
   "coverage": [
     {
       "operator": "Şehir Hatları",
-      "status": "SCANNED",
+      "status": "FAILED",
       "url": "https://sehirhatlari.istanbul/tr/iptal-seferler",
-      "announcementCount": 1,
-      "latencyMs": 320,
-      "via": "direct"
+      "error": "Kaynak alınamadı — direct: HTTP 403: https://sehirhatlari.istanbul/tr/iptal-seferler | allorigins: The operation was aborted due to timeout | codetabs: The operation was aborted due to timeout",
+      "latencyMs": 16248
     },
     {
       "operator": "Dentur Avrasya",
       "status": "SCANNED",
       "url": "https://www.denturavrasya.com/tr-TR/duyurular",
-      "announcementCount": 0,
-      "latencyMs": 290,
+      "announcementCount": 19,
+      "latencyMs": 341,
       "via": "direct"
     },
     {
       "operator": "Mavi Marmara",
       "status": "SCANNED",
-      "url": "https://mavimarmara.net/",
+      "url": "https://durum.mavimarmara.net/feed.json",
       "announcementCount": 0,
-      "latencyMs": 260,
-      "via": "direct"
+      "latencyMs": 1298,
+      "via": "jina"
     },
     {
       "operator": "Turyol",
       "status": "SCANNED",
       "url": "https://turyol.com/Home/AktifPopupDuyurulari",
       "announcementCount": 0,
-      "latencyMs": 240,
+      "latencyMs": 1403,
       "via": "direct"
     },
     {
       "operator": "İDO",
       "status": "NO_SOURCE",
-      "note": "ido.com.tr resmî duyuru sayfası mevcut; bugün (29.10.2026) Adalar hattında iptal bulunmamaktadır."
+      "note": "ido.com.tr resmî duyuru sayfası mevcut; ancak makine-okunur iptal duyurusu ayrıştırıcısı henüz doğrulanmadığı için canlı tarama kapsamına alınmadı."
     },
     {
       "operator": "Prens Tur",
       "status": "NO_SOURCE",
-      "note": "Resmi sitede duyuru bölümü yok (prenstur.net). 2026-2027 Kış Tarifesi normal olarak uygulanmaktadır."
+      "note": "Resmi sitede duyuru bölümü yok: prenstur.net/duyurular, /duyuru.html, /haberler.html → tümü 404. Tarife yalnızca JPEG afiş; iptal duyurusu web'de yayınlanmıyor."
     }
   ],
   "sources": [
     {
-      "operator": "Şehir Hatları",
-      "fetchedAt": "2026-10-29T14:20:00.000Z",
-      "sourceUrl": "https://sehirhatlari.istanbul/tr/iptal-seferler",
+      "operator": "Dentur Avrasya",
+      "fetchedAt": "2026-11-26T19:00:00.927Z",
+      "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular",
       "announcements": [
         {
-          "id": "sh-status-29.10.2026",
-          "operator": "Şehir Hatları",
-          "title": "Sefer Durumu — 29.10.2026",
-          "body": "İptal seferimiz bulunmamaktadır.",
+          "id": "den-duyurusu-besiktas-kadikoy-sefer-duyurusu",
+          "operator": "Dentur Avrasya",
+          "title": "Beşiktaş - Kadıköy Sefer Duyurusu",
           "type": "INFO",
-          "affectedLines": [],
-          "publishedAt": "29.10.2026",
-          "publishedAtSource": "SOURCE",
-          "sourceUrl": "https://sehirhatlari.istanbul/tr/iptal-seferler",
-          "sourceVerified": true
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/besiktas-kadikoy-sefer-duyurusu",
+          "sourceVerified": true,
+          "body": "Sayın Yolcularımız, Bölgemizde etkili olan olumsuz hava koşulları (lodos) nedeniyle, yolcu ve seyir güvenliği gereği Beşiktaş - Kadıköy hattındaki",
+          "publishedAt": "23.11.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-kabatas-uskudar-besiktas-besiktas-kadikoy-uskudar-kabatas",
+          "operator": "Dentur Avrasya",
+          "title": "Üsküdar - Beşiktaş & Beşiktaş - Kadıköy & Üsküdar - Kabataş",
+          "type": "INFO",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/uskudar-besiktas-besiktas-kadikoy-uskudar-kabatas",
+          "sourceVerified": true,
+          "body": "Değerli yolcularımız, Üsküdar - Beşiktaş & Üsküdar - Kabataş & Beşiktaş - Kadıköy seferlerimiz kontrollü olarak devam etmektedir. Anlayışınız için",
+          "publishedAt": "20.11.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-iptali-heybeli-ada-buyukada-sefer-iptali",
+          "operator": "Dentur Avrasya",
+          "title": "Heybeli Ada - Büyükada Sefer İptali",
+          "type": "CANCELLED_TRIPS",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/heybeli-ada-buyukada-sefer-iptali",
+          "sourceVerified": true,
+          "body": "Değerli yolcularımız, Emniyet tedbirleri kapsamında, hava muhalefeti (olumsuz hava ve deniz koşulları) nedeniyle adalar seferlerimiz gün boyu iptal",
+          "publishedAt": "19.11.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-iptali-heybeli-ada-buyuk-ada-sefer-iptali",
+          "operator": "Dentur Avrasya",
+          "title": "Heybeli Ada - Büyük Ada Sefer İptali",
+          "type": "CANCELLED_TRIPS",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/heybeli-ada-buyuk-ada-sefer-iptali",
+          "sourceVerified": true,
+          "body": "Değerli yolcularımız, Emniyet tedbirleri kapsamında, hava muhalefeti (olumsuz hava ve deniz koşulları) nedeniyle adalar seferlerimiz gün boyu iptal",
+          "publishedAt": "14.11.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-duyurusu-sefer-iptalleri-duyurusu",
+          "operator": "Dentur Avrasya",
+          "title": "Sefer İptalleri Duyurusu",
+          "type": "CANCELLED_TRIPS",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/sefer-iptalleri-duyurusu",
+          "sourceVerified": true,
+          "body": "Değerli yolcularımız, Emniyet tedbirleri kapsamında, hava muhalefeti (olumsuz hava ve deniz koşulları) nedeniyle Beşiktaş - Kadıköy ve Heybeli Ada -",
+          "publishedAt": "13.11.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-iptali-11-kasim-heybeli-ada-buyuk-ada-sefer-iptali",
+          "operator": "Dentur Avrasya",
+          "title": "11 Kasım - Heybeli Ada - Büyük Ada Sefer İptali",
+          "type": "CANCELLED_TRIPS",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/11-kasim-heybeli-ada-buyuk-ada-sefer-iptali",
+          "sourceVerified": true,
+          "body": "Değerli yolcularımız, Emniyet tedbirleri kapsamında, hava muhalefeti (olumsuz hava ve deniz koşulları) nedeniyle adalar seferlerimiz gün boyu iptal",
+          "publishedAt": "11.11.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-iptali-10-kasim-heybeli-ada-buyuk-ada-sefer-iptali",
+          "operator": "Dentur Avrasya",
+          "title": "10 Kasım Heybeli Ada - Büyük Ada Sefer İptali",
+          "type": "CANCELLED_TRIPS",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/10-kasim-heybeli-ada-buyuk-ada-sefer-iptali",
+          "sourceVerified": true,
+          "body": "Değerli yolcularımız, hava muhalefeti (olumsuz hava ve deniz koşulları) nedeniyle adalar seferlerimiz gün boyu iptal edilmiştir. Emniyet tedbirleri",
+          "publishedAt": "10.11.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-iptali-5-kasim-heybeli-ada-buyuk-ada-sefer-iptali",
+          "operator": "Dentur Avrasya",
+          "title": "5 Kasım Heybeli Ada - Büyük Ada Sefer İptali",
+          "type": "CANCELLED_TRIPS",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/5-kasim-heybeli-ada-buyuk-ada-sefer-iptali",
+          "sourceVerified": true,
+          "body": "Değerli yolcularımız, hava muhalefeti (olumsuz hava ve deniz koşulları) nedeniyle adalar seferlerimiz gün boyu iptal edilmiştir. Emniyet tedbirleri",
+          "publishedAt": "05.11.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-iptali-19-ekim-heybeli-ada-buyuk-ada-sefer-iptali",
+          "operator": "Dentur Avrasya",
+          "title": "19 Ekim Heybeli Ada - Büyük Ada Sefer İptali",
+          "type": "CANCELLED_TRIPS",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/19-ekim-heybeli-ada-buyuk-ada-sefer-iptali",
+          "sourceVerified": true,
+          "body": "19 Ekim 2026 Değerli yolcularımız, hava muhalefeti (olumsuz hava ve deniz koşulları) nedeniyle adalar seferlerimiz gün boyu iptal edilmiştir.",
+          "publishedAt": "19.10.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-pazar-yalova-adalar-cuma-cumartesi-pazar",
+          "operator": "Dentur Avrasya",
+          "title": "Yalova Adalar - Cuma - Cumartesi - Pazar",
+          "type": "INFO",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/yalova-adalar-cuma-cumartesi-pazar",
+          "sourceVerified": true,
+          "body": "Yalova Adalar Seferimiz, Yoğun Talep ve istek üzerine, Cuma, Cumartesi ve Pazar günleri için düzenlenmiştir, biletlerinizi web sitemizden satın",
+          "publishedAt": "22.07.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-hk-15-temmuz-yalova-adalar-sefer-bilgilendirmesi-hk",
+          "operator": "Dentur Avrasya",
+          "title": "15 Temmuz Yalova - Adalar Sefer Bilgilendirmesi hk",
+          "type": "INFO",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/15-temmuz-yalova-adalar-sefer-bilgilendirmesi-hk",
+          "sourceVerified": true,
+          "body": "Değerli Yolcularımız, 15 Temmuz Çarşamba günü için Yalova - Adalar ek seferimiz oluşturulmuştur, web sitemiz üzerinden biletlerinizi satın",
+          "publishedAt": "13.07.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-ici-yalova-adalar-besiktas-kabatas-hafta-ici",
+          "operator": "Dentur Avrasya",
+          "title": "Yalova Adalar - Beşiktaş Kabataş Hafta İçi",
+          "type": "INFO",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/yalova-adalar-besiktas-kabatas-hafta-ici",
+          "sourceVerified": true,
+          "body": "Sayın Yolcularımız, Beşiktaş - Kabataş Kalkışlı Yalova Adalar Seferimiz Cuma Günü için açılmıştır. Biletlerinizi sitemizden satın alabilirsiniz. İyi",
+          "publishedAt": "02.07.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-bilgilendirmesi-yalova-adalar-besiktas-ve-kabatas-sefer-bilgilendirmesi",
+          "operator": "Dentur Avrasya",
+          "title": "Yalova - Adalar - Beşiktaş ve Kabataş Sefer Bilgilendirmesi",
+          "type": "INFO",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/yalova-adalar-besiktas-ve-kabatas-sefer-bilgilendirmesi",
+          "sourceVerified": true,
+          "body": "Değerli Yolcularımız, Yalova - Adalar Bilet Satışlarımız Başlamıştır, Biletlerinizi Web Sitemiz üzerinden Satın Alabilirsiniz.",
+          "publishedAt": "25.06.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-bedava-14-subat-sevgililer-gunu-1-bogaz-turu-1-bilet-alana-1-bilet-bedava",
+          "operator": "Dentur Avrasya",
+          "title": "14 Şubat Sevgililer Günü 1 Boğaz Turu 1 Bilet Alana 1 Bilet Bedava",
+          "type": "INFO",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/14-subat-sevgililer-gunu-1-bogaz-turu-1-bilet-alana-1-bilet-bedava",
+          "sourceVerified": true,
+          "body": "Değerli müşterilerimiz, Sevgililer Gününde, Sevgiliniz ile Mükemmel bir deneyim yaşamak için 1 Boğaz Turu bileti alana 1 Boğaz Turu bileti bedava",
+          "publishedAt": "14.02.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-unutmadik-6-subat-2023-unutmadik",
+          "operator": "Dentur Avrasya",
+          "title": "6 Şubat 2023... UNUTMADIK..",
+          "type": "INFO",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/6-subat-2023-unutmadik",
+          "sourceVerified": true,
+          "publishedAt": "06.02.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-ocak-sefer-durumu-bilgilendirmesi-8-ocak",
+          "operator": "Dentur Avrasya",
+          "title": "Sefer Durumu Bilgilendirmesi 8 Ocak",
+          "type": "SCHEDULE_CHANGE",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/sefer-durumu-bilgilendirmesi-8-ocak",
+          "sourceVerified": true,
+          "body": "Değerli Yolcularımız, Hava Muhalefeti nedeniyle Üsküdar - Beşiktaş , Üsküdar - Kabataş, Kabataş - Üsküdar. Üsküdar, Kabataş ve Beşiktaş Boğaz turu",
+          "publishedAt": "08.01.2026",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-tarifesi-yilbasi-gecesi-tarifesi",
+          "operator": "Dentur Avrasya",
+          "title": "Yılbaşı Gecesi Tarifesi...",
+          "type": "SCHEDULE_CHANGE",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/yilbasi-gecesi-tarifesi",
+          "sourceVerified": true,
+          "publishedAt": "30.12.2025",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-baslamistir-turk-gecesi-ve-sunset-tur-satislarimiz-baslamistir",
+          "operator": "Dentur Avrasya",
+          "title": "TÜRK GECESİ VE SUNSET TUR SATIŞLARIMIZ BAŞLAMIŞTIR.",
+          "type": "INFO",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/turk-gecesi-ve-sunset-tur-satislarimiz-baslamistir",
+          "sourceVerified": true,
+          "publishedAt": "24.12.2025",
+          "publishedAtSource": "SOURCE"
+        },
+        {
+          "id": "den-projesi-dentur-x-sifir-emisyonlu-yapay-zeka-destekli-otonom-elektrik-tahrikli-yolcu-gemisi-projesi",
+          "operator": "Dentur Avrasya",
+          "title": "DENTUR X sıfır emisyonlu, yapay zeka destekli otonom elektrik tahrikli yolcu gemisi projesi",
+          "type": "INFO",
+          "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular/dentur-x-sifir-emisyonlu-yapay-zeka-destekli-otonom-elektrik-tahrikli-yolcu-gemisi-projesi",
+          "sourceVerified": true,
+          "body": "Dentur Grup ve Ayden Marine iş birliğiyle geliştirilecek DENTUR X sıfır emisyonlu, yapay zeka destekli otonom sistemleriyle donatılmış Türkiye’nin",
+          "publishedAt": "10.08.2025",
+          "publishedAtSource": "SOURCE"
         }
       ]
     },
     {
-      "operator": "Dentur Avrasya",
-      "fetchedAt": "2026-10-29T14:20:00.000Z",
-      "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular",
-      "announcements": []
-    },
-    {
       "operator": "Mavi Marmara",
-      "fetchedAt": "2026-10-29T14:20:00.000Z",
-      "sourceUrl": "https://mavimarmara.net/",
+      "fetchedAt": "2026-11-26T19:00:00.927Z",
+      "sourceUrl": "https://durum.mavimarmara.net/feed.json",
       "announcements": []
     },
     {
       "operator": "Turyol",
-      "fetchedAt": "2026-10-29T14:20:00.000Z",
+      "fetchedAt": "2026-11-26T19:00:00.927Z",
       "sourceUrl": "https://turyol.com/Home/AktifPopupDuyurulari",
       "announcements": []
     }
