@@ -309,6 +309,8 @@ export function ScheduleCard(props: ScheduleCardProps) {
       <>
         <div
           onClick={handleCardClick}
+          data-trip-id={props.id}
+          data-cancelled={isCancelled ? "true" : undefined}
           className={`relative rounded-xl px-2.5 py-1.5 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 transition-all cursor-pointer border group shadow-2xs focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 ${
             isCancelled
               ? "border-rose-500/70 bg-rose-50/50 dark:bg-rose-950/20 text-slate-800 dark:text-slate-200"
@@ -335,7 +337,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
             <span
               className={`font-mono font-black text-sm sm:text-base tabular-nums leading-none ${
                 isCancelled
-                  ? "line-through text-rose-500"
+                  ? "line-through text-rose-700 dark:text-rose-400"
                   : dynState.isDeparted
                   ? "text-slate-400 dark:text-slate-500"
                   : isLastMinute
@@ -393,11 +395,11 @@ export function ScheduleCard(props: ScheduleCardProps) {
           {/* Orta: Güzergah + Operatör + Durak & Gece Rozetleri */}
           <div className="relative z-10 flex flex-wrap sm:flex-nowrap items-center gap-1.5 min-w-0 w-full sm:flex-1 text-xs">
             <OperatorLogo operator={props.operator} size="sm" showName={false} />
-            <span title={dynState.currentOrigin} className={`font-bold whitespace-normal break-words max-w-[42%] sm:max-w-none ${isCancelled ? "line-through text-slate-400" : ""}`}>
+            <span title={dynState.currentOrigin} className={`font-bold whitespace-normal break-words max-w-[42%] sm:max-w-none ${isCancelled ? "line-through text-slate-600 dark:text-slate-300" : ""}`}>
               {dynState.currentOrigin}
             </span>
             <span className="text-blue-500 dark:text-blue-400 font-black text-[10px] shrink-0">→</span>
-            <span title={dynState.destination} className={`font-bold whitespace-normal break-words max-w-[42%] sm:max-w-none ${isCancelled ? "line-through text-slate-400" : "text-blue-700 dark:text-blue-300"}`}>
+            <span title={dynState.destination} className={`font-bold whitespace-normal break-words max-w-[42%] sm:max-w-none ${isCancelled ? "line-through text-slate-600 dark:text-slate-300" : "text-blue-700 dark:text-blue-300"}`}>
               {routeDestinationDisplay}
             </span>
 
@@ -459,6 +461,8 @@ export function ScheduleCard(props: ScheduleCardProps) {
   return (
     <div
       onClick={handleCardClick}
+      data-trip-id={props.id}
+      data-cancelled={isCancelled ? "true" : undefined}
       className={`relative rounded-2xl px-3 py-2.5 flex flex-col gap-1.5 transition-all duration-150 cursor-pointer group border active:scale-[0.99] touch-manipulation focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 ${
         props.isFeaturedHero
           ? "bg-[#0b1528] text-white border-slate-700/90 ring-1 ring-cyan-500/30 shadow-2xl"
@@ -532,7 +536,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
               <span
                 className={`font-mono font-black text-xl sm:text-2xl leading-none tabular-nums tracking-tight transition-all ${
                   isCancelled
-                    ? "line-through text-rose-500 dark:text-rose-400 font-bold opacity-80"
+                    ? "line-through text-rose-700 dark:text-rose-400 font-bold"
                     : dynState.isDeparted
                     ? "text-slate-400 dark:text-slate-500"
                     : isLastMinute
@@ -609,7 +613,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
           </div>
 
           {isCancelled && props.delayText && (
-            <div className="text-[10px] font-bold text-rose-600 dark:text-rose-400 mt-0.5 truncate">
+            <div className="text-[10px] font-bold text-rose-700 dark:text-rose-300 mt-0.5 truncate">
               <AlertTriangle size={10} className="inline mr-0.5" aria-hidden="true" /> {props.delayText}
             </div>
           )}
@@ -715,6 +719,7 @@ export function ScheduleCard(props: ScheduleCardProps) {
           arrivalTime={props.arrivalTime}
           stops={props.stops}
           operator={props.operator}
+          onDark={Boolean(props.isFeaturedHero)}
           underway={dynState.underway}
           soonDeparturePier={!isOtherDayPreview && dynState.countdown && !dynState.isDeparted ? dynState.currentOrigin : null}
         />

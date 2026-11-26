@@ -172,7 +172,7 @@ export function ServiceDataTrustBar({
         {needsOperatorCheck && !loading && (
           <span
             role="status"
-            className="hidden md:inline text-[10px] font-black text-rose-600 dark:text-rose-400 truncate shrink-0"
+            className="hidden md:inline text-[10px] font-black text-rose-700 dark:text-rose-400 truncate shrink-0"
           >
             ⚠ Duyurular {announcementFresh.ageLabel} doğrulandı; iptal bilgisi eksik olabilir
           </span>

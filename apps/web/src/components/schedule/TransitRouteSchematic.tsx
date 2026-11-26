@@ -20,6 +20,14 @@ interface TransitRouteSchematicProps {
   underway?: UnderwaySegment | null;
   /** Kalkışına ≤5 dk kalan iskele — şeritte saati yanıp söner */
   soonDeparturePier?: string | null;
+  /**
+   * Şema KOYU bir kartın içinde mi? Öne çıkan (hero) kart teması ne olursa
+   * olsun `bg-[#0b1528]` kullanır; `dark:` varyantları açık temada devreye
+   * girmediği için durak adları koyu zeminde koyu kalıp okunamıyordu
+   * (`text-slate-900` → 1.02:1). Bu bayrak, zemin gerçekten koyuyken metni
+   * temadan bağımsız olarak açık renge sabitler.
+   */
+  onDark?: boolean;
 }
 
 /**
@@ -49,6 +57,7 @@ export function TransitRouteSchematic({
   operator,
   underway,
   soonDeparturePier,
+  onDark = false,
 }: TransitRouteSchematicProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const shipRef = useRef<HTMLDivElement | null>(null);
@@ -174,8 +183,12 @@ export function TransitRouteSchematic({
                       title={isSoonPier ? `${stop.name} kalkışı yaklaşıyor` : undefined}
                       className={`text-[9px] sm:text-[9.5px] font-mono tabular-nums leading-none mb-2 ${
                         isSoonPier
-                          ? "font-black text-amber-600 dark:text-amber-400 animate-attention"
-                          : "font-bold text-slate-500 dark:text-slate-400"
+                          ? onDark
+                            ? "font-black text-amber-300 animate-attention"
+                            : "font-black text-amber-800 dark:text-amber-300 animate-attention"
+                          : onDark
+                            ? "font-bold text-slate-400"
+                            : "font-bold text-slate-500 dark:text-slate-400"
                       }`}
                     >
                       {stop.time}
@@ -196,10 +209,16 @@ export function TransitRouteSchematic({
                   <span
                     className={`text-[10px] mt-1 font-bold whitespace-nowrap leading-none ${
                       isSoonPier
-                        ? "font-black text-amber-700 dark:text-amber-300 animate-attention"
+                        ? onDark
+                          ? "font-black text-amber-300 animate-attention"
+                          : "font-black text-amber-800 dark:text-amber-300 animate-attention"
                         : isFirst || isLast
-                        ? "text-slate-900 dark:text-white font-extrabold"
-                        : "text-slate-600 dark:text-slate-400 font-medium"
+                        ? onDark
+                          ? "text-white font-extrabold"
+                          : "text-slate-900 dark:text-white font-extrabold"
+                        : onDark
+                          ? "text-slate-300 font-medium"
+                          : "text-slate-600 dark:text-slate-400 font-medium"
                     }`}
                   >
                     {stop.name}
