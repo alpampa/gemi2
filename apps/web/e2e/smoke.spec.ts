@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { gotoReady, waitForHydration } from "./hydration";
+import { gotoReady } from "./hydration";
 
 /**
  * Duman testleri: üretim build'i üzerinde kritik kullanıcı akışları.
@@ -15,13 +15,19 @@ import { gotoReady, waitForHydration } from "./hydration";
 async function openSettings(page: Page) {
   const mobileTools = page.getByRole("button", { name: "Hızlı Araçlar Menüsü" });
   if (await mobileTools.isVisible()) {
-    await mobileTools.click();
+    // NEDEN `force`: başlık saati/sayaç her saniye yeniden çiziliyor; WebKit'te
+    // paralel yük altında Playwright'ın "iki ardışık karede aynı kutu" kararlılık
+    // kontrolü hiç sağlanmıyor ve tıklama 90 sn bekliyordu (tam matriste bir kez).
+    // Bu adım bir HAZIRLIK adımıdır, iddia değil: ayarlar çekmecesinin gerçekten
+    // açıldığı hemen ardından `Görünüm Modu` ve tema kartı iddialarıyla
+    // doğrulanır. Kararlılık kontrolü atlanır, görünürlük/etkinlik korunur.
+    await mobileTools.click({ force: true });
     await page
       .getByRole("button", { name: /Görünüm ve erişilebilirlik ayarları/ })
-      .click();
+      .click({ force: true });
     return;
   }
-  await page.getByRole("button", { name: "Ayarlar" }).click();
+  await page.getByRole("button", { name: "Ayarlar" }).click({ force: true });
 }
 
 test("Ana sayfa: sefer listesi, güven şeridi ve alt menü görünür", async ({ page }) => {
@@ -71,18 +77,27 @@ test("Sefer detayı: çekmece açılır, Aktarma sekmesinde yürüme takibi gör
   // Kalkışını yeni geçmiş kart ("HAREKET ETTİ", 30 sn'lik pencere) listede kendi
   // kronolojik yerinde kalır ve ilk sırada olabilir; detay akışı için listedeki
   // ilk KALKMAMIŞ seferi seç (kullanıcı da yaklaşan sefere dokunur).
-  const cards = page.getByRole("button", { name: /seferi, detay için açın/ });
+  //
+  // SEÇİM SIRAYLA DEĞİL KİMLİKLE YAPILIR: liste her saniye geri sayıma göre
+  // yeniden sıralanıyor. Sıra numarasıyla seçmek, `innerText()` ile okuma ve
+  // `click()` arasında hedefin BAŞKA bir karta kaymasına yol açıyordu (paralel
+  // yükte tam matriste bir kez kırıldı). `data-trip-id` sıralamadan bağımsızdır.
+  const cards = page.locator("[data-trip-id]");
   await expect(cards.first()).toBeVisible({ timeout: 10000 });
-  const cardCount = await cards.count();
-  let targetIndex = 0;
-  for (let i = 0; i < Math.min(cardCount, 15); i++) {
-    const text = await cards.nth(i).innerText();
-    if (!text.includes("HAREKET ETTİ")) {
-      targetIndex = i;
-      break;
-    }
-  }
-  await cards.nth(targetIndex).click();
+
+  const candidates = await cards.evaluateAll((nodes) =>
+    nodes
+      .map((n) => ({
+        id: n.getAttribute("data-trip-id"),
+        text: n.textContent ?? "",
+      }))
+      .filter((c): c is { id: string; text: string } => Boolean(c.id))
+  );
+  const target = candidates.find((c) => !c.text.includes("HAREKET ETTİ"));
+  expect(target, "detayı açılacak kalkmamış sefer bulunamadı").toBeTruthy();
+
+  const targetCard = page.locator(`[data-trip-id="${target!.id}"]`).first();
+  await targetCard.getByRole("button", { name: /detay için açın/ }).click();
 
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible({ timeout: 10000 });
@@ -151,7 +166,15 @@ test("Tema kalıcılığı: Gün Işığı modu seçilir ve yenilemede korunur",
   } catch {
     await page.goto("/", { waitUntil: "domcontentloaded", timeout: 30_000 });
   }
-  await waitForHydration(page);
+  /**
+   * HİDRASYON BEKLENMEZ. Bu testin sözleşmesi "tema tercihi yeni belgede
+   * korunur"; tema `data-theme` niteliğine head'deki satır içi betikle
+   * uygulanır, React'e bağlı değildir. Buna karşılık SW devri sırasında
+   * reload geçiş belgesi döndürebiliyor ve bu belgede hidrasyon hiç
+   * çalışmıyor (yukarıdaki notun aynı kök nedeni) — burada hidrasyon
+   * beklemek, ölçülen sözleşmeyle ilgisiz bir kırılganlık ekliyordu.
+   * İlk gezinmede `gotoReady` hidrasyonu zaten kanıtlıyor.
+   */
   await expect(page.locator("html")).toHaveAttribute("data-theme", "sun-contrast", {
     timeout: 20_000,
   });
