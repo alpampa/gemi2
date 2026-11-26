@@ -3,6 +3,8 @@
  * Centralized, deterministic calculations for voyage schedules, countdowns, and midnight crossings.
  */
 
+import { getIstanbulParts } from "@/lib/utils/istanbul-time";
+
 export interface VoyageTiming {
   minutesRemaining: number;
   secondsRemaining: number;
@@ -36,32 +38,15 @@ export function resolveVoyageTiming(
   }
 
   const [depH, depM] = departureTime.split(":").map(Number);
-  const now = new Date(nowMs);
 
-  // Use Europe/Istanbul timezone components for accurate evaluation
-  const istFormatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Europe/Istanbul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
-
-  const parts = istFormatter.formatToParts(now);
-  const map: Record<string, string> = {};
-  parts.forEach((p) => {
-    map[p.type] = p.value;
-  });
-
-  const currentYear = parseInt(map.year, 10);
-  const currentMonth = parseInt(map.month, 10) - 1;
-  const currentDay = parseInt(map.day, 10);
-  const currentH = parseInt(map.hour, 10);
-  const currentM = parseInt(map.minute, 10);
-  const currentS = parseInt(map.second, 10);
+  // Tek kaynak: `getIstanbulParts`. Burada ayrı bir Intl formatter tutmak,
+  // `hour12: false` → `h24` hatasının ikinci bir kopyasını üretiyordu
+  // (gece yarısı saat 24 okununca "currentH >= 20" dalı yanlışlıkla
+  // devreye girip sayımı bir gün kaydırıyordu).
+  const current = getIstanbulParts(nowMs);
+  const currentH = current.hour;
+  const currentM = current.minute;
+  const currentS = current.second;
 
   const currentTotalSec = currentH * 3600 + currentM * 60 + currentS;
   const depTotalSec = depH * 3600 + depM * 60;

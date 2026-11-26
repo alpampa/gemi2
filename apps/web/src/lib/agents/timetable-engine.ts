@@ -3,7 +3,7 @@ import type { ScheduleCardDto, SchedulesResponse, TripStatus } from '@/lib/types
 import { getOfficialRouteFare } from '@/lib/data/official-fares';
 import { selfHealTripRecord } from '@/lib/agents/self-healing-engine';
 import { checkTurkishHoliday } from '@/lib/utils/holiday-calendar';
-import { istanbulIsoFor, compareHhmm, nightRolloverDayOffset } from '@/lib/utils/istanbul-time';
+import { getIstanbulParts, istanbulIsoFor, compareHhmm, nightRolloverDayOffset } from '@/lib/utils/istanbul-time';
 import { normalizePierName } from '@/lib/data/piers';
 import { resolveTripFreshness } from '@/lib/utils/data-freshness';
 
@@ -12,30 +12,19 @@ import { resolveTripFreshness } from '@/lib/utils/data-freshness';
  */
 export function getIstanbulTime(nowMs: number = Date.now()) {
   const now = new Date(nowMs);
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Istanbul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  });
-  
-  const parts = formatter.formatToParts(now);
-  const map: Record<string, string> = {};
-  parts.forEach(p => { map[p.type] = p.value; });
 
-  const year = parseInt(map.year, 10);
-  const month = parseInt(map.month, 10);
-  const day = parseInt(map.day, 10);
-  const hour = parseInt(map.hour, 10);
-  const minute = parseInt(map.minute, 10);
+  // Tek kaynak: `getIstanbulParts`. Burada ayrı bir Intl formatter tutmak
+  // `hour12: false` → `h24` hatasını kopyalıyordu; gece yarısı saat 24
+  // okunduğunda gün türü (hafta içi/Cumartesi/Pazar) yanlış hesaplanabilirdi.
+  const parts = getIstanbulParts(nowMs);
+  const year = parts.year;
+  const month = parts.month;
+  const day = parts.day;
+  const hour = parts.hour;
+  const minute = parts.minute;
 
   // Day of week in Istanbul (0 = Sun, 1 = Mon, ..., 6 = Sat)
-  const istanbulDate = new Date(Date.UTC(year, month - 1, day, hour, minute));
-  const dayOfWeek = istanbulDate.getUTCDay();
+  const dayOfWeek = parts.dayOfWeek;
   const isSaturday = dayOfWeek === 6;
   const isSunday = dayOfWeek === 0;
   const isWeekend = isSaturday || isSunday;

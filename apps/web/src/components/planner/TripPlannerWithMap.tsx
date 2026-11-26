@@ -41,7 +41,7 @@ export function TripPlannerWithMap({ schedules, serverTimeIso, onClose }: TripPl
       timeZone: 'Europe/Istanbul',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      hourCycle: 'h23'
     });
     const parts = formatter.format(now).split(':');
     const currMinutes = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);

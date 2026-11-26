@@ -39,7 +39,7 @@ const TIME_FORMATTER = new Intl.DateTimeFormat("tr-TR", {
   timeZone: "Europe/Istanbul",
   hour: "2-digit",
   minute: "2-digit",
-  hour12: false,
+  hourCycle: "h23",
 });
 
 export function ServiceDataTrustBar({

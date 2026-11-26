@@ -141,7 +141,14 @@ export function BoardTvMode({
 
   const clockLabel = useMemo(() => {
     try {
-      return new Date(nowMs).toLocaleTimeString("tr-TR", { hour12: false });
+      // Saat alanları açıkça istenir: `hourCycle` yalnızca `hour` verildiğinde
+      // dikkate alınır. `tr-TR` varsayılanı gece yarısını "24:00:00" gösterir.
+      return new Date(nowMs).toLocaleTimeString("tr-TR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23",
+      });
     } catch {
       return "--:--:--";
     }

@@ -589,7 +589,7 @@ export function ScheduleListClient({
     let currentMinutes = 0;
     if (!isTimetablePreviewMode) {
       const parts = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit", hour12: false,
+        timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
       }).format(new Date(now)).split(":");
       currentMinutes = Number(parts[0]) * 60 + Number(parts[1]);
     }
@@ -742,7 +742,7 @@ export function ScheduleListClient({
         timeZone: "Europe/Istanbul",
         hour: "2-digit",
         minute: "2-digit",
-        hour12: false,
+        hourCycle: "h23",
       });
       const parts = formatter.format(new Date(now)).split(":");
       currMinutes = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);

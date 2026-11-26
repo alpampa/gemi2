@@ -32,7 +32,11 @@ const ISTANBUL_PARTS_FORMATTER = new Intl.DateTimeFormat("en-CA", {
   hour: "2-digit",
   minute: "2-digit",
   second: "2-digit",
-  hour12: false,
+  // `hour12: false` KULLANILMAZ: locale'in varsayılan saat döngüsüne düşer ve
+  // ICU sürümüne göre `h23` (00–23) yerine `h24` (01–24) seçilebilir. Aynı
+  // kod Node 24'te gece yarısını "00:05", Node 20'de "24:05" veriyordu
+  // (CI'da iki test kırıldı). `h23` açıkça istenir, yoruma yer bırakmaz.
+  hourCycle: "h23",
 });
 
 /** Şu anki İstanbul saatini parçalara ayırır. */
@@ -46,7 +50,11 @@ export function getIstanbulParts(nowMs: number = Date.now()): IstanbulParts {
   const year = parseInt(map.year, 10);
   const month = parseInt(map.month, 10);
   const day = parseInt(map.day, 10);
-  const hour = parseInt(map.hour, 10);
+  // Savunma: bir ICU uygulaması yine `h24` döndürürse 24:00 → 00:00 kabul
+  // edilir. Saat alanı sözleşme gereği her zaman 0–23'tür; aksi halde
+  // "24:02" gibi yolcuya gösterilemeyecek bir saat üretilir.
+  const rawHour = parseInt(map.hour, 10);
+  const hour = rawHour === 24 ? 0 : rawHour;
   const minute = parseInt(map.minute, 10);
   const second = parseInt(map.second, 10);
 

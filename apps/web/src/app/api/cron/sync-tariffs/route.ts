@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   );
 
   const now = new Date();
-  const istanbulTimeStr = now.toLocaleTimeString("tr-TR", { timeZone: "Europe/Istanbul", hour12: false });
+  const istanbulTimeStr = now.toLocaleTimeString("tr-TR", { timeZone: "Europe/Istanbul", hourCycle: "h23" });
   const istanbulDateStr = now.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" });
 
   try {
