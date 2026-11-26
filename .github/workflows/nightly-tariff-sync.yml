@@ -35,16 +35,28 @@ jobs:
         working-directory: .
 
       # 1. CANLI DENTUR TARİFESİNİ ÇEK ve dentur-schedules.json'i birebir yeniden üret
+      #
+      # `continue-on-error`: iki kaynak BİRBİRİNDEN BAĞIMSIZDIR. Önceden Dentur
+      # adımı düşünce duyuru adımı hiç çalışmıyordu; yani tek kaynağın arızası
+      # diğerinin de doğrulama damgasını durduruyordu. Artık ikisi de denenir,
+      # sonuç özet tablosunda ayrı ayrı raporlanır ve en sonda iş akışı yine
+      # kırmızıya çevrilir (hata sessizce yutulmaz).
       - name: Dentur tarifesini canlı çek (resmi site)
+        id: dentur
+        continue-on-error: true
         run: GENERATE_DENTUR=1 npx vitest run src/lib/agents/__tests__/generate-dentur-data.test.ts
 
       # 2. CANLI DUYURULARI ÇEK (Şehir Hatları iptal-seferler + Dentur duyurular)
       - name: Duyuruları canlı çek (resmi siteler)
+        id: announcements
+        if: always()
+        continue-on-error: true
         run: GENERATE_ANNOUNCEMENTS=1 npx vitest run src/lib/agents/__tests__/generate-announcements.test.ts
 
       # 3. Değişiklik olup olmadığını git diff üzerinden kontrol et
       - name: Değişiklik var mı kontrol et
         id: diff
+        if: always()
         run: |
           echo "changed=$(git status --porcelain -- src/lib/data/dentur-schedules.json src/lib/agents/data-snapshots/announcements.json src/lib/agents/data-snapshots/fingerprints.json | wc -l)" >> "$GITHUB_OUTPUT"
 
@@ -61,4 +73,24 @@ jobs:
       - name: Özet raporla
         if: always()
         run: |
-          echo "Senkron tamamlandı. Değişiklik: ${{ steps.diff.outputs.changed }} dosya."
+          {
+            echo "## Gecelik senkron özeti"
+            echo ""
+            echo "| Kaynak | Sonuç |"
+            echo "| --- | --- |"
+            echo "| Dentur tarifesi | ${{ steps.dentur.outcome }} |"
+            echo "| Duyurular | ${{ steps.announcements.outcome }} |"
+            echo ""
+            echo "Değişen dosya sayısı: ${{ steps.diff.outputs.changed }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Kaynak doğrulanamadıysa iş akışı KIRMIZI olmalı. `continue-on-error`
+      # yalnızca yukarıdaki adımların birbirini engellememesi içindir; hata
+      # burada açıkça tekrar yükseltilir (AGENTS.md: sessiz yutma yok).
+      - name: Doğrulanamayan kaynak varsa kırmızıya çevir
+        if: always() && (steps.dentur.outcome == 'failure' || steps.announcements.outcome == 'failure')
+        run: |
+          echo "::error::Bir veya daha fazla resmî kaynak doğrulanamadı (adım loglarına bakın)."
+          echo "Veri dosyaları DEĞİŞTİRİLMEDİ. Yolcuya son doğrulanmış veri gösterilmeye devam eder;"
+          echo "tazelik süresi (SCHEDULE_EXPIRY_DAYS) dolunca kayıtlar yayımdan kalkar."
+          exit 1
