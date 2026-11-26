@@ -7,6 +7,10 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import {
+  marqueeDurationSec,
+  resolveMarqueeLayout,
+} from "@/lib/utils/marquee-policy";
 
 interface MarqueeTickerProps {
   children: ReactNode;
@@ -100,24 +104,22 @@ export function MarqueeTicker({
     const measure = () => {
       // Tek kopya genişliği doğrudan ilk kopyadan okunur (kopya sayısından
       // bağımsız). `track / 2` yaklaşımı koşullu kopyayla salınım üretirdi.
-      const singleCopyWidth = copy.scrollWidth;
-      const overflows = singleCopyWidth > outer.clientWidth + 1;
+      const layout = resolveMarqueeLayout({
+        copyWidthPx: copy.scrollWidth,
+        containerWidthPx: outer.clientWidth,
+        prefersReducedMotion: prefersReduced,
+      });
       // Akış kararı ile taşma durumu ayrı tutulur: "hareketi azalt" tercihinde
       // akış kapalıdır ama içerik taşıyorsa kaydırma bölgesi klavyeyle
       // erişilebilir olmalıdır.
-      setScrollable(overflows);
-      const shouldFlow = !prefersReduced && overflows;
-      setFlowing(shouldFlow);
-      if (shouldFlow) {
-        setDurationSec(
-          Math.max(22, Math.round(singleCopyWidth / speedPxPerSec))
-        );
-      }
-      if (cycleTimer) clearTimeout(cycleTimer);
-      const durSec = shouldFlow
-        ? Math.max(22, Math.round(singleCopyWidth / speedPxPerSec))
+      setScrollable(layout.overflows);
+      setFlowing(layout.flowing);
+      const durSec = layout.flowing
+        ? marqueeDurationSec(copy.scrollWidth, speedPxPerSec)
         : 0;
-      scheduleCycle(shouldFlow, durSec);
+      if (layout.flowing) setDurationSec(durSec);
+      if (cycleTimer) clearTimeout(cycleTimer);
+      scheduleCycle(layout.flowing, durSec);
     };
 
     measure();
