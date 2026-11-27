@@ -327,7 +327,10 @@ export function parseUskudarServiceWindows(block: string): DenturServiceWindow[]
       endTime: range[2],
       note: (afterRange ?? "")
         .replace(/\s+/g, " ")
-        .replace(/^arası\s+/i, "")
+        .trim()
+        // Kaynak cümlesi "<aralık> arası <açıklama>" biçiminde; aralık ayrı
+        // alanda taşındığı için baştaki "arası" bağlacı düşürülür.
+        .replace(/^aras[ıi]\s+/i, "")
         .trim(),
     });
   }

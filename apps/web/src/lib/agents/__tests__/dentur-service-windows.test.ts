@@ -31,7 +31,7 @@ describe("Üsküdar–Kabataş özel servis pencereleri", () => {
     expect(rush?.startTime).toBe("16:00");
     expect(rush?.endTime).toBe("18:30");
     expect(rush?.label).toContain("Akşam Yoğun Saat");
-    expect(rush?.note).toContain("aralıksız sürekli ring");
+    expect(rush?.note).toBe("aralıksız sürekli ring seferi yapılmaktadır.");
 
     // Yoğun saat kaynakta HAFTA İÇİ için yazılı; pazar kaydına iliştirilmez
     // (olmayan bir hizmet iddia edilmemeli).

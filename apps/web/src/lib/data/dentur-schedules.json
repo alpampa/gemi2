@@ -1,7 +1,7 @@
 {
   "operator": "Dentur Avrasya",
   "sourceBase": "https://www.denturavrasya.com/tr-TR/hatlarimiz/*",
-  "generatedAt": "2026-11-27T09:10:32.016Z",
+  "generatedAt": "2026-11-27T09:16:48.744Z",
   "scrapedAtUserAgent": "Vapur-Sync-Agent/3.0 (resmi denturavrasya.com sayfalarından birebir)",
   "note": "Sayfalarda birebir yazılı saatler kaydedildi; 'Sürekli Sefer' pencereleri isContinuous ile işaretlidir, sahte dakika üretilmedi.",
   "failures": [],
@@ -1070,7 +1070,7 @@
           "label": "Akşam Yoğun Saat",
           "startTime": "16:00",
           "endTime": "18:30",
-          "note": "arası aralıksız sürekli ring seferi yapılmaktadır."
+          "note": "aralıksız sürekli ring seferi yapılmaktadır."
         },
         {
           "kind": "NIGHT",
@@ -1140,7 +1140,7 @@
           "label": "Sabah Yoğun Saat",
           "startTime": "08:10",
           "endTime": "09:10",
-          "note": "arası aralıksız sürekli ring seferi yapılmaktadır."
+          "note": "aralıksız sürekli ring seferi yapılmaktadır."
         },
         {
           "kind": "NIGHT",
