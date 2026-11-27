@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-27T02:41:16.757Z",
+  "generatedAt": "2026-11-27T08:03:09.813Z",
   "failures": [
     {
       "operator": "Şehir Hatları",
@@ -12,14 +12,14 @@
       "status": "FAILED",
       "url": "https://sehirhatlari.istanbul/tr/iptal-seferler",
       "error": "Kaynak alınamadı — direct: HTTP 403: https://sehirhatlari.istanbul/tr/iptal-seferler | allorigins: The operation was aborted due to timeout | codetabs: The operation was aborted due to timeout",
-      "latencyMs": 16294
+      "latencyMs": 16414
     },
     {
       "operator": "Dentur Avrasya",
       "status": "SCANNED",
       "url": "https://www.denturavrasya.com/tr-TR/duyurular",
       "announcementCount": 19,
-      "latencyMs": 342,
+      "latencyMs": 381,
       "via": "direct"
     },
     {
@@ -27,7 +27,7 @@
       "status": "SCANNED",
       "url": "https://durum.mavimarmara.net/feed.json",
       "announcementCount": 0,
-      "latencyMs": 1031,
+      "latencyMs": 1338,
       "via": "jina"
     },
     {
@@ -35,7 +35,7 @@
       "status": "SCANNED",
       "url": "https://turyol.com/Home/AktifPopupDuyurulari",
       "announcementCount": 0,
-      "latencyMs": 1076,
+      "latencyMs": 1419,
       "via": "direct"
     },
     {
@@ -52,7 +52,7 @@
   "sources": [
     {
       "operator": "Dentur Avrasya",
-      "fetchedAt": "2026-11-27T02:41:00.462Z",
+      "fetchedAt": "2026-11-27T08:02:53.398Z",
       "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular",
       "announcements": [
         {
@@ -265,13 +265,13 @@
     },
     {
       "operator": "Mavi Marmara",
-      "fetchedAt": "2026-11-27T02:41:00.462Z",
+      "fetchedAt": "2026-11-27T08:02:53.398Z",
       "sourceUrl": "https://durum.mavimarmara.net/feed.json",
       "announcements": []
     },
     {
       "operator": "Turyol",
-      "fetchedAt": "2026-11-27T02:41:00.462Z",
+      "fetchedAt": "2026-11-27T08:02:53.398Z",
       "sourceUrl": "https://turyol.com/Home/AktifPopupDuyurulari",
       "announcements": []
     }
