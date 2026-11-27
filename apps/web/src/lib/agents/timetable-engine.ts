@@ -229,6 +229,7 @@ export async function getLiveOrOfficialSchedules(options?: {
       arrivalSource: trip.arrivalSource ?? (trip.arrivalTime ? "official" : "unknown"),
       isContinuous: trip.isContinuous || undefined,
       continuousUntil: trip.continuousUntil,
+      serviceFrequencyLabel: trip.serviceFrequencyLabel,
       lineName: trip.lineName,
       runsToday: dayFlags.runsToday,
       runsWeekday: dayFlags.runsWeekday,

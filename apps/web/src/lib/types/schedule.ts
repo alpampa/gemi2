@@ -46,6 +46,11 @@ export interface ScheduleCardDto {
   isContinuous?: boolean;
   /** Sürekli sefer pencere bitişi (HH:mm) */
   continuousUntil?: string;
+  /**
+   * Resmî kaynakta yazılı sıklık metni (örn. "10 dakikada bir").
+   * Saat listesi değildir; olduğu gibi gösterilir.
+   */
+  serviceFrequencyLabel?: string;
   /** Hat adı */
   lineName?: string;
 

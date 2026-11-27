@@ -57,7 +57,8 @@ export function PierDepartureBoard({
         trip.stops,
         undefined,
         now,
-        serverTimeIso
+        serverTimeIso,
+        trip.isContinuous ? trip.continuousUntil : undefined
       );
 
       if (dyn.isExpired) continue;

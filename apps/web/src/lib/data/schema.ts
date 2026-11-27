@@ -43,6 +43,8 @@ export const rawOfficialTripSchema = z
     runsSunday: z.boolean().optional(),
     isContinuous: z.boolean().optional(),
     continuousUntil: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+    /** Resmî kaynakta yazılı sıklık metni (saat listesi değildir). */
+    serviceFrequencyLabel: z.string().min(1).optional(),
     lineName: z.string().optional(),
     sourceUrl: z.string().url().optional(),
     verifiedAt: z.string().optional(),

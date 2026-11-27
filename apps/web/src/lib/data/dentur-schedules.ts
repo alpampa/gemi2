@@ -37,8 +37,10 @@ const DAY_TYPE_RUNS: Record<
 };
 
 // Resmi doğrulama 2026-10-18: denturavrasya.com/api/Tour/7/routes (Heybeli Ada
-// Büyük Ada turu) → 200 ₺. Şehir içi hatların (Üsküdar-Beşiktaş/Kabataş,
-// Beşiktaş-Kadıköy) ücreti resmi sitede YAYINLANMIYOR → "—" (uydurma yasak).
+// Büyük Ada turu) → 200 ₺. Şehir içi hatların bir kısmı ücret YAYIMLAMIYOR →
+// o hatlarda "—" (uydurma yasak). Ücret sayfada yazılıysa JSON'daki `price`
+// alanı kullanılır (2026-11-27 doğrulaması: Üsküdar-Kabataş TAM 51,81 ₺,
+// Üsküdar-Beşiktaş İstanbulkart Tam 50,15 ₺).
 const ADA_FARE = "200 ₺";
 const CITY_FARE_UNVERIFIED = "—";
 
@@ -92,13 +94,16 @@ export function getDenturSchedules(): RawOfficialTrip[] {
       // selfHeal gerçekçi seyir süresiyle doldurur. Gerçek pencere continuousUntil'da.
       arrivalTime: isContinues ? undefined : r.arrivalTime,
       platform: `${r.origin} Dentur İskelesi`,
-      price: toCategory(lineKey) === "ADALAR" ? ADA_FARE : CITY_FARE_UNVERIFIED,
+      price:
+        r.price ??
+        (toCategory(lineKey) === "ADALAR" ? ADA_FARE : CITY_FARE_UNVERIFIED),
       stops: r.stops && r.stops.length > 0 ? r.stops : undefined,
       runsWeekday: runs.runsWeekday,
       runsSaturday: runs.runsSaturday,
       runsSunday: runs.runsSunday,
       isContinuous: isContinues || undefined,
       continuousUntil: r.continuousUntil,
+      serviceFrequencyLabel: r.serviceFrequencyLabel,
       lineName: r.line,
       sourceUrl: DENTUR_SOURCE_URL,
       // Doğrulama damgası: JSON'un üretildiği an (canlı scrape zamanı).

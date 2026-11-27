@@ -125,7 +125,8 @@ export function BoardTvMode({
         trip.stops,
         undefined,
         now,
-        serverTimeIso
+        serverTimeIso,
+        trip.isContinuous ? trip.continuousUntil : undefined
       );
       if (dyn.isExpired) continue;
       // Belirli bir iskele seçiliyse, o iskelenin biniş saati ve durağını kullan

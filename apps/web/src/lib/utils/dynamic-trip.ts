@@ -105,7 +105,14 @@ export function resolveDynamicTrip(
   stops?: { name: string; time: string }[],
   arrivalTime?: string,
   nowMs: number = Date.now(),
-  serverTimeIso?: string
+  serverTimeIso?: string,
+  /**
+   * SÜREKLİ/SIKLIKLI SERVİS penceresinin bitişi (HH:mm).
+   * Verilirse kayıt tek bir kalkış değil, `departureTime`–`serviceWindowEnd`
+   * arasında süren bir servis olarak yorumlanır: pencere bitmeden "geçti"
+   * sayılmaz ve listeden düşürülmez.
+   */
+  serviceWindowEnd?: string
 ): DynamicTripResolution {
   const accurateNow = nowMs;
   const istParts = getIstanbulParts(accurateNow);
@@ -138,6 +145,73 @@ export function resolveDynamicTrip(
       underway: null,
       boardingDeadline: null
     };
+  }
+
+  // 0.5 SÜREKLİ / SIKLIKLI SERVİS (tek kayıt = bir pencere)
+  // Bazı hatlarda resmî kaynak tek tek saat yayımlamıyor; yalnızca
+  // "06:45 – 00:00 arası, her 10 dakikada bir" diyor. Böyle bir kayıt tek bir
+  // kalkış gibi ele alınırsa kalkış saatinden hemen sonra "geçti" sayılır ve
+  // listeden tamamen düşer; oysa servis gün boyu sürüyor. Bu yüzden kayıt,
+  // pencere BİTENE kadar aktif kabul edilir. Pencere içinde geri sayım
+  // gösterilmez (sonraki sefer saati resmî kaynakta yazılı değil).
+  const buildDayIso = (dateStr: string, time: string, offset: number): string => {
+    // offset NEGATİF olabilir (dün başlayıp bugün biten pencere). incrementDateStr
+    // yalnızca ileri gittiği için takvim aritmetiği burada doğrudan yapılır.
+    if (offset === 0) return `${dateStr}T${time}:00+03:00`;
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const isoDate = new Date(Date.UTC(y, m - 1, d + offset))
+      .toISOString()
+      .slice(0, 10);
+    return `${isoDate}T${time}:00+03:00`;
+  };
+
+  if (serviceWindowEnd && /^\d{2}:\d{2}$/.test(serviceWindowEnd)) {
+    // Gece yarısını aşan pencerede (örn. 06:45–00:00) iki aday pencere var:
+    // bugün başlayan ve dün başlayıp bugün biten. İkisi de denenir.
+    const rollover = compareHhmm(serviceWindowEnd, departureTime) < 0 ? 1 : 0;
+    for (const offset of [baseDayOffset, baseDayOffset - 1]) {
+      const startMs = new Date(
+        buildDayIso(todayIsoDate, departureTime, offset)
+      ).getTime();
+      const endIso = buildDayIso(
+        todayIsoDate,
+        serviceWindowEnd,
+        offset + rollover
+      );
+      const endMs = new Date(endIso).getTime();
+      if (accurateNow < startMs || accurateNow > endMs) continue;
+
+      const [hh, mm] = departureTime.split(":");
+      const hNum = parseInt(hh, 10);
+      const isPm = hNum >= 12;
+      const h12 = hNum % 12 === 0 ? 12 : hNum % 12;
+
+      return {
+        currentOrigin: initialOrigin,
+        initialOrigin,
+        destination,
+        routeTitle: `${initialOrigin} → ${destination} Hattı`,
+        currentDepartureTime: departureTime,
+        currentDepartureTime12: `${h12}:${mm} ${isPm ? "PM" : "AM"}`,
+        currentTargetIso: endIso,
+        isDeparted: false,
+        countdown: null,
+        minutesUntilDeparture: null,
+        status: "ON_TIME",
+        isExpired: false,
+        waypoints: [
+          { name: initialOrigin, time: departureTime, state: "CURRENT", isOrigin: true, isDestination: false },
+          { name: destination, time: serviceWindowEnd, state: "UPCOMING", isOrigin: false, isDestination: true },
+        ],
+        activeChain: [],
+        activeLegIndex: 0,
+        underway: null,
+        boardingDeadline: null
+      };
+    }
+    // Pencere dışındayız (servis saatleri arası). Kayıt yine de gizlenmez;
+    // aşağıdaki normal akış ilk kalkışa geri sayım üretir — o saat de resmî
+    // kaynakta yazılı olduğu için uydurma değildir.
   }
 
   // 1. Build chronological waypoints with proper midnight rollover.

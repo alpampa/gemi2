@@ -448,7 +448,8 @@ export function ScheduleListClient({
           overlaySchedule.stops,
           undefined,
           now,
-          serverTimeIso
+          serverTimeIso,
+          overlaySchedule.isContinuous ? overlaySchedule.continuousUntil : undefined
         );
         return {
           schedule: overlaySchedule,
@@ -1324,6 +1325,7 @@ export function ScheduleListClient({
                       arrivalSource={schedule.arrivalSource}
                       isContinuous={schedule.isContinuous}
                       continuousUntil={schedule.continuousUntil}
+                      serviceFrequencyLabel={schedule.serviceFrequencyLabel}
                       isCompact={isCompactDensity}
                       isFeaturedHero={idx === 0 && !isTimetablePreviewMode}
                       highlightStopName={searchQuery}

@@ -368,3 +368,64 @@ describe("resolveDynamicTrip — canlı seyir (underway) ilerlemesi", () => {
     expect(res.underway).toBeNull();
   });
 });
+
+/**
+ * SÜREKLİ / SIKLIKLI SERVİS
+ * Dentur Üsküdar hatları tek tek saat yayımlamıyor: "06:45 – 00:00 arası, her
+ * 10 dakikada bir". Böyle bir kayıt tek kalkış gibi ele alınırsa 06:45'ten
+ * sonra "geçti" sayılıp listeden düşer ve hat tamamen görünmez olur.
+ */
+describe("resolveDynamicTrip — sürekli/sıklıklı servis penceresi", () => {
+  const call = (nowIso: string, windowEnd?: string) =>
+    resolveDynamicTrip(
+      "Üsküdar",
+      "Kabataş",
+      "06:45",
+      "2026-10-01T06:45:00+03:00",
+      undefined,
+      undefined,
+      at(nowIso),
+      undefined,
+      windowEnd
+    );
+
+  it("pencere içinde sefer geçmiş sayılmaz (öğlen 14:00)", () => {
+    const res = call("2026-10-01T14:00:00+03:00", "00:00");
+    expect(res.isExpired).toBe(false);
+    expect(res.isDeparted).toBe(false);
+    expect(res.status).toBe("ON_TIME");
+    // Sonraki sefer saati resmî kaynakta yazılı değil → geri sayım ÜRETİLMEZ.
+    expect(res.countdown).toBeNull();
+    expect(res.minutesUntilDeparture).toBeNull();
+    expect(res.currentDepartureTime).toBe("06:45");
+  });
+
+  it("pencere bittikten sonra kayıt gizlenmez; ilk kalkışa geri sayım üretilir", () => {
+    // 06:45–00:00 penceresi 5 dk önce bitti. Servis yok ama kayıt listeden
+    // düşmemeli; sıradaki resmî kalkış 06:45'tir (uydurma değil).
+    const res = call("2026-10-02T00:05:00+03:00", "00:00");
+    expect(res.isExpired).toBe(false);
+    expect(res.status).toBe("ON_TIME");
+    expect(res.currentDepartureTime).toBe("06:45");
+    expect(res.minutesUntilDeparture).toBe(400); // 00:05 → 06:45
+  });
+
+  it("gece yarısını aşan pencere (00:45) ertesi güne taşınır", () => {
+    // 00:30, dün 06:45'te başlayıp bugün 00:45'te bitecek pencerenin içinde.
+    const res = call("2026-10-02T00:30:00+03:00", "00:45");
+    expect(res.isExpired).toBe(false);
+    expect(res.currentTargetIso).toBe("2026-10-02T00:45:00+03:00");
+  });
+
+  it("servis aralığında (03:00) pencere aktif sayılmaz", () => {
+    const res = call("2026-10-02T03:00:00+03:00", "00:45");
+    expect(res.isExpired).toBe(false); // kayıt gizlenmez
+    expect(res.currentDepartureTime).toBe("06:45");
+    expect(res.currentTargetIso).toBe("2026-10-02T06:45:00+03:00");
+  });
+
+  it("pencere verilmezse eski davranış korunur (kalkıştan sonra expired)", () => {
+    const res = call("2026-10-01T14:00:00+03:00", undefined);
+    expect(res.isExpired).toBe(true);
+  });
+});

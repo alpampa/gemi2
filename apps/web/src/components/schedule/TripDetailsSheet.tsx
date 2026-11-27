@@ -86,7 +86,8 @@ export function TripDetailsSheet({
       schedule.stops,
       schedule.arrivalTime ?? schedule.derivedArrivalTime,
       nowMs,
-      serverTimeIso
+      serverTimeIso,
+      schedule.isContinuous ? schedule.continuousUntil : undefined
     );
   }, [schedule, nowMs, serverTimeIso]);
 

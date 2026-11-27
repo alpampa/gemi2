@@ -8,6 +8,12 @@ import {
   parseUskudarBesiktasSchedules,
 } from "@/lib/agents/dentur-scraper";
 
+/**
+ * Bu fixture'lar denturavrasya.com hat sayfalarının 2026-11-27 tarihli
+ * GERÇEK içeriğidir (yalnızca <style>/<script> gövdeleri çıkarıldı; kart
+ * HTML'i birebir korunur). Site Next.js'e taşındığı için eski tablo tabanlı
+ * fixture'lar geçersiz kaldı; sayılar kaynaktan yeniden doğrulandı.
+ */
 function fixture(name: string): string {
   return readFileSync(
     fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url)),
@@ -15,8 +21,8 @@ function fixture(name: string): string {
   );
 }
 
-describe("Dentur gerçek tarife parser'ı (resmi site fixture'ları)", () => {
-  it("Beşiktaş↔Kadıköy: iki yön, Hİ+Cmt 28 kayıt, Pazar 26 kayıt", () => {
+describe("Dentur gerçek tarife parser'ı (resmî site fixture'ları)", () => {
+  it("Beşiktaş↔Kadıköy: iki yön, Hİ+Cmt 28, Pazar 26 sefer", () => {
     const recs = parseBesiktasKadikoySchedules(
       fixture("dentur-besiktaskadikoy.html")
     );
@@ -25,100 +31,113 @@ describe("Dentur gerçek tarife parser'ı (resmi site fixture'ları)", () => {
 
     expect(weekdaySat.length).toBe(56); // 2 yön × 28
     expect(sunday.length).toBe(52); // 2 yön × 26
-    // Her iki yön de aynı saat kümesini paylaşmalı
+
     const besToKad = weekdaySat.filter((r) => r.origin === "Beşiktaş");
     const kadToBes = weekdaySat.filter((r) => r.origin === "Kadıköy");
     expect(besToKad.length).toBe(28);
     expect(kadToBes.length).toBe(28);
-    expect(besToKad.map((r) => r.departureTime)).toEqual(
-      kadToBes.map((r) => r.departureTime)
+
+    // Sayfada yazılı ilk/son seferler
+    const weekdayTimes = besToKad.map((r) => r.departureTime).sort();
+    expect(weekdayTimes[0]).toBe("07:30");
+    expect(weekdayTimes[weekdayTimes.length - 1]).toBe("21:00");
+
+    const sundayTimes = sunday
+      .filter((r) => r.origin === "Beşiktaş")
+      .map((r) => r.departureTime)
+      .sort();
+    expect(sundayTimes[0]).toBe("08:30");
+
+    // Saatler sayfada birebir yazılı; uydurma dakika yok.
+    expect(recs.every((r) => /^([0-2]\d):[0-5]\d$/.test(r.departureTime))).toBe(
+      true
     );
-    // Saatler 07:30-21:00 arası 30 dk
-    const times = besToKad.map((r) => r.departureTime);
-    expect(times[0]).toBe("07:30");
-    expect(times[times.length - 1]).toBe("21:00");
-    expect(new Set(times).size).toBe(28);
+    // Bu hatta "sürekli sefer" ifadesi yok.
+    expect(recs.some((r) => r.isContinuous)).toBe(false);
   });
 
-  it("Adalar: Hafta içi 2 gidiş + 2 dönüş, Hafta sonu 4 gidiş + 4 dönüş, ara duraklar korunur", () => {
+  it("Adalar: hafta içi ve hafta sonu gidiş/dönüş, iframe kopyası tekilleşir", () => {
     const recs = parseAdalarSchedules(fixture("dentur-adalar.html"));
 
-    const weekdayGidis = recs.filter(
+    const gidisWeekday = recs.filter(
       (r) => r.dayType === "WEEKDAY" && r.origin === "Beşiktaş"
     );
-    const weekdayDonus = recs.filter(
+    const donusWeekday = recs.filter(
       (r) => r.dayType === "WEEKDAY" && r.origin === "Büyükada"
     );
-    const weekendGidis = recs.filter(
+    const gidisWeekend = recs.filter(
       (r) => r.dayType === "WEEKEND" && r.origin === "Beşiktaş"
     );
-    const weekendDonus = recs.filter(
+    const donusWeekend = recs.filter(
       (r) => r.dayType === "WEEKEND" && r.origin === "Büyükada"
     );
 
-    expect(weekdayGidis.length).toBe(2);
-    expect(weekdayDonus.length).toBe(2);
-    expect(weekendGidis.length).toBe(4);
-    expect(weekendDonus.length).toBe(4);
+    // Sayfa her gün tipinde 2 gidiş + 2 dönüş yayımlıyor.
+    expect(gidisWeekday.length).toBe(2);
+    expect(donusWeekday.length).toBe(2);
+    expect(gidisWeekend.length).toBe(2);
+    expect(donusWeekend.length).toBe(2);
 
-    // Gidiş: Beşiktaş ara durak Kabataş ve Sirkeci olmalı
-    const first = weekdayGidis[0];
-    expect(first.origin).toBe("Beşiktaş");
-    expect(first.destination).toBe("Büyükada");
+    // Kart HTML'i sayfada iki kez (görünür + iframe srcdoc) geçiyor;
+    // kimlik tekilleştirmesi çalışmazsa sayı iki katına çıkardı.
+    expect(recs.length).toBe(8);
+
+    const first = gidisWeekday.sort((a, b) =>
+      a.departureTime.localeCompare(b.departureTime)
+    )[0];
     expect(first.departureTime).toBe("09:30");
     expect(first.arrivalTime).toBe("11:15");
-    expect(first.stops?.length).toBe(3); // Kabataş, Sirkeci, Heybeliada
-    expect(first.stops?.[0]).toEqual({ name: "KABATAŞ", time: "09:45" });
-    expect(first.stops?.[2]).toEqual({ name: "HEYBELİADA", time: "11:00" });
-
-    // Dönüş: Büyükada → Heybeliada → Sirkeci → Kabataş → Beşiktaş
-    const donus = weekdayDonus[0];
-    expect(donus.origin).toBe("Büyükada");
-    expect(donus.departureTime).toBe("14:30");
-    expect(donus.arrivalTime).toBe("16:15");
-    expect(donus.stops?.[0]).toEqual({ name: "HEYBELİADA", time: "14:45" });
+    expect(first.stops?.map((s) => `${s.name}@${s.time}`)).toEqual([
+      "KABATAŞ@09:45",
+      "SİRKECİ@10:00",
+      "HEYBELİADA@11:00",
+    ]);
   });
 
-  it("Üsküdar↔Kabataş: gerçek saat sayıları ve sürekli sefer pencereleri", () => {
+  it("Üsküdar↔Kabataş: tek tek saat yok → yazılı aralık + sıklık", () => {
     const recs = parseUskudarKabatasSchedules(
       fixture("dentur-uskudar-kabatas.html")
     );
 
-    const uskudarWeekday = recs.filter(
+    // 2 iskele × 3 gün tipi
+    expect(recs.length).toBe(6);
+    expect(recs.every((r) => r.isContinuous)).toBe(true);
+
+    const uskudarWeekday = recs.find(
       (r) => r.origin === "Üsküdar" && r.dayType === "WEEKDAY"
     );
-    // Sayfada ÜSKÜDAR KALKIŞ tablosu Hİ sütunu ≈ 85 hücre; birebir tekilleştirilmiş sayı kontrolü
-    expect(uskudarWeekday.length).toBeGreaterThan(60);
+    expect(uskudarWeekday?.departureTime).toBe("06:45");
+    expect(uskudarWeekday?.continuousUntil).toBe("00:00");
+    expect(uskudarWeekday?.serviceFrequencyLabel).toBe("10 Dakikada Bir");
+    expect(uskudarWeekday?.price).toBe("51,81₺");
 
-    // İlk gerçek sefer 06:45
-    expect(uskudarWeekday[0].departureTime).toBe("06:45");
-
-    // "Sürekli sefer" pencereleri isContinuous olarak temsil edilir
-    const continuousKabatasWeekday = recs.filter(
-      (r) =>
-        r.origin === "Kabataş" &&
-        r.dayType === "WEEKDAY" &&
-        r.isContinuous
+    const uskudarSat = recs.find(
+      (r) => r.origin === "Üsküdar" && r.dayType === "SATURDAY"
     );
-    expect(continuousKabatasWeekday.length).toBeGreaterThan(0);
-    for (const c of continuousKabatasWeekday) {
-      expect(c.continuousUntil).toBeTruthy();
-    }
+    expect(uskudarSat?.departureTime).toBe("08:00");
+    expect(uskudarSat?.serviceFrequencyLabel).toBe("10 - 15 Dakikada Bir");
 
-    // "Sürekli" penceresi içinde sahte dakika ÜRETİLMEMİŞ olmalı → tüm kayıtlar birebir sayfa saati
-    const allTimesValid = recs.every((r) =>
-      /^([0-2]\d):[0-5]\d$/.test(r.departureTime)
+    const uskudarSun = recs.find(
+      (r) => r.origin === "Üsküdar" && r.dayType === "SUNDAY"
     );
-    expect(allTimesValid).toBe(true);
+    expect(uskudarSun?.departureTime).toBe("09:00");
+    expect(uskudarSun?.serviceFrequencyLabel).toBe("15 - 20 Dakikada Bir");
+
+    const kabatasWeekday = recs.find(
+      (r) => r.origin === "Kabataş" && r.dayType === "WEEKDAY"
+    );
+    expect(kabatasWeekday?.departureTime).toBe("06:55");
+    expect(kabatasWeekday?.continuousUntil).toBe("00:15");
   });
 
-  it("Üsküdar↔Beşiktaş: sürekli sefer pencereleri (uygun saat aralıkları)", () => {
+  it("Üsküdar↔Beşiktaş: sürekli sefer pencereleri ve İstanbulkart ücreti", () => {
     const recs = parseUskudarBesiktasSchedules(
       fixture("dentur-uskudar-besiktas.html")
     );
-    expect(recs.length).toBeGreaterThan(0);
 
-    // Sanayi bilinen aralıklar: Üsküdar Hİ+Cmt 06:10-00:45, Pazar 06:20-00:45
+    expect(recs.length).toBe(4);
+    expect(recs.every((r) => r.isContinuous)).toBe(true);
+
     const uskudarWeekdaySat = recs.find(
       (r) => r.origin === "Üsküdar" && r.dayType === "WEEKDAY_SAT"
     );
@@ -129,9 +148,27 @@ describe("Dentur gerçek tarife parser'ı (resmi site fixture'ları)", () => {
       (r) => r.origin === "Üsküdar" && r.dayType === "SUNDAY"
     );
     expect(uskudarSunday?.departureTime).toBe("06:20");
-    expect(uskudarSunday?.continuousUntil).toBe("00:45");
 
-    // Hiçbir "sürekli sefer" sabit saat üretmemiş olmalı
-    expect(recs.every((r) => r.isContinuous)).toBe(true);
+    const besiktasWeekdaySat = recs.find(
+      (r) => r.origin === "Beşiktaş" && r.dayType === "WEEKDAY_SAT"
+    );
+    expect(besiktasWeekdaySat?.departureTime).toBe("06:20");
+    expect(besiktasWeekdaySat?.continuousUntil).toBe("01:00");
+
+    // Ücret resmî sayfada yazılı: İstanbulkart Tam Geçiş.
+    expect(besiktasWeekdaySat?.price).toBe("50,15 ₺");
+  });
+
+  it("sayfa yapısı tanınmazsa boş dizi döndürür (sessiz uydurma yok)", () => {
+    expect(parseBesiktasKadikoySchedules("<html><body>yok</body></html>")).toEqual(
+      []
+    );
+    expect(parseAdalarSchedules("<html><body>yok</body></html>")).toEqual([]);
+    expect(
+      parseUskudarKabatasSchedules("<html><body>yok</body></html>")
+    ).toEqual([]);
+    expect(
+      parseUskudarBesiktasSchedules("<html><body>yok</body></html>")
+    ).toEqual([]);
   });
 });

@@ -49,6 +49,8 @@ export interface ScheduleCardProps {
   arrivalSource?: "official" | "derived" | "unknown";
   isContinuous?: boolean;
   continuousUntil?: string;
+  /** Resmî kaynakta yazılı sıklık metni (örn. "10 dakikada bir"). */
+  serviceFrequencyLabel?: string;
   onClick?: () => void;
   isCompact?: boolean;
   isFeaturedHero?: boolean;
@@ -90,7 +92,8 @@ export function ScheduleCard(props: ScheduleCardProps) {
     props.stops,
     props.arrivalTime ?? props.derivedArrivalTime,
     accurateNow,
-    props.serverTimeIso
+    props.serverTimeIso,
+    props.isContinuous ? props.continuousUntil : undefined
   );
 
   // Eğer kullanıcı başka bir günün tarifesini (ör. Cumartesi veya Pazar) inceliyorsa,
@@ -550,8 +553,12 @@ export function ScheduleCard(props: ScheduleCardProps) {
               </span>
             </div>
             {props.isContinuous && !isCancelled && (
-              <span className="mt-1 inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-300/60 dark:border-cyan-500/30 shrink-0 whitespace-nowrap">
-                <Timer size={9} aria-hidden="true" /> SÜREKLİ{props.continuousUntil ? ` ${props.continuousUntil}` : ""}
+              <span className="mt-1 inline-flex items-start gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-300/60 dark:border-cyan-500/30 shrink-0 max-w-[9rem] leading-tight">
+                <Timer size={9} aria-hidden="true" className="mt-px shrink-0" />
+                <span>
+                  SÜREKLİ{props.continuousUntil ? ` ${props.continuousUntil}` : ""}
+                  {props.serviceFrequencyLabel ? ` · ${props.serviceFrequencyLabel}` : ""}
+                </span>
               </span>
             )}
             <div className="mt-1">

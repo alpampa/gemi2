@@ -51,6 +51,11 @@ export interface RawOfficialTrip {
   isContinuous?: boolean;
   /** Sürekli sefer penceresinin bitiş saati (HH:mm) */
   continuousUntil?: string;
+  /**
+   * Resmî kaynakta YAZILI sıklık metni (örn. "10 dakikada bir").
+   * Tek tek saat listesi değildir; yolcuya aynen gösterilir.
+   */
+  serviceFrequencyLabel?: string;
   /** Hat tanımlayıcı (örn. Beşiktaş-Kadıköy) */
   lineName?: string;
   sourceUrl?: string;
