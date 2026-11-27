@@ -446,6 +446,39 @@ export function TripDetailsSheet({
                   ) : null}
                 </div>
 
+                {/* RESMÎ KAYNAKTA YAZILI ÖZEL SERVİS PENCERELERİ */}
+                {schedule.serviceWindows && schedule.serviceWindows.length > 0 && (
+                  <div className="bg-slate-50 dark:bg-slate-900/90 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mb-2">
+                      <Timer size={13} className="text-cyan-500" />
+                      <span>Servis Pencereleri</span>
+                    </span>
+                    <ul className="flex flex-col gap-1.5">
+                      {schedule.serviceWindows.map((w) => (
+                        <li
+                          key={`${w.kind}-${w.startTime}-${w.endTime}`}
+                          className="flex flex-wrap items-baseline gap-x-1.5 text-[11px] leading-snug text-slate-700 dark:text-slate-300"
+                        >
+                          <span className="font-black text-slate-900 dark:text-white">
+                            {w.label}
+                          </span>
+                          <span className="font-mono font-bold text-cyan-600 dark:text-cyan-300">
+                            {w.startTime}–{w.endTime}
+                          </span>
+                          {w.note && (
+                            <span className="text-slate-500 dark:text-slate-400">
+                              {w.note}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-1.5 text-[9px] text-slate-400 dark:text-slate-500">
+                      Resmî işletme sayfasında yazılı bilgi; saat listesi değildir.
+                    </p>
+                  </div>
+                )}
+
                 {/* VAPUR İÇİ OLANAKLAR VE GÜVERTE TAVSİYESİ */}
                 {deckAdvice && (
                   <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 flex flex-col justify-center text-xs">

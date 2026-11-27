@@ -37,6 +37,21 @@ export interface DenturStopTime {
   time: string;
 }
 
+/**
+ * Resmî sayfada yazılı ÖZEL SERVİS PENCERESİ (yoğun saat ring seferi, gece
+ * sıklığı gibi). Saat LİSTESİ değildir: yalnızca kaynakta yazan aralık ve
+ * açıklama aynen taşınır, uydurma dakika üretilmez.
+ */
+export interface DenturServiceWindow {
+  kind: "RUSH" | "NIGHT";
+  /** Kaynakta yazılı etiket: "Akşam Yoğun Saat", "Gece Seferleri"... */
+  label: string;
+  startTime: string;
+  endTime: string;
+  /** Kaynakta yazılı açıklama (gün kapsamı dahil), aynen. */
+  note: string;
+}
+
 export interface DenturLineRecord {
   line: string;
   origin: string;
@@ -53,6 +68,11 @@ export interface DenturLineRecord {
    * Tek tek saat listesi değildir; yolcuya aynen gösterilir.
    */
   serviceFrequencyLabel?: string;
+  /**
+   * Kaynakta yazılı özel servis pencereleri (yoğun saat ring, gece sıklığı).
+   * Kayıt tek bir kalkışa indirgendiği için bu bilgiler ayrı taşınır.
+   */
+  serviceWindows?: DenturServiceWindow[];
   /** Resmî sayfada yazılı tam ücret (örn. "51,81 ₺"). Yoksa tanımsız. */
   price?: string;
 }
@@ -265,6 +285,70 @@ function parseIstanbulkartTam(d: string): string | undefined {
  * TEK TEK SAAT YOK → tek kayıt: departureTime = ilk sefer,
  * continuousUntil = son sefer, serviceFrequencyLabel = yazılı sıklık.
  */
+/**
+ * Üsküdar–Kabataş kartındaki özel servis pencerelerini çıkarır.
+ *
+ * Kaynak biçimi (2026-11-27):
+ *   <div class="uskudar-card__rush-badge">
+ *     ⚡ Akşam Yoğun Saat: Hafta içi <strong>16:00 – 18:30</strong> arası
+ *     aralıksız sürekli ring seferi yapılmaktadır.
+ *   </div>
+ *   <div class="uskudar-card__time-label">🌙 Gece Seferleri <span>(21:00 sonrası)</span></div>
+ *   <div class="uskudar-card__time-row">
+ *     <span>21:00 – 00:00 Arası:</span>
+ *     <span class="uskudar-card__tag">Her 20 dakikada bir</span>
+ *   </div>
+ *
+ * Yalnızca yazılı olan taşınır; pencere içine saat UYDURULMAZ.
+ */
+export function parseUskudarServiceWindows(block: string): DenturServiceWindow[] {
+  const windows: DenturServiceWindow[] = [];
+
+  for (const m of block.matchAll(
+    /rush-badge">([\s\S]*?)<\/div>/g
+  )) {
+    const inner = m[1];
+    const strong = (inner.match(/<strong>\s*([^<]+?)\s*<\/strong>/) || [])[1] ?? "";
+    const range = strong.match(RANGE_RE);
+    if (!range) continue;
+
+    const plain = cleanCell(inner).replace(/^[^A-Za-zÇĞİÖŞÜçğıöşü]+/, "");
+    const label = (plain.match(/([^:]{3,40}Yoğun Saat)/) || [])[1]?.trim() ??
+      "Yoğun Saat";
+    // Kaynak cümlesi: "<etiket>: <gün kapsamı> <aralık> <açıklama>"
+    // Aralık ayrı alanda taşındığı için cümleden çıkarılır; kalan açıklama
+    // aynen korunur. Gün kapsamı ise kaydın dayType'ı ile eşleştirilir.
+    const afterLabel = plain.slice(plain.indexOf(label) + label.length);
+    const [, afterRange] = afterLabel.split(strong);
+    windows.push({
+      kind: "RUSH",
+      label,
+      startTime: range[1],
+      endTime: range[2],
+      note: (afterRange ?? "")
+        .replace(/\s+/g, " ")
+        .replace(/^arası\s+/i, "")
+        .trim(),
+    });
+  }
+
+  for (const m of block.matchAll(
+    /time-row">\s*<span>\s*([^<]*?[–-][^<]*?)\s*<\/span>\s*<span[^>]*class="[^"]*tag[^"]*"[^>]*>\s*([^<]+?)\s*</g
+  )) {
+    const rowRange = m[1].match(RANGE_RE);
+    if (!rowRange) continue;
+    windows.push({
+      kind: "NIGHT",
+      label: "Gece Seferleri",
+      startTime: rowRange[1],
+      endTime: rowRange[2],
+      note: m[2].replace(/\s+/g, " ").trim(),
+    });
+  }
+
+  return windows;
+}
+
 export function parseUskudarKabatasSchedules(html: string): DenturLineRecord[] {
   const d = decodeDenturHtml(html);
   const records: DenturLineRecord[] = [];
@@ -290,12 +374,21 @@ export function parseUskudarKabatasSchedules(html: string): DenturLineRecord[] {
     const isKabatas = title.toLocaleUpperCase("tr-TR").includes("KABATAŞ");
     if (!isUskudar && !isKabatas) continue;
 
+    const allWindows = parseUskudarServiceWindows(block);
     for (const m of block.matchAll(
       /time-row">\s*<span>\s*([^<]*?):?\s*<\/span>\s*<strong>\s*([^<]+?)\s*<\/strong>/g
     )) {
       const dayType = denturDayTypeFromLabel(m[1]);
       const range = m[2].match(RANGE_RE);
       if (!dayType || !range) continue;
+
+      // "Yoğun Saat" penceresi kaynakta HAFTA İÇİ için yazılı; cumartesi/pazar
+      // kaydına iliştirilirse olmayan bir hizmet iddia edilmiş olur. Gece
+      // sıklığı ise gün ayrımı yapılmadan verilir → her gün için geçerli.
+      const runsOnWeekday = dayType === "WEEKDAY" || dayType === "WEEKDAY_SAT";
+      const windows = allWindows.filter(
+        (w) => w.kind === "NIGHT" || runsOnWeekday
+      );
 
       records.push({
         line: "Üsküdar-Kabataş",
@@ -307,6 +400,7 @@ export function parseUskudarKabatasSchedules(html: string): DenturLineRecord[] {
         isContinuous: true,
         continuousUntil: range[2],
         serviceFrequencyLabel: frequencyByDay.get(dayType),
+        serviceWindows: windows.length > 0 ? windows : undefined,
         price,
       });
     }

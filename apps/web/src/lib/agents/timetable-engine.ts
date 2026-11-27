@@ -230,6 +230,7 @@ export async function getLiveOrOfficialSchedules(options?: {
       isContinuous: trip.isContinuous || undefined,
       continuousUntil: trip.continuousUntil,
       serviceFrequencyLabel: trip.serviceFrequencyLabel,
+      serviceWindows: trip.serviceWindows,
       lineName: trip.lineName,
       runsToday: dayFlags.runsToday,
       runsWeekday: dayFlags.runsWeekday,

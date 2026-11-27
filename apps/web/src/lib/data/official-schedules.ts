@@ -5,6 +5,7 @@ import { getDenturSchedules } from "./dentur-schedules";
 import { getPrensTurSchedules } from "./prens-tur-schedules";
 import { getTuryolSchedules } from "./turyol-schedules";
 import { BOSTANCI_SEHIRHATLARI_SCHEDULES } from "./bostanci-sehirhatlari-schedules";
+import type { DenturServiceWindow } from "@/lib/agents/dentur-scraper";
 
 export interface RawStop {
   name: string;
@@ -56,6 +57,11 @@ export interface RawOfficialTrip {
    * Tek tek saat listesi değildir; yolcuya aynen gösterilir.
    */
   serviceFrequencyLabel?: string;
+  /**
+   * Resmî kaynakta yazılı özel servis pencereleri (yoğun saat ring, gece
+   * sıklığı). Saat listesi değildir; olduğu gibi gösterilir.
+   */
+  serviceWindows?: DenturServiceWindow[];
   /** Hat tanımlayıcı (örn. Beşiktaş-Kadıköy) */
   lineName?: string;
   sourceUrl?: string;

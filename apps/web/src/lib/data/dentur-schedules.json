@@ -1,7 +1,7 @@
 {
   "operator": "Dentur Avrasya",
   "sourceBase": "https://www.denturavrasya.com/tr-TR/hatlarimiz/*",
-  "generatedAt": "2026-11-27T08:02:52.264Z",
+  "generatedAt": "2026-11-27T09:04:31.448Z",
   "scrapedAtUserAgent": "Vapur-Sync-Agent/3.0 (resmi denturavrasya.com sayfalarından birebir)",
   "note": "Sayfalarda birebir yazılı saatler kaydedildi; 'Sürekli Sefer' pencereleri isContinuous ile işaretlidir, sahte dakika üretilmedi.",
   "failures": [],
@@ -1064,6 +1064,22 @@
       "isContinuous": true,
       "continuousUntil": "00:00",
       "serviceFrequencyLabel": "10 Dakikada Bir",
+      "serviceWindows": [
+        {
+          "kind": "RUSH",
+          "label": "Akşam Yoğun Saat",
+          "startTime": "16:00",
+          "endTime": "18:30",
+          "note": "arası aralıksız sürekli ring seferi yapılmaktadır."
+        },
+        {
+          "kind": "NIGHT",
+          "label": "Gece Seferleri",
+          "startTime": "21:00",
+          "endTime": "00:00",
+          "note": "Her 20 dakikada bir"
+        }
+      ],
       "price": "51,81₺"
     },
     {
@@ -1076,6 +1092,15 @@
       "isContinuous": true,
       "continuousUntil": "00:00",
       "serviceFrequencyLabel": "10 - 15 Dakikada Bir",
+      "serviceWindows": [
+        {
+          "kind": "NIGHT",
+          "label": "Gece Seferleri",
+          "startTime": "21:00",
+          "endTime": "00:00",
+          "note": "Her 20 dakikada bir"
+        }
+      ],
       "price": "51,81₺"
     },
     {
@@ -1088,6 +1113,15 @@
       "isContinuous": true,
       "continuousUntil": "00:00",
       "serviceFrequencyLabel": "15 - 20 Dakikada Bir",
+      "serviceWindows": [
+        {
+          "kind": "NIGHT",
+          "label": "Gece Seferleri",
+          "startTime": "21:00",
+          "endTime": "00:00",
+          "note": "Her 20 dakikada bir"
+        }
+      ],
       "price": "51,81₺"
     },
     {
@@ -1100,6 +1134,22 @@
       "isContinuous": true,
       "continuousUntil": "00:15",
       "serviceFrequencyLabel": "10 Dakikada Bir",
+      "serviceWindows": [
+        {
+          "kind": "RUSH",
+          "label": "Sabah Yoğun Saat",
+          "startTime": "08:10",
+          "endTime": "09:10",
+          "note": "arası aralıksız sürekli ring seferi yapılmaktadır."
+        },
+        {
+          "kind": "NIGHT",
+          "label": "Gece Seferleri",
+          "startTime": "21:10",
+          "endTime": "00:15",
+          "note": "Her 20 dakikada bir"
+        }
+      ],
       "price": "51,81₺"
     },
     {
@@ -1112,6 +1162,15 @@
       "isContinuous": true,
       "continuousUntil": "00:15",
       "serviceFrequencyLabel": "10 - 15 Dakikada Bir",
+      "serviceWindows": [
+        {
+          "kind": "NIGHT",
+          "label": "Gece Seferleri",
+          "startTime": "21:10",
+          "endTime": "00:15",
+          "note": "Her 20 dakikada bir"
+        }
+      ],
       "price": "51,81₺"
     },
     {
@@ -1124,6 +1183,15 @@
       "isContinuous": true,
       "continuousUntil": "00:15",
       "serviceFrequencyLabel": "15 - 20 Dakikada Bir",
+      "serviceWindows": [
+        {
+          "kind": "NIGHT",
+          "label": "Gece Seferleri",
+          "startTime": "21:10",
+          "endTime": "00:15",
+          "note": "Her 20 dakikada bir"
+        }
+      ],
       "price": "51,81₺"
     },
     {

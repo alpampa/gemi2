@@ -51,6 +51,17 @@ export interface ScheduleCardDto {
    * Saat listesi değildir; olduğu gibi gösterilir.
    */
   serviceFrequencyLabel?: string;
+  /**
+   * Resmî kaynakta yazılı özel servis pencereleri (yoğun saat ring, gece
+   * sıklığı). Saat listesi değildir; olduğu gibi gösterilir.
+   */
+  serviceWindows?: {
+    kind: "RUSH" | "NIGHT";
+    label: string;
+    startTime: string;
+    endTime: string;
+    note: string;
+  }[];
   /** Hat adı */
   lineName?: string;
 

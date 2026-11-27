@@ -104,6 +104,7 @@ export function getDenturSchedules(): RawOfficialTrip[] {
       isContinuous: isContinues || undefined,
       continuousUntil: r.continuousUntil,
       serviceFrequencyLabel: r.serviceFrequencyLabel,
+      serviceWindows: r.serviceWindows,
       lineName: r.line,
       sourceUrl: DENTUR_SOURCE_URL,
       // Doğrulama damgası: JSON'un üretildiği an (canlı scrape zamanı).

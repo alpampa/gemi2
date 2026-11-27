@@ -45,6 +45,19 @@ export const rawOfficialTripSchema = z
     continuousUntil: z.string().regex(/^\d{2}:\d{2}$/).optional(),
     /** Resmî kaynakta yazılı sıklık metni (saat listesi değildir). */
     serviceFrequencyLabel: z.string().min(1).optional(),
+    /** Resmî kaynakta yazılı özel servis pencereleri (yoğun saat / gece). */
+    serviceWindows: z
+      .array(
+        z.object({
+          kind: z.enum(["RUSH", "NIGHT"]),
+          label: z.string().min(1),
+          startTime: z.string().regex(/^\d{2}:\d{2}$/),
+          endTime: z.string().regex(/^\d{2}:\d{2}$/),
+          note: z.string(),
+        })
+      )
+      .min(1)
+      .optional(),
     lineName: z.string().optional(),
     sourceUrl: z.string().url().optional(),
     verifiedAt: z.string().optional(),
