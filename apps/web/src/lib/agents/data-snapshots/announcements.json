@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-27T09:20:03.484Z",
+  "generatedAt": "2026-11-28T02:31:13.137Z",
   "failures": [
     {
       "operator": "Şehir Hatları",
-      "error": "Kaynak alınamadı — direct: HTTP 403: https://sehirhatlari.istanbul/tr/iptal-seferler | allorigins: The operation was aborted due to timeout | codetabs: The operation was aborted due to timeout"
+      "error": "Kaynak alınamadı — direct: HTTP 403: https://sehirhatlari.istanbul/tr/iptal-seferler | allorigins: geçersiz içerik | codetabs: The operation was aborted due to timeout"
     }
   ],
   "coverage": [
@@ -11,15 +11,15 @@
       "operator": "Şehir Hatları",
       "status": "FAILED",
       "url": "https://sehirhatlari.istanbul/tr/iptal-seferler",
-      "error": "Kaynak alınamadı — direct: HTTP 403: https://sehirhatlari.istanbul/tr/iptal-seferler | allorigins: The operation was aborted due to timeout | codetabs: The operation was aborted due to timeout",
-      "latencyMs": 16216
+      "error": "Kaynak alınamadı — direct: HTTP 403: https://sehirhatlari.istanbul/tr/iptal-seferler | allorigins: geçersiz içerik | codetabs: The operation was aborted due to timeout",
+      "latencyMs": 12409
     },
     {
       "operator": "Dentur Avrasya",
       "status": "SCANNED",
       "url": "https://www.denturavrasya.com/tr-TR/duyurular",
       "announcementCount": 19,
-      "latencyMs": 362,
+      "latencyMs": 397,
       "via": "direct"
     },
     {
@@ -27,15 +27,15 @@
       "status": "SCANNED",
       "url": "https://durum.mavimarmara.net/feed.json",
       "announcementCount": 0,
-      "latencyMs": 990,
+      "latencyMs": 893,
       "via": "jina"
     },
     {
       "operator": "Turyol",
       "status": "SCANNED",
       "url": "https://turyol.com/Home/AktifPopupDuyurulari",
-      "announcementCount": 0,
-      "latencyMs": 1211,
+      "announcementCount": 1,
+      "latencyMs": 1667,
       "via": "direct"
     },
     {
@@ -52,7 +52,7 @@
   "sources": [
     {
       "operator": "Dentur Avrasya",
-      "fetchedAt": "2026-11-27T09:19:47.268Z",
+      "fetchedAt": "2026-11-28T02:31:00.728Z",
       "sourceUrl": "https://www.denturavrasya.com/tr-TR/duyurular",
       "announcements": [
         {
@@ -265,15 +265,27 @@
     },
     {
       "operator": "Mavi Marmara",
-      "fetchedAt": "2026-11-27T09:19:47.268Z",
+      "fetchedAt": "2026-11-28T02:31:00.728Z",
       "sourceUrl": "https://durum.mavimarmara.net/feed.json",
       "announcements": []
     },
     {
       "operator": "Turyol",
-      "fetchedAt": "2026-11-27T09:19:47.268Z",
+      "fetchedAt": "2026-11-28T02:31:00.728Z",
       "sourceUrl": "https://turyol.com/Home/AktifPopupDuyurulari",
-      "announcements": []
+      "announcements": [
+        {
+          "id": "turyol-aktif-popup-iptal-28.11.2026",
+          "operator": "Turyol",
+          "title": "İptal Seferler — 28.11.2026",
+          "body": "HAVA MUHALEFETİ SEBEBİYLE\nEMİNÖNÜ / KADIKÖY - ÇINARCIK - KOCADERE - ESENKÖY\n28.11.2026 18:00 SEFERİ VE 29.11.2026 16:05 SEFERİ KARŞILIKLI\nİPTAL EDİLMİŞTİR.",
+          "type": "CANCELLED_TRIPS",
+          "publishedAt": "28.11.2026",
+          "publishedAtSource": "SOURCE",
+          "sourceUrl": "https://turyol.com/Home/AktifPopupDuyurulari",
+          "sourceVerified": true
+        }
+      ]
     }
   ]
 }

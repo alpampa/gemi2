@@ -1,7 +1,7 @@
 {
   "operator": "Dentur Avrasya",
   "sourceBase": "https://www.denturavrasya.com/tr-TR/hatlarimiz/*",
-  "generatedAt": "2026-11-27T09:19:46.625Z",
+  "generatedAt": "2026-11-28T02:30:59.779Z",
   "scrapedAtUserAgent": "Vapur-Sync-Agent/3.0 (resmi denturavrasya.com sayfalarından birebir)",
   "note": "Sayfalarda birebir yazılı saatler kaydedildi; 'Sürekli Sefer' pencereleri isContinuous ile işaretlidir, sahte dakika üretilmedi.",
   "failures": [],
